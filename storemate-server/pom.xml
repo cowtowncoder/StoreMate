@@ -12,6 +12,12 @@
   </description>
 
   <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Standard Java APIs -->
     <dependency> <!-- Servlet API -->
       <groupId>javax.servlet</groupId>
