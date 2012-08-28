@@ -30,7 +30,7 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
 
 	public IncrementalMurmur3Hasher(int seed)
 	{
-		this._seed = seed;
+		_seed = seed;
 		reset();
 	}
 

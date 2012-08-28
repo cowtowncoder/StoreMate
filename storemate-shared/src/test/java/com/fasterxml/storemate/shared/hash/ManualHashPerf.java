@@ -80,7 +80,7 @@ public class ManualHashPerf
     {
         int result = 0;
         while (--REPS >= 0) {
-            result = (int) StdMurmur3Hasher.hash(0, input, 0, input.length);
+            result = (int) BlockMurmur3Hasher.hash(0, input, 0, input.length);
         }
         return result;
     }

@@ -10,4 +10,14 @@
   <packaging>jar</packaging>
   <description>Utility stuff shared by client and server modules
   </description>
+
+  <dependencies>
+    <!-- LZF for compressing files -->
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>compress-lzf</artifactId>
+      <version>0.9.4</version>
+    </dependency>
+  </dependencies>
+
 </project>

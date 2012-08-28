@@ -57,7 +57,7 @@ public class TestHashing extends SharedTestBase
 	
 	private void _verifyMurmur3(byte[] data)
 	{
-		int exp = StdMurmur3Hasher.hash(SEED, data, 0, data.length);
+		int exp = BlockMurmur3Hasher.hash(SEED, data, 0, data.length);
 		
 		IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(SEED);
 		hasher.update(data, 0, data.length);
@@ -71,7 +71,7 @@ public class TestHashing extends SharedTestBase
 
 	private void _verifyMurmur3OneByOne(byte[] data)
 	{
-		int exp = StdMurmur3Hasher.hash(SEED, data, 0, data.length);
+		int exp = BlockMurmur3Hasher.hash(SEED, data, 0, data.length);
 
 		byte[] buffer = new byte[5];
 
@@ -91,7 +91,7 @@ public class TestHashing extends SharedTestBase
 
 	private void _verifyMurmur3WithVariable(byte[] data)
 	{
-		int exp = StdMurmur3Hasher.hash(SEED, data, 0, data.length);
+		int exp = BlockMurmur3Hasher.hash(SEED, data, 0, data.length);
 
 		IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(SEED);
 		Random rnd = new Random(data.length);

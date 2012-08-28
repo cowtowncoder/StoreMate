@@ -5,8 +5,12 @@ package com.fasterxml.storemate.shared.hash;
  * Public Domain implementation from
  * https://github.com/yonik/java_util/blob/master/src/util/hash/MurmurHash3.java
  */
-public class StdMurmur3Hasher
+public class BlockMurmur3Hasher
 {
+	public static int hash(final int seed, byte[] data) {
+		return hash(seed, data, 0, data.length);
+	}
+
 	public static int hash(final int seed, byte[] data, int offset, int len)
     {
 	    int h1 = seed;
