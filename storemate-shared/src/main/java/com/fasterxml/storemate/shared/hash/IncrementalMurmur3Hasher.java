@@ -61,7 +61,7 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
 		if (_partialByteCount > 0) {
 			int k1 = _partialBytes;
 	        k1 *= c1;
-	        k1 = (k1 << 15) | (k1 >>> 17);  // ROTL32(k1,15);
+	        k1 = Integer.rotateLeft(k1, 15);
 	        k1 *= c2;
 	        h1 ^= k1;
 		}
@@ -107,21 +107,26 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
 			}
 			offset += count;
 		}
-	
+		// HotSpot seems to like optimizing 'simple' chunks; main loop offlined
+		_update(data, offset, len);
+	}
+
+	private final void _update(byte[] data, int offset, final int len)
+	{
 		int h1 = _currentHash;
-	    int roundedEnd = offset + (len & 0xfffffffc);  // round down to 4 byte block
+	    final int roundedEnd = offset + (len & 0xfffffffc);  // round down to 4 byte block
 
 	    for (; offset < roundedEnd; offset += 4) {
-	    	int k1 = _gatherIntLE(data, offset);
+//	    	int k1 = _gatherIntLE(data, offset);
+	    	int k1 = (data[offset] & 0xff) | ((data[offset+1] & 0xff) << 8) | ((data[offset+2] & 0xff) << 16) | (data[offset+3] << 24);
 	    	k1 *= c1;
-	    	k1 = (k1 << 15) | (k1 >>> 17);  // ROTL32(k1,15);
+	    	k1 =  Integer.rotateLeft(k1, 15);
 	    	k1 *= c2;
 	    	h1 ^= k1;
-	    	h1 = (h1 << 13) | (h1 >>> 19);  // ROTL32(h1,13);
+	    	h1 =  Integer.rotateLeft(h1, 13);
 	    	h1 = h1*5 + c3;
 	    }
 	    _currentHash = h1;
-	    
 	    // and save the tail, if any
 	    int remainder = len&3;
 	    if (remainder > 0) {
@@ -174,11 +179,11 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
 		_partialByteCount = 0;
 		int k1 = _partialBytes;
     	k1 *= c1;
-    	k1 = (k1 << 15) | (k1 >>> 17);  // ROTL32(k1,15);
+    	k1 = Integer.rotateLeft(k1, 15);
     	k1 *= c2;
     	int h1 = _currentHash;
     	h1 ^= k1;
-    	h1 = (h1 << 13) | (h1 >>> 19);  // ROTL32(h1,13);
+    	h1 = Integer.rotateLeft(h1, 13);
     	h1 = h1*5 + c3;
     	_currentHash = h1;
 		
