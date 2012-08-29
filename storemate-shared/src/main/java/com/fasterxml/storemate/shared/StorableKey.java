@@ -4,44 +4,44 @@ import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 public final class StorableKey
 {
-	protected final byte[] _buffer;
-	protected final int _offset, _length;
+    protected final byte[] _buffer;
+    protected final int _offset, _length;
 	
-	/**
-	 * Hash code is calculated on-demand
-	 */
-	protected int _hashCode;
+    /**
+     * Hash code is calculated on-demand
+     */
+    protected int _hashCode;
 
-	public StorableKey(byte[] buf) {
-		this(buf, 0, buf.length);
-	}
+    public StorableKey(byte[] buf) {
+        this(buf, 0, buf.length);
+    }
 
-	public StorableKey(byte[] buf, int offset, int len)
-	{
-		_buffer = buf;
-		_offset = offset;
-		_length = len;
-	}
+    public StorableKey(byte[] buf, int offset, int len)
+    {
+        _buffer = buf;
+        _offset = offset;
+        _length = len;
+    }
 
-	public int length() { return _length; }
+    public int length() { return _length; }
 
-	public void with(WithBytesCallback cb) {
-		cb.withBytes(_buffer, _offset, _length);
-	}
+    public <T> T with(WithBytesCallback<T> cb) {
+        return cb.withBytes(_buffer, _offset, _length);
+    }
 	
-	@Override public int hashCode() {
-		int h = _hashCode;
-		if (h == 0) {
-			h = BlockMurmur3Hasher.hash(0, _buffer, _offset, _length);
-			if (h == 0) { // need to mask 0 not to mean "not calculated"
-				h = 1;
-			}
-			_hashCode = h;
-		}
-		return h;
-	}
+    @Override public int hashCode() {
+        int h = _hashCode;
+        if (h == 0) {
+            h = BlockMurmur3Hasher.hash(0, _buffer, _offset, _length);
+            if (h == 0) { // need to mask 0 not to mean "not calculated"
+                h = 1;
+            }
+            _hashCode = h;
+        }
+        return h;
+    }
 
-	@Override
+    @Override
     public boolean equals(Object o)
     {
     	if (o == this) return true;

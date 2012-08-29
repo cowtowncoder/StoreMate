@@ -54,16 +54,17 @@ public class FilenameConverter
 
 	public StringBuilder appendFilename(StorableKey rawKey, final StringBuilder sb)
 	{
-		rawKey.with(new WithBytesCallback() {
-			@Override
-			public void withBytes(byte[] buffer, int offset, int length) {
-				final int end = offset+length;
-				while (offset < end) {
-					byte b = buffer[offset++];
-					sb.append(isSafe(b) ? (char)b : _safeChar);
-				}
-			}
-		});
-		return sb;
+	    rawKey.with(new WithBytesCallback<Void>() {
+	        @Override
+	        public Void withBytes(byte[] buffer, int offset, int length) {
+	            final int end = offset+length;
+	            while (offset < end) {
+	                byte b = buffer[offset++];
+	                sb.append(isSafe(b) ? (char)b : _safeChar);
+	            }
+	            return null;
+	        }
+	    });
+	    return sb;
 	}
 }

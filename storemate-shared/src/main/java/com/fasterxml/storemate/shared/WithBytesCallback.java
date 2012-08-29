@@ -1,6 +1,6 @@
 package com.fasterxml.storemate.shared;
 
-public interface WithBytesCallback
+public interface WithBytesCallback<T>
 {
-	public void withBytes(byte[] buffer, int offset, int length);
+    public T withBytes(byte[] buffer, int offset, int length);
 }
