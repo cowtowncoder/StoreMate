@@ -37,7 +37,7 @@ public class FilenameConverter
 		this(DEFAULT_SAFE_CHAR);
 	}
 	
-	protected FilenameConverter(char safeChar) {
+	public FilenameConverter(char safeChar) {
 		_safeChar = safeChar;
 	}
 	

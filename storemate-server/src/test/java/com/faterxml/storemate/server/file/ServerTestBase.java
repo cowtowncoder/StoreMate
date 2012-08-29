@@ -1,12 +1,26 @@
-package com.fasterxml.storemate.shared;
+package com.faterxml.storemate.server.file;
 
 import junit.framework.TestCase;
 
+import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.UTF8Encoder;
+
 /**
- * Base class for unit tests
+ * Base class for unit tests of server sub-module
  */
-public abstract class SharedTestBase extends TestCase
+public abstract class ServerTestBase extends TestCase
 {
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // Test methods: factory methods
+    ///////////////////////////////////////////////////////////////////////
+     */
+
+	public StorableKey storableKey(String str)
+	{
+		return new StorableKey(UTF8Encoder.encodeAsUTF8(str));
+	}
+
     /*
     ///////////////////////////////////////////////////////////////////////
     // Test methods: exception verification
