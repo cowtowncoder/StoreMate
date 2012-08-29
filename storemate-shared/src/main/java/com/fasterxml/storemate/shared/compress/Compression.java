@@ -5,37 +5,35 @@ public enum Compression
     /**
      * Indicates case where no compression algorithm is used
      */
-    NONE('N', "identity"),
+    NONE('N', "identity", 0),
 
     /**
      * Indicates use of LZF compression (fast, modest compression)
      */
-    LZF('L', "lzf"),
+    LZF('L', "lzf", 1),
 
     /**
      * Indicates use of basic deflate compression, no header;
      * 'Z' from zip (although technically closer to gzip)
      */
-    GZIP('Z', "gzip")
+    GZIP('Z', "gzip", 2)
     ;
     
-    private final byte _byte;
     private final char _char;
-    private final int _int;
+
+    private final int _index;
 
     private final String _contentEncoding;
     
-    private Compression(char c, String contentEnc)
+    private Compression(char c, String contentEnc, int index)
     {
-        _byte = (byte) c;
         _char = c;
-        _int = c;
+        _index = index;
         _contentEncoding = contentEnc;
     }
 
     public char asChar() { return _char; }
-    public byte asByte() { return _byte; }
-    public int asInt() { return _int; }
+    public int asIndex() { return _index; }
 
     public String asContentEncoding()
     {
@@ -46,6 +44,11 @@ public enum Compression
         return _contentEncoding;
     }
 
+    @Override
+    public String toString() {
+        return _contentEncoding;
+    }
+    
     /**
      * Helper method that can be called to see if this Compression
      * method is one of acceptable encodings that client has
@@ -59,33 +62,17 @@ public enum Compression
         // crude, but functional due to small number of legal values:
         return acceptableEncodings.indexOf(_contentEncoding) >= 0;
     }
-    
-    public static String toString(byte comp)
-    {
-        Compression c = valueOf((char) comp, false);
-        if (c == null) {
-            return "UNKNOWN-"+(comp & 0xFF);
-        }
-        return c.name();
-    }
 
-    public static Compression valueOf(byte b, boolean errorForUnknown) {
-        return valueOf((char) b, errorForUnknown);
-    }
-	
-    public static Compression valueOf(char c, boolean errorForUnknown)
+    public static Compression valueOf(int index, boolean errorForUnknown)
     {
-        if (c == '\0') { // null (missing)
-            return NONE;
-        }
         for (Compression comp : values()) {
-            if (comp.asChar() == c) {
+            if (comp.asIndex() == index) {
                 return comp;
             }
         }
         if (errorForUnknown) {
-            throw new IllegalArgumentException("Unrecognized compression (0x"
-                    +Integer.toHexString(c)+") '"+c+"'");
+            throw new IllegalArgumentException("Unrecognized compression value: 0x"
+                    +Integer.toHexString(index)+" (currently only values 0 - 2 supported)");
         }
         return null;
     }
