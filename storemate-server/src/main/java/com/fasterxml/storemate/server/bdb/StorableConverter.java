@@ -1,7 +1,9 @@
 package com.fasterxml.storemate.server.bdb;
 
 import com.fasterxml.storemate.server.Storable;
+import com.fasterxml.storemate.server.file.FileReference;
 import com.fasterxml.storemate.server.util.BytesToStuff;
+import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.sleepycat.je.DatabaseEntry;
 
@@ -47,7 +49,7 @@ public class StorableConverter
     
     /*
     /**********************************************************************
-    /* Public API
+    /* Public API, reading from DB to Storable
     /**********************************************************************
      */
     
@@ -106,6 +108,26 @@ public class StorableConverter
                 );
     }
 
+    /*
+    /**********************************************************************
+    /* Public API, converting from storable pieces into DB entry
+    /**********************************************************************
+     */
+
+    public DatabaseEntry encode(StorableKey key,
+            StorableCreationMetadata metadata,
+            byte[] inlineData, int inlineOffset, int inlineLength)
+    {
+        return null;
+    }
+
+    public DatabaseEntry encode(StorableKey key,
+            StorableCreationMetadata metadata,
+            FileReference externalData)
+    {
+        return null;
+    }
+    
     /*
     /**********************************************************************
     /* Helper methods, conversions

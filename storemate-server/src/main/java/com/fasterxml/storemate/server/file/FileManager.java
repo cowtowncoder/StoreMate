@@ -38,9 +38,10 @@ public class FileManager
     /**
      * We need to use a sequence number (usually 4 digits, possibly more),
      * and simple compression prefix; this is in addition to basename of
-     * the file (from external key).
+     * the file (from external key). But also there's the preceding
+     * file path, which adds almost 20 chars.
      */
-    private final static int FILENAME_OVERHEAD = 12;
+    private final static int FILENAME_OVERHEAD = 32;
     
     /**
      * Rounding for number of minutes, when constructing date-based
@@ -203,19 +204,13 @@ public class FileManager
                 _relativeActivePath + cleanName);
     }
 
-    /*
-    public File derefenceFile(EntryMetadata entry)
+    public File derefenceFile(String relativePath)
     {
-        if (entry == null) {
+        if (relativePath == null) { // inlined data?
             return null;
         }
-        String rel = entry.pathAsString();
-        if (rel == null) { // inlined data
-            return null;
-        }
-        return new File(_dataRootPath + rel);
+        return new File(_dataRootPath + relativePath);
     }
-    */
 
     /*
     /**********************************************************************
