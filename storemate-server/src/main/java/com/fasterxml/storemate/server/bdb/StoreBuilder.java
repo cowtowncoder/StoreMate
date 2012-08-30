@@ -44,6 +44,8 @@ public class StoreBuilder
         if (_config == null) throw new IllegalStateException("Missing StoreConfig");
         if (_fileManager == null) throw new IllegalStateException("Missing FileManager");
 
+        StorableConverter storableConv = _config.createStorableConverter();
+        
         File dbRoot = new File(_config.dataRootPath);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
             if (!canCreate) {
@@ -60,7 +62,8 @@ public class StoreBuilder
                 indexConfig(env));
         
         try {
-            StorableStore store = new StorableStore(dbRoot, _fileManager, entryDB, index);
+            StorableStore store = new StorableStore(_config,
+                    dbRoot, _fileManager, entryDB, index, storableConv);
             store.start();
             return store;
         } catch (DatabaseException e) {

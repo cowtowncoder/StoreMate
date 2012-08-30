@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.server.bdb;
+package com.fasterxml.storemate.server;
 
 import com.fasterxml.storemate.shared.compress.Compression;
 

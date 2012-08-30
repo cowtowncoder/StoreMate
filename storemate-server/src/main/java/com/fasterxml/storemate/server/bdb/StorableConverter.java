@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.server.bdb;
 
+import com.fasterxml.storemate.server.Storable;
 import com.fasterxml.storemate.server.util.BytesToStuff;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.sleepycat.je.DatabaseEntry;

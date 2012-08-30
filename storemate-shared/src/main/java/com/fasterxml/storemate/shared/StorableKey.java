@@ -61,4 +61,16 @@ public final class StorableKey
     	}
     	return true;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder("[Key(");
+        sb.append(_length);
+        sb.append("), hash 0x");
+        sb.append(Integer.toHexString(hashCode()));
+        // TODO: add head/tail of key?
+        sb.append(']');
+        return sb.toString();
+    }
 }

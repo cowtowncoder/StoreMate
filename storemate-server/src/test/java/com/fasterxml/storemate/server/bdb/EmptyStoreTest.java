@@ -1,13 +1,9 @@
 package com.fasterxml.storemate.server.bdb;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
-import com.fasterxml.storemate.shared.TimeMaster;
-
-import com.fasterxml.storemate.server.ServerTestBase;
-import com.fasterxml.storemate.server.TimeMasterForSimpleTesting;
-import com.fasterxml.storemate.server.file.*;
+import com.fasterxml.storemate.server.*;
+import com.fasterxml.storemate.shared.StorableKey;
 
 public class EmptyStoreTest extends ServerTestBase
 {
@@ -25,6 +21,10 @@ public class EmptyStoreTest extends ServerTestBase
         assertEquals(0L, store.getEntryCount());
         assertEquals(0L, store.getIndexedCount());
 
+        StorableKey testKey = storableKey("bogus");
+        
+        assertNull(store.findEntry(testKey));
+        
         store.stop();
     }
 }

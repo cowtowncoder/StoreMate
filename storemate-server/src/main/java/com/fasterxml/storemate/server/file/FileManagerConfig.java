@@ -46,6 +46,12 @@ public class FileManagerConfig
      */
     public String dataRootPath;
 
+    /*
+    /**********************************************************************
+    /* Overridable handlers
+    /**********************************************************************
+     */
+    
     /**
      * {@link FilenameConverter} implementation to use, if any
      */
