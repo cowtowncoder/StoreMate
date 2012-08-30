@@ -1,5 +1,6 @@
-package com.faterxml.storemate.server.file;
+package com.fasterxml.storemate.server.file;
 
+import com.fasterxml.storemate.server.ServerTestBase;
 import com.fasterxml.storemate.server.file.FilenameConverter;
 
 public class TestFilenames extends ServerTestBase

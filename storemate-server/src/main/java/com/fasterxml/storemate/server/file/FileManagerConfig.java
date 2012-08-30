@@ -1,11 +1,20 @@
 package com.fasterxml.storemate.server.file;
 
+import java.io.File;
+
 /**
  * Simple value class used for binding configuration settings used
  * with {@link FileManager}
  */
 public class FileManagerConfig
 {
+    // for deserializers
+    protected FileManagerConfig() { }
+    
+    public FileManagerConfig(File dataDir) {
+        dataRootPath = dataDir.getAbsolutePath();
+    }
+    
     /*
     /**********************************************************************
     /* Simple config properties

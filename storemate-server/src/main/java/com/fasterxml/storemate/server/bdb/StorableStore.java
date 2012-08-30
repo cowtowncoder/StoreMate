@@ -80,6 +80,11 @@ public class StorableStore
         _index = lastModIndex;
     }
 
+    public void start()
+    {
+        // nothing to do, yet
+    }
+    
     public void stop()
     {
         if (!_closed.getAndSet(true)) {
@@ -92,7 +97,7 @@ public class StorableStore
     
     /*
     /**********************************************************************
-    /* API, simple-ish accessors
+    /* API, simple accessors for state, helper objects
     /**********************************************************************
      */
 
@@ -100,6 +105,36 @@ public class StorableStore
         return _closed.get();
     }
 
+    public FileManager getFileManager() {
+        return _fileManager;
+    }
+
+    /*
+    /**********************************************************************
+    /* API, metadata access
+    /**********************************************************************
+     */
+
+    /**
+     * Accessor for getting approximate count of entries in the underlying
+     * main BDB database
+     */
+    public long getEntryCount()
+    {
+        _checkClosed();
+        return _entries.count();
+    }
+
+    /**
+     * Accessor for getting approximate count of entries accessible
+     * via last-modifed index.
+     */
+    public long getIndexedCount()
+    {
+        _checkClosed();
+        return _entries.count();
+    }
+    
     /*
     /**********************************************************************
     /* API, data reads

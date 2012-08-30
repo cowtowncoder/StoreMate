@@ -14,16 +14,32 @@ public class StoreBuilder
 {
     protected FileManager _fileManager;
     protected StoreConfig _config;
-    protected Boolean _canWrite = Boolean.FALSE;
 
-    public StoreBuilder() { }
+    protected StoreBuilder() { }
     public StoreBuilder(StoreConfig config, FileManager fileManager)
     {
         _config = config;
         _fileManager = fileManager;
     }
 
-    public StorableStore buildAndInit(boolean canCreate)
+    /**
+     * Method that will open an existing BDB database if one exists, or create
+     * one if not, and create a store with that BDB. Underlying data storage
+     * can do reads and writes.
+     */
+    public StorableStore buildCreateAndInit() {
+        return _buildAndInit(true, true);
+    }
+
+    public StorableStore buildAndInitReadOnly() {
+        return _buildAndInit(false, false);
+    }
+
+    public StorableStore buildAndInitReadWrite() {
+        return _buildAndInit(false, true);
+    }
+    
+    protected StorableStore _buildAndInit(boolean canCreate, boolean canWrite)
     {
         if (_config == null) throw new IllegalStateException("Missing StoreConfig");
         if (_fileManager == null) throw new IllegalStateException("Missing FileManager");
@@ -37,14 +53,16 @@ public class StoreBuilder
                 throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' did not exist: failed to create it");
             }
         }
-        Environment env = new Environment(dbRoot, envConfig(canCreate, _canWrite.booleanValue()));
+        Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
         Database entryDB = env.openDatabase(null, // no TX
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
         
         try {
-            return new StorableStore(dbRoot, _fileManager, entryDB, index);
+            StorableStore store = new StorableStore(dbRoot, _fileManager, entryDB, index);
+            store.start();
+            return store;
         } catch (DatabaseException e) {
             throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
         }
@@ -63,16 +81,6 @@ public class StoreBuilder
 
     public StoreBuilder with(FileManager mgr) {
         _fileManager = mgr;
-        return this;
-    }
-
-    public StoreBuilder readWriteStore() {
-        _canWrite = Boolean.TRUE;
-        return this;
-    }
-
-    public StoreBuilder readOnlyStore() {
-        _canWrite = Boolean.FALSE;
         return this;
     }
 
@@ -95,7 +103,9 @@ public class StoreBuilder
     protected DatabaseConfig dbConfig(Environment env)
     {
         DatabaseConfig dbConfig = new DatabaseConfig();
-        dbConfig.setAllowCreate(env.getConfig().getAllowCreate());
+        EnvironmentConfig econfig = env.getConfig();
+        dbConfig.setReadOnly(econfig.getReadOnly());
+        dbConfig.setAllowCreate(econfig.getAllowCreate());
         dbConfig.setSortedDuplicates(false);
         return dbConfig;
     }
