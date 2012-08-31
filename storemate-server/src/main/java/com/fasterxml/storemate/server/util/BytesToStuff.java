@@ -82,7 +82,7 @@ public class BytesToStuff
             value += i;
         }
         _ptr = ptr;
-        if (bytesDone > 5) { 
+        if (bytesDone > StuffToBytes.MAX_VINT_LENGTH) { // sanity check
             throw new IllegalStateException("Corrupt VInt, shouldn't have more than 5 bytes, had: "+bytesDone);
         }
         return value;
@@ -109,7 +109,7 @@ public class BytesToStuff
             value += i;
         }
         _ptr = ptr;
-        if (bytesDone > 9) { // only 9 (63 bits) because we don't do negative numbers
+        if (bytesDone > StuffToBytes.MAX_VLONG_LENGTH) { // only 9 (63 bits) because we don't do negative numbers
             throw new IllegalStateException("Corrupt VLong, shouldn't have more than 9 bytes, had: "+bytesDone);
         }
         return value;
@@ -125,7 +125,7 @@ public class BytesToStuff
         _ptr = i;
         return i;
     }
-    
+
     protected void _verifyBounds(int bytesNeeded)
     {
         if ((_ptr + bytesNeeded) > _end) {

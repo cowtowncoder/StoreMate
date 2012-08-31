@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.server;
 
+import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 
 /**
@@ -10,7 +11,11 @@ public class Storable
     /**
      * Lazily populated copy of raw data from within entry
      */
-    protected byte[] _rawEntry;
+    protected final byte[] _rawEntry;
+
+    protected final int _rawOffset;
+    
+    protected final int _rawLength;
 
     /*
     /**********************************************************************
@@ -67,13 +72,17 @@ public class Storable
     /**********************************************************************
      */
     
-    public Storable(byte[] raw, long lastMod,
+    public Storable(byte[] raw, int rawOffset, int rawLength,
+            long lastMod,
             boolean isDeleted, Compression comp, int externalPathLength,
             int contentHash, int compressedHash, long originalLength,
             int metadataOffset, int metadataLength,
             int payloadOffset, long storageLength)
     {
         _rawEntry = raw;
+        _rawOffset = rawOffset;
+        _rawLength = rawLength;
+
         _lastModified = lastMod;
 
         _isDeleted = isDeleted;
@@ -97,4 +106,7 @@ public class Storable
     /**********************************************************************
      */
 
+    public <T> T withRaw(WithBytesCallback<T> cb) {
+        return cb.withBytes(_rawEntry, _rawOffset, _rawLength);
+    }
 }

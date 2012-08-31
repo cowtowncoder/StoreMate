@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.server.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -29,6 +31,14 @@ public class IOUtil
         return offset;
     }
 
+    public static void writeFile(File file, byte[] data, int offset, int length)
+            throws IOException
+    {
+        FileOutputStream out = new FileOutputStream(file);
+        out.write(data, offset, length);
+        out.close();
+    }
+    
     public static String verifyCompression(Compression alleged, byte[] readBuffer, int len)
     {
         if (alleged != null && alleged != Compression.NONE) {

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.storemate.shared.BufferRecycler;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.TimeMaster;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
@@ -16,6 +17,7 @@ import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 import com.fasterxml.storemate.server.*;
 import com.fasterxml.storemate.server.file.FileManager;
+import com.fasterxml.storemate.server.file.FileReference;
 import com.fasterxml.storemate.server.util.IOUtil;
 
 import com.sleepycat.je.*;
@@ -59,7 +61,7 @@ public class StorableStore
     /**********************************************************************
      */
 
-//    protected final TimeMaster _timeMaster;
+    protected final TimeMaster _timeMaster;
 
     protected final FileManager _fileManager;
 
@@ -104,8 +106,8 @@ public class StorableStore
     /**********************************************************************
      */
 
-    public StorableStore(StoreConfig config,
-            File dbRoot, FileManager fileManager,
+    public StorableStore(StoreConfig config, File dbRoot,
+            TimeMaster timeMaster, FileManager fileManager,
             Database entryDB, SecondaryDatabase lastModIndex,
             StorableConverter conv)
     {
@@ -117,6 +119,7 @@ public class StorableStore
         _requireChecksumForPreCompressed = config.requireChecksumForPreCompressed;
 
         _fileManager = fileManager;
+        _timeMaster = timeMaster;
         _dataRoot = dbRoot;
         _entries = entryDB;
         _index = lastModIndex;
@@ -207,7 +210,7 @@ public class StorableStore
         if (status != OperationStatus.SUCCESS) {
             return null;
         }
-        return _storableConverter.decode(result);
+        return _storableConverter.decode(result.getData());
     }
 
     /*
@@ -224,10 +227,10 @@ public class StorableStore
      *   closes this stream
      */
     public StorableCreationResult insert(StorableKey key, InputStream input,
-            StorableCreationMetadata metadata)
+            StorableCreationMetadata stdMetadata, byte[] customMetadata)
         throws IOException, StoreException
     {
-        return putEntry(key, input, metadata, NO_OVERWRITES);
+        return putEntry(key, input, stdMetadata, customMetadata, NO_OVERWRITES);
     }
 
     /**
@@ -238,7 +241,7 @@ public class StorableStore
      *   closes this stream
      */
     public StorableCreationResult putEntry(StorableKey key, InputStream input,
-            StorableCreationMetadata metadata,
+            StorableCreationMetadata stdMetadata, byte[] customMetadata,
             OverwriteHandler overwriteHandler)
         throws IOException, StoreException
     {
@@ -254,26 +257,29 @@ public class StorableStore
             }
     
             // First things first: verify that compression is what it claims to be:
-            final Compression originalCompression = metadata.compression;
+            final Compression originalCompression = stdMetadata.compression;
             String error = IOUtil.verifyCompression(originalCompression, readBuffer, len);
             if (error != null) {
                 throw new StoreException(key, error);
             }
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
-                    return _compressAndPutSmallEntry(key, metadata, overwriteHandler, readBuffer, len);
+                    return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
+                            overwriteHandler, readBuffer, len);
                 }
-                return _putSmallPreCompressedEntry(key, metadata, overwriteHandler, readBuffer, len);
+                return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
+                        overwriteHandler, readBuffer, len);
             }
             // partial read in buffer, rest from input stream:
-            return _putLargeEntry(key, metadata, overwriteHandler, readBuffer, len, input);
+            return _putLargeEntry(key, stdMetadata, customMetadata,
+                    overwriteHandler, readBuffer, len, input);
         } finally {
             bufferHolder.returnBuffer(readBuffer);
         }
     }
 
     protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
-            StorableCreationMetadata metadata,
+            StorableCreationMetadata metadata, byte[] customMetadata,
             OverwriteHandler overwriteHandler,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
@@ -314,11 +320,12 @@ public class StorableStore
                 metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
             }
         }
-        return _putSmallEntry(key, metadata, overwriteHandler, readBuffer, readByteCount);
+        return _putSmallEntry(key, metadata, customMetadata,
+                overwriteHandler, readBuffer, readByteCount);
     }
 
     protected StorableCreationResult _putSmallPreCompressedEntry(StorableKey key,
-            StorableCreationMetadata metadata,
+            StorableCreationMetadata metadata, byte[] customMetadata,
             OverwriteHandler overwriteHandler,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
@@ -346,45 +353,54 @@ public class StorableStore
                 metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
             }
         }
-        return _putSmallEntry(key, metadata, overwriteHandler, readBuffer, readByteCount);
+        return _putSmallEntry(key, metadata, customMetadata,
+                overwriteHandler, readBuffer, readByteCount);
     }
 
     protected StorableCreationResult _putSmallEntry(StorableKey key,
-            StorableCreationMetadata metadata,
+            StorableCreationMetadata stdMetadata, byte[] customMetadata,
             OverwriteHandler overwriteHandler,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
     {
-        /*
-        File storedFile; // non-null if not inlined
+        Storable storable;
+        final long now;
 
         // inline? Yes if small enough
         if (readByteCount <= _maxInlinedStorageSize) {
-            // one more thing: may need to shrink the buffer to fit
-            if (dataLength < data.length) {
-                data = Arrays.copyOfRange(data, 0, dataLength);
-            }
-            newEntry.inlinedData = data;
-            newEntry.path = null;
-            storedFile = null;
+            now = _timeMaster.currentTimeMillis();
+            storable = _storableConverter.encodeInlined(key, now,
+                    stdMetadata, customMetadata, readBuffer, 0, readByteCount);
         } else {
             // otherwise, need to create file and all that fun...
-            FileReference file = _fileManager.createStorageFile(key,
-                    compression, newEntry.getCreationTime());
-            newEntry.assignFilePath(file.getReference());
-            storedFile = file.getFile();
+            long fileCreationTime = _timeMaster.currentTimeMillis();
+            FileReference fileRef = _fileManager.createStorageFile(key,
+                    stdMetadata.compression, fileCreationTime);
             try {
-                _writeFile(storedFile, data, 0, dataLength);
+                IOUtil.writeFile(fileRef.getFile(), readBuffer, 0, readByteCount);
             } catch (IOException e) {
-                return internalPutError(response,
-                        newEntry, e, "Failed to write file '"+storedFile.getAbsolutePath()+"'");
+                // better remove the file, if one exists...
+                fileRef.getFile().delete();
+                throw new StoreException(key,
+                        "Failed to write storage file of "+readByteCount+" bytes: "+e.getMessage(), e);
             }
+            // but modtime better be taken only now, as above may have taken some time (I/O bound)
+            now = _timeMaster.currentTimeMillis();
+            storable = _storableConverter.encodeOfflined(key, now,
+                    stdMetadata, customMetadata, fileRef);
         }
-        */
+
+        // Getting close: we have entry to store in BDB, if things work ok...
+
+        // TODO: locking, check for overwrite...
+        
+        // since it may have taken 
+        
         return null;
     }
         
-    public StorableCreationResult _putLargeEntry(StorableKey key, StorableCreationMetadata metadata,
+    public StorableCreationResult _putLargeEntry(StorableKey key,
+            StorableCreationMetadata metadata, byte[] customMetadata,
             OverwriteHandler overwriteHandler,
             byte[] readBuffer, int readByteCount,
             InputStream input)

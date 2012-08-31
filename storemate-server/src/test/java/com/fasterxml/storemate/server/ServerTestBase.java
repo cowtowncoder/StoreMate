@@ -46,7 +46,7 @@ public abstract class ServerTestBase extends TestCase
         FileManagerConfig fmConfig = new FileManagerConfig(new File(testRoot, "files"));
         StoreConfig cfg = new StoreConfig();
         cfg.dataRootPath = new File(testRoot, "bdb").getCanonicalPath();
-        StoreBuilder b = new StoreBuilder(cfg, new FileManager(fmConfig, timeMaster));
+        StoreBuilder b = new StoreBuilder(cfg, timeMaster, new FileManager(fmConfig, timeMaster));
         return b.buildCreateAndInit();
     }
     

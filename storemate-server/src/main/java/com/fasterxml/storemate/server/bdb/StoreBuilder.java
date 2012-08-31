@@ -5,6 +5,7 @@ import java.io.File;
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.server.file.FileManager;
+import com.fasterxml.storemate.shared.TimeMaster;
 
 /**
  * Helper object used for configuring and instantiating
@@ -13,12 +14,15 @@ import com.fasterxml.storemate.server.file.FileManager;
 public class StoreBuilder
 {
     protected FileManager _fileManager;
+    protected TimeMaster _timeMaster;
     protected StoreConfig _config;
 
     protected StoreBuilder() { }
-    public StoreBuilder(StoreConfig config, FileManager fileManager)
+    public StoreBuilder(StoreConfig config,
+            TimeMaster timeMaster, FileManager fileManager)
     {
         _config = config;
+        _timeMaster = timeMaster;
         _fileManager = fileManager;
     }
 
@@ -62,8 +66,8 @@ public class StoreBuilder
                 indexConfig(env));
         
         try {
-            StorableStore store = new StorableStore(_config,
-                    dbRoot, _fileManager, entryDB, index, storableConv);
+            StorableStore store = new StorableStore(_config, dbRoot,
+                    _timeMaster, _fileManager, entryDB, index, storableConv);
             store.start();
             return store;
         } catch (DatabaseException e) {

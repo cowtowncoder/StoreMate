@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.server.bdb;
 
+import com.fasterxml.storemate.server.file.FileReference;
 import com.fasterxml.storemate.shared.compress.Compression;
 
 /**
@@ -8,6 +9,12 @@ import com.fasterxml.storemate.shared.compress.Compression;
  */
 public class StorableCreationMetadata
 {
+    /*
+    /**********************************************************************
+    /* Input data, provided by caller
+    /**********************************************************************
+     */
+    
     /**
      * Murmur3/32 (seed 0) hash code on uncompressed content;
      * 0 means "not available"
@@ -29,4 +36,44 @@ public class StorableCreationMetadata
      * method.
      */
     public Compression compression;
+
+    /*
+    /**********************************************************************
+    /* Additional gathered state
+    /**********************************************************************
+     */
+
+    /**
+     * Timestamp used for the BDB entry to store
+     */
+    public long modtime;
+
+    /**
+     * For external entries, File in which actual data was written.
+     */
+    public FileReference dataFile;
+    
+    /*
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
+     */
+    
+    public StorableCreationMetadata(Compression comp,
+            int contentHash, int compressedContentHash)
+    {
+        compression = comp;
+        this.contentHash = contentHash;
+        this.compressedContentHash = compressedContentHash; 
+    }
+    
+    /*
+    /**********************************************************************
+    /* Helper methods
+    /**********************************************************************
+     */
+
+    public boolean usesCompression() {
+        return (compression != null) && (compression != Compression.NONE);
+    }
 }

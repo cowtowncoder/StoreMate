@@ -1,11 +1,12 @@
 package com.fasterxml.storemate.server.bdb;
 
+import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.compress.Compression;
+
 import com.fasterxml.storemate.server.Storable;
 import com.fasterxml.storemate.server.file.FileReference;
 import com.fasterxml.storemate.server.util.BytesToStuff;
-import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.compress.Compression;
-import com.sleepycat.je.DatabaseEntry;
+import com.fasterxml.storemate.server.util.StuffToBytes;
 
 /**
  * Helper class that hides most of complexities on converting between
@@ -53,11 +54,14 @@ public class StorableConverter
     /**********************************************************************
      */
     
-    public Storable decode(DatabaseEntry entry)
+    public Storable decode(final byte[] raw) {
+        return decode(raw, 0, raw.length);
+    }
+
+    public Storable decode(final byte[] raw, final int offset, final int length)
     {
         // as per Javadocs, offset always 0, size same as arrays:
-        final byte[] raw = entry.getData();
-        BytesToStuff reader = new BytesToStuff(raw);
+        BytesToStuff reader = new BytesToStuff(raw, offset, length);
 
         final long lastmod = reader.nextLong();
 
@@ -100,7 +104,8 @@ public class StorableConverter
             throw new IllegalArgumentException("Had "+left+" bytes left after decoding entry (out of "
                     +raw.length+")");
         }
-        return new Storable(raw, lastmod,
+        return new Storable(raw, offset, length,
+                lastmod,
                 deleted, compression, externalPathLength,
                 contentHash, compressedHash, originalLength,
                 metadataOffset, metadataLength,
@@ -114,15 +119,33 @@ public class StorableConverter
     /**********************************************************************
      */
 
-    public DatabaseEntry encode(StorableKey key,
-            StorableCreationMetadata metadata,
+    public Storable encodeInlined(StorableKey key, long modtime,
+            StorableCreationMetadata stdMetadata, byte[] customMetadata,
             byte[] inlineData, int inlineOffset, int inlineLength)
     {
+        // Guesstimate size we need first (assuming max lengths for varlen fields)
+        int len = StuffToBytes.BASE_LENGTH;
+        if (stdMetadata.usesCompression()) {
+            len += (4 + StuffToBytes.MAX_VLONG_LENGTH);
+        }
+        // metadata section
+        if (customMetadata == null) {
+            len += 1; // zero-length marker
+        } else {
+            len += (StuffToBytes.MAX_VINT_LENGTH + customMetadata.length);
+        }
+        // and inlined reference
+        len += (StuffToBytes.MAX_VINT_LENGTH + inlineLength);
+        
+        StuffToBytes writer = new StuffToBytes(len);
+        
+        writer.appendLong(modtime);
+        
         return null;
     }
 
-    public DatabaseEntry encode(StorableKey key,
-            StorableCreationMetadata metadata,
+    public Storable encodeOfflined(StorableKey key, long modtime,
+            StorableCreationMetadata metadata, byte[] customMetadata,
             FileReference externalData)
     {
         return null;
@@ -148,7 +171,7 @@ public class StorableConverter
         switch ((int) b) {
         case 0: // available
             return false;
-        case 1: // deleted (tombsonte)
+        case 1: // deleted (tombstone)
             return true;
         }
         throw new IllegalArgumentException("Unrecognized status value of "+(b & 0xFF));
