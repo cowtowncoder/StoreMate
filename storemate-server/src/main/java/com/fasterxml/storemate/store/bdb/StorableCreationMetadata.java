@@ -1,0 +1,79 @@
+package com.fasterxml.storemate.store.bdb;
+
+import com.fasterxml.storemate.shared.compress.Compression;
+import com.fasterxml.storemate.store.file.FileReference;
+
+/**
+ * Helper class for containing information needed for storing
+ * entries.
+ */
+public class StorableCreationMetadata
+{
+    /*
+    /**********************************************************************
+    /* Input data, provided by caller
+    /**********************************************************************
+     */
+    
+    /**
+     * Murmur3/32 (seed 0) hash code on uncompressed content;
+     * 0 means "not available"
+     */
+    public int contentHash;
+
+    /**
+     * Optional 
+     * Murmur3/32 (seed 0) hash code on compressed content
+     * 0 means "not available"
+     */
+    public int compressedContentHash;
+
+    /**
+     * Compression method used for content, if any. If left as null,
+     * means "not known" and store can compress it as it sees fit;
+     * if not null, server is NOT to do anything beyond possibly
+     * verifying that content has valid signature for compression
+     * method.
+     */
+    public Compression compression;
+
+    /*
+    /**********************************************************************
+    /* Additional gathered state
+    /**********************************************************************
+     */
+
+    /**
+     * Timestamp used for the BDB entry to store
+     */
+    public long modtime;
+
+    /**
+     * For external entries, File in which actual data was written.
+     */
+    public FileReference dataFile;
+    
+    /*
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
+     */
+    
+    public StorableCreationMetadata(Compression comp,
+            int contentHash, int compressedContentHash)
+    {
+        compression = comp;
+        this.contentHash = contentHash;
+        this.compressedContentHash = compressedContentHash; 
+    }
+    
+    /*
+    /**********************************************************************
+    /* Helper methods
+    /**********************************************************************
+     */
+
+    public boolean usesCompression() {
+        return (compression != null) && (compression != Compression.NONE);
+    }
+}
