@@ -1,20 +1,24 @@
 package com.fasterxml.storemate.store.bdb;
 
 import java.io.File;
+import java.io.IOException;
 
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
-import com.fasterxml.storemate.store.PhysicalStore;
-import com.fasterxml.storemate.store.Storable;
-import com.fasterxml.storemate.store.StorableConverter;
-import com.fasterxml.storemate.store.StoreException;
+import com.fasterxml.storemate.store.*;
 
+/**
+ * {@link PhysicalStore} implementation that builds on BDB-JE.
+ * Note that per-entry locking is assumed to be provided by
+ * caller; no attempt is made to synchronize individual operations
+ * at store level.
+ */
 public class PhysicalBDBStore extends PhysicalStore
 {
-    private final KeyConverter KEY_CONV = new KeyConverter();
+    private final BDBConverter BDB_CONV = new BDBConverter();
     
     /*
     /**********************************************************************
@@ -127,6 +131,65 @@ public class PhysicalBDBStore extends PhysicalStore
     /**********************************************************************
      */
 
+    /**
+     * Method that tries to create specified entry in the database,
+     * if (and only if!) no entry exists for given key.
+     * If an entry exists, it will be returned and no changes are made.
+     * 
+     * @return Null if creation succeeded; or existing entry if not
+     */
+    @Override
+    public Storable createEntry(StorableKey key,
+            StorableCreationMetadata stdMetadata, Storable storable)
+        throws IOException, StoreException
+    {
+        DatabaseEntry dbKey = dbKey(key);
+        // first, try creating:
+        OperationStatus status = _entries.putNoOverwrite(null, dbKey, dbValue(storable));
+        if (status == OperationStatus.SUCCESS) { // the usual case:
+            return null;
+        }
+        if (status != OperationStatus.KEYEXIST) { // what?
+            throw new StoreException(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
+        }
+        // otherwise, ought to find existing entry, return it
+        DatabaseEntry result = new DatabaseEntry();
+        status = _entries.get(null, dbKey, result, LockMode.READ_COMMITTED);
+        if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
+            throw new StoreException(key, "Internal error, failed to access old value, status: "+status);
+        }
+        return _storableConverter.decode(result.getData());
+    }
+
+    /**
+     * Method that inserts given entry in the database, possibly replacing
+     * an existing version; also returns the old entry.
+     * 
+     * @return Existing entry, if any
+     */
+    @Override
+    public Storable putEntry(StorableKey key,
+            StorableCreationMetadata stdMetadata, Storable storable)
+        throws IOException, StoreException
+    {
+        DatabaseEntry dbKey = dbKey(key);
+        DatabaseEntry result = new DatabaseEntry();
+        // First: do we have an entry? If so, read to be returned
+        OperationStatus status = _entries.get(null, dbKey, result, LockMode.READ_COMMITTED);
+        if (status != OperationStatus.SUCCESS) {
+            result = null;
+        }
+        // if not, create
+        status = _entries.put(null, dbKey, dbValue(storable));
+        if (status != OperationStatus.SUCCESS) {
+            throw new StoreException(key, "Failed to PUT entry, response status: "+status);
+        }
+        if (result == null) {
+            return null;
+        }
+        return _storableConverter.decode(result.getData());
+    }
+
     /*
     /**********************************************************************
     /* API Impl, delete
@@ -141,10 +204,15 @@ public class PhysicalBDBStore extends PhysicalStore
     
     protected DatabaseEntry dbKey(StorableKey key)
     {
-        return key.with(KEY_CONV);
+        return key.with(BDB_CONV);
     }
 
-    private final static class KeyConverter implements WithBytesCallback<DatabaseEntry>
+    protected DatabaseEntry dbValue(Storable storable)
+    {
+        return storable.withRaw(BDB_CONV);
+    }
+    
+    private final static class BDBConverter implements WithBytesCallback<DatabaseEntry>
     {
         @Override
         public DatabaseEntry withBytes(byte[] buffer, int offset, int length) {
@@ -155,4 +223,14 @@ public class PhysicalBDBStore extends PhysicalStore
         }
     }
 
+    private final static class ValueConverter implements WithBytesCallback<DatabaseEntry>
+    {
+        @Override
+        public DatabaseEntry withBytes(byte[] buffer, int offset, int length) {
+            if (offset == 0 && length == buffer.length) {
+                return new DatabaseEntry(buffer);
+            }
+            return new DatabaseEntry(buffer, offset, length);
+        }
+    }
 }

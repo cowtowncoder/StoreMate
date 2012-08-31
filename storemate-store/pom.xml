@@ -5,10 +5,10 @@
     <artifactId>storemate-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>storemate-server</artifactId>
-  <name>StoreMate-server</name>
+  <artifactId>storemate-store</artifactId>
+  <name>StoreMate-store</name>
   <packaging>jar</packaging>
-  <description>Server part of StoreMate
+  <description>Actual single-node store implementation
   </description>
 
   <dependencies>

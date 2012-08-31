@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.store;
 
+import java.io.IOException;
+
 import com.fasterxml.storemate.shared.StorableKey;
 
 /**
@@ -67,6 +69,43 @@ public abstract class PhysicalStore
     /* API Impl, insert/update
     /**********************************************************************
      */
+
+    public StorableCreationResult putEntry(StorableKey key,
+            StorableCreationMetadata stdMetadata, Storable storable,
+            boolean allowOverwrite)
+        throws IOException, StoreException
+    {
+        if (allowOverwrite) {
+            Storable old = putEntry(key, stdMetadata, storable);
+            if (old == null) { // ok
+                return new StorableCreationResult(key, true, null);
+            }
+            return new StorableCreationResult(key, false, old);
+        }
+        Storable old = putEntry(key, stdMetadata, storable);
+        return new StorableCreationResult(key, true, old);
+    }
+    
+    /**
+     * Method that tries to create specified entry in the database,
+     * if (and only if!) no entry exists for given key.
+     * If an entry exists, it will be returned and no changes are made.
+     * 
+     * @return Null if creation succeeded; or existing entry if not
+     */
+    protected abstract Storable createEntry(StorableKey key,
+            StorableCreationMetadata stdMetadata, Storable storable)
+        throws IOException, StoreException;
+
+    /**
+     * Method that inserts given entry in the database, possibly replacing
+     * an existing version; also returns the old entry.
+     * 
+     * @return Existing entry, if any
+     */
+    protected abstract Storable putEntry(StorableKey key,
+            StorableCreationMetadata stdMetadata, Storable storable)
+        throws IOException, StoreException;
 
     /*
     /**********************************************************************

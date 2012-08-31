@@ -3,6 +3,7 @@ package com.fasterxml.storemate.store;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.Adler32;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,9 +12,11 @@ import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
+import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
+import com.fasterxml.storemate.store.util.CountingOutputStream;
 import com.fasterxml.storemate.store.util.IOUtil;
 
 /**
@@ -23,6 +26,8 @@ import com.fasterxml.storemate.store.util.IOUtil;
  */
 public class StorableStore
 {
+    private final static int HASH_SEED = 0;
+
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     /*
@@ -179,7 +184,7 @@ public class StorableStore
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException
     {
-        return putEntry(key, input, stdMetadata, customMetadata, NO_OVERWRITES);
+        return putEntry(key, input, stdMetadata, customMetadata, false);
     }
 
     /**
@@ -191,7 +196,7 @@ public class StorableStore
      */
     public StorableCreationResult putEntry(StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            OverwriteHandler overwriteHandler)
+            boolean allowOverwrite)
         throws IOException, StoreException
     {
         BufferRecycler.Holder bufferHolder = _bufferRecycler.getHolder();        
@@ -214,22 +219,28 @@ public class StorableStore
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
                     return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
-                            overwriteHandler, readBuffer, len);
+                            allowOverwrite, readBuffer, len);
                 }
                 return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
-                        overwriteHandler, readBuffer, len);
+                        allowOverwrite, readBuffer, len);
             }
             // partial read in buffer, rest from input stream:
             return _putLargeEntry(key, stdMetadata, customMetadata,
-                    overwriteHandler, readBuffer, len, input);
+                    allowOverwrite, readBuffer, len, input);
         } finally {
             bufferHolder.returnBuffer(readBuffer);
         }
     }
 
+    /*
+    /**********************************************************************
+    /* Internal methods for entry creation
+    /**********************************************************************
+     */
+    
     protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            OverwriteHandler overwriteHandler,
+            boolean allowOverwrite,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
     {
@@ -260,22 +271,23 @@ public class StorableStore
             } catch (IOException e) {
                 throw new StoreException(key, "Problem with compression ("+compression+"): "+e.getMessage(), e);
             }
-            // if compression would just expand, don't use...
+            // if compression would not, like, compress, don't bother:
             if (compBytes.length >= origLength) {
                 compression = null;
             } else {
                 readBuffer = compBytes;
                 readByteCount = compBytes.length;
+                metadata.uncompressedSize = origLength;
                 metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
             }
         }
         return _putSmallEntry(key, metadata, customMetadata,
-                overwriteHandler, readBuffer, readByteCount);
+                allowOverwrite, readBuffer, readByteCount);
     }
 
     protected StorableCreationResult _putSmallPreCompressedEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            OverwriteHandler overwriteHandler,
+            boolean allowOverwrite,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
     {
@@ -303,12 +315,12 @@ public class StorableStore
             }
         }
         return _putSmallEntry(key, metadata, customMetadata,
-                overwriteHandler, readBuffer, readByteCount);
+                allowOverwrite, readBuffer, readByteCount);
     }
 
     protected StorableCreationResult _putSmallEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            OverwriteHandler overwriteHandler,
+            boolean allowOverwrite,
             byte[] readBuffer, int readByteCount)
         throws IOException, StoreException
     {
@@ -339,23 +351,143 @@ public class StorableStore
                     stdMetadata, customMetadata, fileRef);
         }
 
-        // Getting close: we have entry to store in BDB, if things work ok...
-
         // TODO: locking, check for overwrite...
-        
-        // since it may have taken 
-        
-        return null;
+
+        return _physicalStore.putEntry(key, stdMetadata, storable, allowOverwrite);
     }
-        
+
     public StorableCreationResult _putLargeEntry(StorableKey key,
-            StorableCreationMetadata metadata, ByteContainer customMetadata,
-            OverwriteHandler overwriteHandler,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean allowOverwrite,
             byte[] readBuffer, int readByteCount,
             InputStream input)
         throws IOException, StoreException
     {
-        return null;
+        boolean skipCompression;
+        Compression comp = stdMetadata.compression;
+
+        if (comp != null) { // pre-compressed, or blocked
+            skipCompression = true;
+            comp = stdMetadata.compression;
+        } else {
+            if (!_compressionEnabled || Compressors.isCompressed(readBuffer, 0, readByteCount)) {
+                skipCompression = true;
+                comp = Compression.NONE;
+            } else {
+                skipCompression = false;
+                comp = Compression.LZF;
+            }
+            stdMetadata.compression = comp;
+        }
+        
+        // So: start by creating the result file
+        long fileCreationTime = _timeMaster.currentTimeMillis();
+        final FileReference fileRef = _fileManager.createStorageFile(key, comp, fileCreationTime);
+        File storedFile = fileRef.getFile();
+        
+        OutputStream out;
+        CountingOutputStream compressedOut;
+
+        try {
+            if (skipCompression) {
+                compressedOut = null;
+                out = new FileOutputStream(storedFile);
+            } else {
+                compressedOut = new CountingOutputStream(new FileOutputStream(storedFile),
+                        new IncrementalMurmur3Hasher());
+                out = Compressors.compressingStream(compressedOut, comp);
+            }
+            out.write(readBuffer, 0, readByteCount);
+        } catch (IOException e) {
+            throw new StoreException(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
+        }
+
+        IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
+        hasher.update(readBuffer, 0, readByteCount);
+        long copiedBytes = readByteCount;
+        
+        // and then need to proceed with copying the rest, compressing along the way
+        while (true) {
+            int count;
+            try {
+                count = input.read(readBuffer);
+            } catch (IOException e) { // probably will fail to write response too but...
+                throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+            }
+            if (count < 0) {
+                break;
+            }
+            copiedBytes += count;
+            try {
+                out.write(readBuffer, 0, count);
+            } catch (IOException e) {
+                throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                        +") to file '"+storedFile.getAbsolutePath()+"'", e);
+            }
+            hasher.update(readBuffer, 0, count);
+        }
+        try {
+            out.close();
+        } catch (IOException e) { }
+        
+        // Checksum calculation and storage details differ depending on whether compression is used
+        if (skipCompression) {
+            final int actualHash = hasher.calculateHash();
+            stdMetadata.storageSize = copiedBytes;
+            if (stdMetadata.compression == Compression.NONE) {
+                if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
+                    stdMetadata.contentHash = actualHash;
+                } else if (stdMetadata.contentHash != actualHash) {
+                    throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                                    +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
+                                    +Integer.toHexString(actualHash));
+                }
+            } else { // already compressed
+//                stdMetadata.compressedContentHash = hasher.calculateHash();
+                if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
+                    stdMetadata.compressedContentHash = actualHash;
+                } else {
+                    if (stdMetadata.compressedContentHash != actualHash) {
+                        throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                                        +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
+                                        +Integer.toHexString(actualHash));
+                    }
+                }
+            }
+        } else {
+            final int contentHash = hasher.calculateHash();
+            final int compressedHash = compressedOut.calculateHash();
+
+            stdMetadata.uncompressedSize = copiedBytes;
+            stdMetadata.storageSize = compressedOut.count();
+            // must verify checksum, if one was offered...
+            if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
+                stdMetadata.contentHash = contentHash;
+            } else {
+                if (stdMetadata.contentHash != contentHash) {
+                    throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                                    +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
+                                    +Integer.toHexString(contentHash));
+                }
+            }
+            if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
+                stdMetadata.compressedContentHash = compressedHash;
+            } else {
+                if (stdMetadata.compressedContentHash != compressedHash) {
+                    throw new StoreException(key, "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
+                                +" bytes): got 0x"
+                                +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
+                                +Integer.toHexString(compressedHash));
+                }
+            }
+        }
+        long now = _timeMaster.currentTimeMillis();
+        Storable storable = _storableConverter.encodeOfflined(key, now,
+                stdMetadata, customMetadata, fileRef);
+
+        // TODO: locking, check for overwrite...
+
+        return _physicalStore.putEntry(key, stdMetadata, storable, allowOverwrite);
     }
     
     /*
@@ -363,10 +495,10 @@ public class StorableStore
     /* Internal methods
     /**********************************************************************
      */
-
+    
     protected int _calcChecksum(byte[] buffer, int offset, int length)
     {
-        return BlockMurmur3Hasher.hash(0, buffer, offset, length);
+        return BlockMurmur3Hasher.hash(HASH_SEED, buffer, offset, length);
     }
     
     /**

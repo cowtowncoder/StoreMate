@@ -14,7 +14,13 @@ public class StorableCreationMetadata
     /* Input data, provided by caller
     /**********************************************************************
      */
-    
+
+    /**
+     * Size of content before compression, if known (-1 to indicate N/A);
+     * may be provided by caller
+     */
+    public long uncompressedSize = -1L;
+
     /**
      * Murmur3/32 (seed 0) hash code on uncompressed content;
      * 0 means "not available"
@@ -52,6 +58,8 @@ public class StorableCreationMetadata
      * For external entries, File in which actual data was written.
      */
     public FileReference dataFile;
+
+    public long storageSize = -1L;
     
     /*
     /**********************************************************************
