@@ -10,9 +10,6 @@ import junit.framework.TestCase;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.TimeMaster;
 import com.fasterxml.storemate.shared.UTF8Encoder;
-import com.fasterxml.storemate.store.bdb.StorableStore;
-import com.fasterxml.storemate.store.bdb.StoreBuilder;
-import com.fasterxml.storemate.store.bdb.StoreConfig;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileManagerConfig;
 

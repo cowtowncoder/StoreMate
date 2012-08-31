@@ -15,8 +15,8 @@
 
   <modules>
     <module>storemate-shared</module>
+    <module>storemate-store</module>
     <module>storemate-client</module>
-    <module>storemate-server</module>
   </modules>
 
   <url>https://github.com/cowtowncoder/StoreMate</url>

@@ -1,7 +1,6 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.store;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.store.Storable;
 
 public class StorableCreationResult
 {

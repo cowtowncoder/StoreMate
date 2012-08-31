@@ -1,10 +1,12 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.store;
 
 import java.io.File;
 
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.shared.TimeMaster;
+import com.fasterxml.storemate.store.bdb.LastModKeyCreator;
+import com.fasterxml.storemate.store.bdb.PhysicalBDBStore;
 import com.fasterxml.storemate.store.file.FileManager;
 
 /**
@@ -47,8 +49,6 @@ public class StoreBuilder
     {
         if (_config == null) throw new IllegalStateException("Missing StoreConfig");
         if (_fileManager == null) throw new IllegalStateException("Missing FileManager");
-
-        StorableConverter storableConv = _config.createStorableConverter();
         
         File dbRoot = new File(_config.dataRootPath);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
@@ -59,15 +59,29 @@ public class StoreBuilder
                 throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' did not exist: failed to create it");
             }
         }
+
+        /* !!! TODO: make PhysicalStore configurable as well...
+         */
+
+        StorableConverter storableConv = _config.createStorableConverter();
+
+        /*
+torableConverter conv,
+            File dbRoot, Database entryDB, SecondaryDatabase lastModIndex,
+            StorableConverter converter,
+            long bdbCacheSize)         */
+        
         Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
         Database entryDB = env.openDatabase(null, // no TX
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
-        
+        PhysicalStore physicalStore = new PhysicalBDBStore(storableConv,
+                dbRoot, entryDB, index, _config.cacheInBytes);
+
         try {
-            StorableStore store = new StorableStore(_config, dbRoot,
-                    _timeMaster, _fileManager, entryDB, index, storableConv);
+            StorableStore store = new StorableStore(_config, physicalStore,
+                    _timeMaster, _fileManager);
             store.start();
             return store;
         } catch (DatabaseException e) {

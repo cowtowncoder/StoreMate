@@ -4,7 +4,6 @@ import java.io.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.*;
-import com.fasterxml.storemate.store.bdb.StorableStore;
 
 public class EmptyStoreTest extends ServerTestBase
 {

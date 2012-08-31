@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.store;
 
 import java.io.*;
 import java.util.*;
@@ -7,21 +7,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.storemate.shared.BufferRecycler;
-import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.TimeMaster;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
-import com.fasterxml.storemate.store.*;
+
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.IOUtil;
-
-
-import com.sleepycat.je.*;
 
 /**
  * Simple abstraction for storing "decorated BLOBs", with a single
@@ -31,16 +24,6 @@ import com.sleepycat.je.*;
 public class StorableStore
 {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-
-    private final KeyConverter KEY_CONV = new KeyConverter();
-    
-    /*
-    /**********************************************************************
-    /* Simple config, location
-    /**********************************************************************
-     */
-
-    protected final File _dataRoot;
 
     /*
     /**********************************************************************
@@ -65,9 +48,11 @@ public class StorableStore
     protected final TimeMaster _timeMaster;
 
     protected final FileManager _fileManager;
+    
+    protected final PhysicalStore _physicalStore;
 
     protected final StorableConverter _storableConverter;
-
+    
     /**
      * We can reuse read buffers as they are somewhat costly to
      * allocate, reallocate all the time. Buffer used needs to be big
@@ -76,23 +61,7 @@ public class StorableStore
      * Currently we'll use 64k as the cut-off point.
      */
     final private static BufferRecycler _bufferRecycler = new BufferRecycler(64000);
-    
-    /*
-    /**********************************************************************
-    /* BDB entities
-    /**********************************************************************
-     */
 
-    /**
-     * Underlying primary BDB-JE database
-     */
-    protected final Database _entries;
-
-    /**
-     * Secondary database that tracks last-modified order of primary entries.
-     */
-    protected final SecondaryDatabase _index;
-    
     /*
     /**********************************************************************
     /* Store status
@@ -107,38 +76,31 @@ public class StorableStore
     /**********************************************************************
      */
 
-    public StorableStore(StoreConfig config, File dbRoot,
-            TimeMaster timeMaster, FileManager fileManager,
-            Database entryDB, SecondaryDatabase lastModIndex,
-            StorableConverter conv)
+    public StorableStore(StoreConfig config, PhysicalStore physicalStore,
+            TimeMaster timeMaster, FileManager fileManager)
     {
         _compressionEnabled = config.compressionEnabled;
         _minCompressibleSize = config.minUncompressedSizeForCompression;
         _maxGZIPCompressibleSize = config.maxUncompressedSizeForGZIP;
         _maxInlinedStorageSize = config.maxInlinedStorageSize;
-
+        
         _requireChecksumForPreCompressed = config.requireChecksumForPreCompressed;
 
+        _physicalStore = physicalStore;
         _fileManager = fileManager;
         _timeMaster = timeMaster;
-        _dataRoot = dbRoot;
-        _entries = entryDB;
-        _index = lastModIndex;
-        _storableConverter = conv;
+        _storableConverter = physicalStore.getStorableConverter();
     }
 
     public void start()
     {
-        // nothing to do, yet
+        _physicalStore.start();
     }
     
     public void stop()
     {
         if (!_closed.getAndSet(true)) {
-            Environment env = _entries.getEnvironment();
-            _index.close();
-            _entries.close();
-            env.close();
+            _physicalStore.stop();
         }
     }
     
@@ -169,7 +131,7 @@ public class StorableStore
     public long getEntryCount()
     {
         _checkClosed();
-        return _entries.count();
+        return _physicalStore.getEntryCount();
     }
 
     /**
@@ -179,7 +141,7 @@ public class StorableStore
     public long getIndexedCount()
     {
         _checkClosed();
-        return _entries.count();
+        return _physicalStore.getIndexedCount();
     }
     
     /*
@@ -191,27 +153,13 @@ public class StorableStore
     public boolean hasEntry(StorableKey key)
     {
         _checkClosed();
-        OperationStatus status = _entries.get(null, dbKey(key), null, LockMode.READ_COMMITTED);
-        switch (status) {
-        case SUCCESS:
-        case KEYEXIST:
-            return true;
-        case KEYEMPTY: // was deleted during operation.. shouldn't be getting
-        case NOTFOUND:
-            // fall through
-        }
-        return false;
+        return _physicalStore.hasEntry(key);
     }
 
     public Storable findEntry(StorableKey key) throws StoreException
     {
         _checkClosed();
-        DatabaseEntry result = new DatabaseEntry();
-        OperationStatus status = _entries.get(null, dbKey(key), result, LockMode.READ_COMMITTED);
-        if (status != OperationStatus.SUCCESS) {
-            return null;
-        }
-        return _storableConverter.decode(result.getData());
+        return _physicalStore.findEntry(key);
     }
 
     /*
@@ -448,23 +396,6 @@ public class StorableStore
             throw new IllegalStateException("Can not access data from StorableStore after it has been closed");
         }
     }
-
-    protected DatabaseEntry dbKey(StorableKey key)
-    {
-        return key.with(KEY_CONV);
-    }
-    
-    private final static class KeyConverter implements WithBytesCallback<DatabaseEntry>
-    {
-        @Override
-        public DatabaseEntry withBytes(byte[] buffer, int offset, int length) {
-            if (offset == 0 && length == buffer.length) {
-                return new DatabaseEntry(buffer);
-            }
-            return new DatabaseEntry(buffer, offset, length);
-        }
-    }
-
     /*
     /**********************************************************************
     /* Helper classes

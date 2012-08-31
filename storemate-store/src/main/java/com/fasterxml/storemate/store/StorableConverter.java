@@ -1,17 +1,16 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.store;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
-import com.fasterxml.storemate.store.Storable;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.BytesToStuff;
 import com.fasterxml.storemate.store.util.StuffToBytes;
 
-
 /**
  * Helper class that hides most of complexities on converting between
- * "raw" data stored in BDB, and {@link Storable} value abstraction.
+ * "raw" data stored in backend data store, and generic {@link Storable}
+ * value abstraction.
  */
 public class StorableConverter
 {
