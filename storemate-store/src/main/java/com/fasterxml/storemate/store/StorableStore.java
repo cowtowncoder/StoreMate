@@ -1,9 +1,7 @@
 package com.fasterxml.storemate.store;
 
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.Adler32;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -528,22 +526,4 @@ public class StorableStore
             throw new IllegalStateException("Can not access data from StorableStore after it has been closed");
         }
     }
-    /*
-    /**********************************************************************
-    /* Helper classes
-    /**********************************************************************
-     */
-
-    private final static OverwriteHandler NO_OVERWRITES = new NoOverwrites();
-    
-    static class NoOverwrites implements OverwriteHandler
-    {
-        @Override
-        public Response allowOverwrite(StorableKey key,
-                StorableCreationMetadata metadata, Storable existingEntry)
-                throws IOException, StoreException {
-            return Response.LEAVE_AND_FAIL;
-        }
-    }
-
 }

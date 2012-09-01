@@ -222,15 +222,4 @@ public class PhysicalBDBStore extends PhysicalStore
             return new DatabaseEntry(buffer, offset, length);
         }
     }
-
-    private final static class ValueConverter implements WithBytesCallback<DatabaseEntry>
-    {
-        @Override
-        public DatabaseEntry withBytes(byte[] buffer, int offset, int length) {
-            if (offset == 0 && length == buffer.length) {
-                return new DatabaseEntry(buffer);
-            }
-            return new DatabaseEntry(buffer, offset, length);
-        }
-    }
 }
