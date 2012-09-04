@@ -24,8 +24,17 @@ import com.fasterxml.storemate.store.util.IOUtil;
  */
 public class StorableStore
 {
+    /**
+     * No real seed used for Murmur3/32.
+     */
     private final static int HASH_SEED = 0;
 
+    /**
+     * We will partition key space in 256 slices for locking purposes;
+     * needs to be high enough to make lock contention very unlikely.
+     */
+    private final static int LOCK_PARTITIONS = 256;
+    
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     /*
@@ -54,7 +63,27 @@ public class StorableStore
     
     protected final PhysicalStore _physicalStore;
 
+    /*
+    /**********************************************************************
+    /* Internal helper objects
+    /**********************************************************************
+     */
+    
+    /**
+     * Helper object that knows how to encode and decode little bit of
+     * metadata that we use.
+     */
     protected final StorableConverter _storableConverter;
+
+    /**
+     * We will also need a simple form of locking to make 'read+write'
+     * combinations atomic without requiring backend store to have
+     * real transactions.
+     * This is sufficient only because we know the specific usage pattern,
+     * and the problem to resolve: it is not a general replacement for
+     * real transactions.
+     */
+    protected final StorePartitions _partitions;
     
     /**
      * We can reuse read buffers as they are somewhat costly to
@@ -63,7 +92,7 @@ public class StorableStore
      * possible compression).
      * Currently we'll use 64k as the cut-off point.
      */
-    final private static BufferRecycler _bufferRecycler = new BufferRecycler(64000);
+    protected final static BufferRecycler _readBuffers = new BufferRecycler(64000);
 
     /*
     /**********************************************************************
@@ -93,8 +122,12 @@ public class StorableStore
         _fileManager = fileManager;
         _timeMaster = timeMaster;
         _storableConverter = physicalStore.getStorableConverter();
-    }
 
+        // May want to make this configurable in future...
+        // 'true' means "fair", minor overhead, prevents potential starvation
+        _partitions = new StorePartitions(_physicalStore, LOCK_PARTITIONS, true);
+    }
+    
     public void start()
     {
         _physicalStore.start();
@@ -197,7 +230,7 @@ public class StorableStore
             boolean allowOverwrite)
         throws IOException, StoreException
     {
-        BufferRecycler.Holder bufferHolder = _bufferRecycler.getHolder();        
+        BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
         final byte[] readBuffer = bufferHolder.borrowBuffer();
         int len = 0;
 
@@ -348,10 +381,7 @@ public class StorableStore
             storable = _storableConverter.encodeOfflined(key, now,
                     stdMetadata, customMetadata, fileRef);
         }
-
-        // TODO: locking, check for overwrite...
-
-        return _physicalStore.putEntry(key, stdMetadata, storable, allowOverwrite);
+        return _partitions.put(key, stdMetadata, storable, allowOverwrite);
     }
 
     public StorableCreationResult _putLargeEntry(StorableKey key,
@@ -483,9 +513,7 @@ public class StorableStore
         Storable storable = _storableConverter.encodeOfflined(key, now,
                 stdMetadata, customMetadata, fileRef);
 
-        // TODO: locking, check for overwrite...
-
-        return _physicalStore.putEntry(key, stdMetadata, storable, allowOverwrite);
+        return _partitions.put(key, stdMetadata, storable, allowOverwrite);
     }
     
     /*
