@@ -1,8 +1,8 @@
 package com.fasterxml.storemate.store.util;
 
-import java.util.*;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.*;
+
+import com.fasterxml.storemate.shared.StorableKey;
 
 /**
  * Helper class for doing N-way partitioned, thread-per-partition
@@ -48,7 +48,7 @@ public class PartitionedMonitor
         return m;
     }
 
-    public <IN,OUT> OUT perform(Object key, PartitionedOperation<IN,OUT> oper, IN arg)
+    public <IN,OUT> OUT perform(StorableKey key, PartitionedOperation<IN,OUT> oper, IN arg)
             throws InterruptedException
     {
         final int partition = key.hashCode() & _modulo;
@@ -61,13 +61,9 @@ public class PartitionedMonitor
         }
     }
 
+    /*
     public static void main(String[] args) throws Exception
     {
-        /*
-        final int THREADS = 8;
-        final int COUNTERS = 4;
-        */
-
         final int THREADS = 4;
         final int COUNTERS = 16;
         
@@ -150,7 +146,7 @@ public class PartitionedMonitor
         {
             _monitor.perform(new IntKey(part), new PartitionedOperation<Object, Object>() {
                 @Override
-                public Object perform(Object key, Object arg)
+                public Object perform(StorableKey key, Object arg)
                         throws InterruptedException {
                     // no syncing, monitor should guarantee it
                     int sum = _counters[part] + _calcSilly();
@@ -177,5 +173,5 @@ public class PartitionedMonitor
         public IntKey(int n) { num = n; }
         @Override public int hashCode() { return num; }
     }
-    
+    */
 }
