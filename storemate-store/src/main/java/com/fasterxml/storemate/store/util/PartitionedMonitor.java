@@ -52,7 +52,7 @@ public class PartitionedMonitor
     	int partition = key.hashCode() & _modulo;
 
     	/* Need to acquire a semaphore? Only if we are NOT the only one trying
-    	 * to do that...
+    	 * to do that.
     	 * (why two parts? becomes first call should mostly succeed, and is
     	 * faster+simpler than the second call)
     	 */
@@ -63,7 +63,7 @@ public class PartitionedMonitor
     	try {
     	    return oper.perform(key, arg);
     	} finally {
-    	    // Conversely, only need to release semaphore if no one can be waiting
+    	    // Conversely, only need to release semaphore if someone is (or may soon be) waiting
     	    if (!_counters.compareAndSet(partition, 1, 0)
     	            && _counters.addAndGet(partition, -1) > 0) {
     	        _semaphores[partition].release();
