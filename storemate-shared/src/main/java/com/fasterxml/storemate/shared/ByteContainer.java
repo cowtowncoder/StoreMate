@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Add-on interface to 
+ * Simple read-only wrapper around basic in-heap byte array, used for buffering.
  */
 public abstract class ByteContainer
 {
@@ -28,6 +28,8 @@ public abstract class ByteContainer
      */
     public abstract int byteLength();
 
+    public abstract <T> T withBytes(WithBytesCallback<T> cb);
+    
     /**
      * @param buffer Buffer into which copy bytes
      * @param offset Offset to copy bytes at
@@ -40,6 +42,8 @@ public abstract class ByteContainer
 
     private final static class NoBytesContainer extends ByteContainer
     {
+        final static byte[] NO_BYTES = new byte[0];
+        
         final static NoBytesContainer instance = new NoBytesContainer();
         
         private NoBytesContainer() { }
@@ -53,6 +57,9 @@ public abstract class ByteContainer
         }
 
         @Override public void writeBytes(OutputStream out) throws IOException { }
+        @Override public <T> T withBytes(WithBytesCallback<T> cb) {
+            return cb.withBytes(NO_BYTES, 0, 0);
+        }
     }
 
     private final static class SimpleContainer extends ByteContainer
@@ -77,6 +84,10 @@ public abstract class ByteContainer
 
         @Override public void writeBytes(OutputStream out) throws IOException {
             out.write(_data, _offset, _length);
+        }
+
+        @Override public <T> T withBytes(WithBytesCallback<T> cb) {
+            return cb.withBytes(_data, _offset, _length);
         }
     }
 }

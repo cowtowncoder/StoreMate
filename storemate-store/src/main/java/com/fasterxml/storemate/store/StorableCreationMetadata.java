@@ -49,6 +49,8 @@ public class StorableCreationMetadata
     /**********************************************************************
      */
 
+    public boolean deleted = false;
+    
     /**
      * Timestamp used for the BDB entry to store
      */
@@ -83,5 +85,19 @@ public class StorableCreationMetadata
 
     public boolean usesCompression() {
         return (compression != null) && (compression != Compression.NONE);
+    }
+
+    public byte compressionAsByte() {
+        if (compression == null) {
+            return 0;
+        }
+        return (byte) compression.asIndex();
+    }
+    
+    public byte statusAsByte() {
+        if (deleted) {
+            return 1;
+        }
+        return 0;
     }
 }

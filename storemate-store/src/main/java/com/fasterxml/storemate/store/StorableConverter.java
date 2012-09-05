@@ -5,6 +5,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.BytesToStuff;
+import com.fasterxml.storemate.store.util.IOUtil;
 import com.fasterxml.storemate.store.util.StuffToBytes;
 
 /**
@@ -38,7 +39,7 @@ public class StorableConverter
     /**
      * Currently we only support the initial version
      */
-    public final static int VERSION_1 = 0x11;
+    public final static byte VERSION_1 = 0x11;
 
     /*
     /**********************************************************************
@@ -124,54 +125,124 @@ public class StorableConverter
             byte[] inlineData, int inlineOffset, int inlineLength)
     {
         StuffToBytes estimator = StuffToBytes.estimator();
-        _encodeInlined(estimator,
+        _encodeInlined(estimator, false,
                 modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
         StuffToBytes writer = StuffToBytes.writer(estimator.offset());
-        _encodeInlined(writer,
+        return _encodeInlined(writer, true,
                 modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
-//      return new Storable();
-      return null;
     }
-
-    private void _encodeInlined(StuffToBytes writer, long modtime,
+    
+    private Storable _encodeInlined(StuffToBytes writer, boolean createStorable,
+            long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             byte[] inlineData, int inlineOffset, int inlineLength)
     {
-        writer.appendLong(modtime);
+        writer.appendLong(modtime)
+            .appendByte(VERSION_1) // version
+            .appendByte(stdMetadata.statusAsByte()) // status
+            .appendByte(stdMetadata.compressionAsByte()) // compression
+            .appendByte((byte) 0) // external path length (none for inlined)
+            .appendInt(stdMetadata.contentHash)
+            ;
 
-        int len = StuffToBytes.BASE_LENGTH;
         if (stdMetadata.usesCompression()) {
-            len += (4 + StuffToBytes.MAX_VLONG_LENGTH);
+            writer.appendInt(stdMetadata.compressedContentHash) // comp hash
+                .appendVLong(stdMetadata.uncompressedSize); // orig length
         }
+        
+        final int metadataOffset = writer.offset();
+        final int metadataLength;
+        
         // metadata section
         if (customMetadata == null) {
-            len += 1; // zero-length marker
+            writer.appendVLong(0L); // just length marker
+            metadataLength = 0;
         } else {
-            len += (StuffToBytes.MAX_VINT_LENGTH + customMetadata.byteLength());
+            writer.appendLengthAndBytes(customMetadata);
+            metadataLength = customMetadata.byteLength();
         }
-        // and inlined reference
-        len += (StuffToBytes.MAX_VINT_LENGTH + inlineLength);
+        final int payloadOffset = writer.offset();
+        writer.appendVLong(inlineLength);
+        writer.appendBytes(inlineData, inlineOffset, inlineLength);
+
+        if (!createStorable) {
+            return null;
+            
+        }
+        byte[] raw = writer.buffer();
+        int rawLength = writer.offset();
+        
+        return new Storable(raw, 0, rawLength,
+                modtime,
+                stdMetadata.deleted, stdMetadata.compression, 0,
+                stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
+                metadataOffset, metadataLength,
+                payloadOffset, stdMetadata.storageSize);
     }
 
-    public Storable encodeOfflined(StorableKey key, long modtime,
+    public Storable encodeOfflined(StorableKey key,
+            long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             FileReference externalData)
     {
         StuffToBytes estimator = StuffToBytes.estimator();
-        _encodeOfflined(estimator,
+        _encodeOfflined(estimator, false,
                 modtime, stdMetadata, customMetadata, externalData);
         StuffToBytes writer = StuffToBytes.writer(estimator.offset());
-        _encodeOfflined(writer,
+        return _encodeOfflined(writer, true,
                 modtime, stdMetadata, customMetadata, externalData);
-//        return new Storable();
-        return null;
     }
 
-    private void _encodeOfflined(StuffToBytes writer, long modtime,
+    private Storable _encodeOfflined(StuffToBytes writer, boolean createStorable,
+            long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             FileReference externalData)
     {
-        writer.appendLong(modtime);
+        byte[] rawRef = IOUtil.getAsciiBytes(externalData.getReference());
+        if (rawRef.length > 255) { // sanity check
+            throw new IllegalStateException("Length of external reference ("+rawRef.length+") exceeds 255");
+        }
+        writer.appendLong(modtime)
+            .appendByte(VERSION_1) // version
+            .appendByte(stdMetadata.statusAsByte()) // status
+            .appendByte(stdMetadata.compressionAsByte()) // compression
+            .appendByte((byte) rawRef.length) // external path length (none for inlined)
+            .appendInt(stdMetadata.contentHash)
+        ;
+
+        if (stdMetadata.usesCompression()) {
+            writer.appendInt(stdMetadata.compressedContentHash) // comp hash
+                .appendVLong(stdMetadata.uncompressedSize); // orig length
+        }
+        
+        final int metadataOffset = writer.offset();
+        final int metadataLength;
+        
+        // metadata section
+        if (customMetadata == null) {
+            writer.appendVLong(0L); // just length marker
+            metadataLength = 0;
+        } else {
+            writer.appendLengthAndBytes(customMetadata);
+            metadataLength = customMetadata.byteLength();
+        }
+        final int payloadOffset = writer.offset();
+        writer.appendVLong(stdMetadata.storageSize);
+        writer.appendBytes(rawRef);
+
+        if (!createStorable) {
+            return null;
+            
+        }
+        byte[] raw = writer.buffer();
+        int rawLength = writer.offset();
+        
+        return new Storable(raw, 0, rawLength,
+                modtime,
+                stdMetadata.deleted, stdMetadata.compression, 0,
+                stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
+                metadataOffset, metadataLength,
+                payloadOffset, stdMetadata.storageSize);
     }
     
     /*

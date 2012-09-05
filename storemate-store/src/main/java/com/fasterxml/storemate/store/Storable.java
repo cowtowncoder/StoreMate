@@ -5,7 +5,6 @@ import java.io.File;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.file.FileManager;
-import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.IOUtil;
 
 /**

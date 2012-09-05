@@ -1,11 +1,12 @@
 package com.fasterxml.storemate.store.util;
 
+import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
 /**
  * Reverse of {@link BytesToStuff}, used for encoding data
  */
-public final class StuffToBytes
+public abstract class StuffToBytes
 {
     /*
     /**********************************************************************
@@ -24,17 +25,9 @@ public final class StuffToBytes
 
     /*
     /**********************************************************************
-    /* State
+    /* Shared state
     /**********************************************************************
      */
-
-    /**
-     * Buffer in which to append stuff (for real writers); if null, used in
-     * "byte counting" mode
-     */
-    protected final byte[] _buffer;
-
-    protected final int _end;
     
     protected int _ptr;
     
@@ -44,18 +37,14 @@ public final class StuffToBytes
     /**********************************************************************
      */
 
-    private StuffToBytes(byte[] buffer, int maxLen)
-    {
-        _buffer = buffer;
-        _end = maxLen;
-    }
+    protected StuffToBytes() { }
 
     /**
      * Factory method for constructing actual "writer" instance; something
      * used for building serializations of data.
      */
     public static StuffToBytes writer(int maxLen) {
-        return new StuffToBytes(new byte[maxLen], maxLen);
+        return new Writer(maxLen);
     }
 
     /**
@@ -64,87 +53,293 @@ public final class StuffToBytes
      * any encoding or copying.
      */
     public static StuffToBytes estimator() {
-        return new StuffToBytes(null, Integer.MAX_VALUE);
+        return new Estimator();
     }
-    
-    public int offset() {
+
+    /*
+    /**********************************************************************
+    /* API
+    /**********************************************************************
+     */
+
+    public final int offset() {
         return _ptr;
     }
+
+    public abstract byte[] buffer();
     
-    public <T> T withResult(WithBytesCallback<T> cb) {
-        return cb.withBytes(_buffer,  0, _ptr);
+    public abstract StuffToBytes appendByte(byte b);
+    public abstract StuffToBytes appendInt(int i);
+    public abstract StuffToBytes appendLong(long l);
+
+    public abstract StuffToBytes appendVInt(int i);
+    public abstract StuffToBytes appendVLong(long l);
+    
+    public final StuffToBytes appendBytes(byte[] data) {
+        return appendBytes(data, 0, data.length);
     }
     
+    public abstract StuffToBytes appendBytes(byte[] data, int offset, int length);
+    
+    public abstract <T> T withResult(WithBytesCallback<T> cb);
+
+    public abstract StuffToBytes appendLengthAndBytes(ByteContainer bytes);
+
     /*
     /**********************************************************************
-    /* Writing API
+    /* Implementations
     /**********************************************************************
      */
 
-    public StuffToBytes appendByte(byte b) {
-        if (_ptr >= _end) {
-            _reportBounds(1);
+    protected static class Writer extends StuffToBytes
+        implements WithBytesCallback<StuffToBytes>
+    {
+        /**
+         * Buffer in which to append stuff (for real writers); if null, used in
+         * "byte counting" mode
+         */
+        protected final byte[] _buffer;
+
+        protected final int _end;
+ 
+        protected Writer(int maxLen)
+        {
+            /* one safety measure: to allow for simpler appending of
+             * VLongs and VInts, reserve bit of extra space.
+             */
+            maxLen += MAX_VLONG_LENGTH;
+            _buffer = new byte[maxLen];
+            _end = maxLen;
         }
-        _buffer[_ptr++] = b;
-        return this;
-    }
-
-    public StuffToBytes appendLong(long l)
-    {
-        _verifyBounds(8);
-        _appendInt((int) (l >>> 32));
-        _appendInt((int) l);
-        return this;
-    }
-
-    public StuffToBytes appendLong(int i)
-    {
-        _verifyBounds(4);
-        _appendInt(i);
-        return this;
-    }
-    
-    public StuffToBytes append(byte[] data) {
-        return append(data, 0, data.length);
-    }
-
-    public StuffToBytes append(byte[] data, int offset, int length) {
-        _verifyBounds(length);
-        System.arraycopy(data, offset, _buffer, _ptr, length);
-        _ptr += length;
-        return this;
-    }
-    
-    /*
-    /**********************************************************************
-    /* Internal methods
-    /**********************************************************************
-     */
-
-    protected void _appendInt(int i)
-    {
-        int ptr = _ptr;
-        final byte[] buf = _buffer;
         
-        buf[ptr++] = (byte) (i >> 24);
-        buf[ptr++] = (byte) (i >> 16);
-        buf[ptr++] = (byte) (i >> 8);
-        buf[ptr++] = (byte) i;
+        public <T> T withResult(WithBytesCallback<T> cb) {
+            return cb.withBytes(_buffer,  0, _ptr);
+        }
         
-        _ptr = ptr;
-    }
-    
-    protected void _verifyBounds(int bytesNeeded)
-    {
-        if ((_ptr + bytesNeeded) > _end) {
-            _reportBounds(bytesNeeded);
+        /*
+        /**********************************************************************
+        /* API
+        /**********************************************************************
+         */
+
+        @Override
+        public byte[] buffer() {
+            return _buffer;
+        }
+
+        @Override
+        public StuffToBytes appendByte(byte b)
+        {
+            if (_ptr >= _end) {
+                _reportBounds(1);
+            }
+            _buffer[_ptr++] = b;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendLong(long l)
+        {
+            _verifyBounds(8);
+            _appendInt((int) (l >>> 32));
+            _appendInt((int) l);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendInt(int i)
+        {
+            _verifyBounds(4);
+            _appendInt(i);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendVInt(int value)
+        {
+            if (value < 0) throw new IllegalArgumentException();
+            // minor optimization for trivial case of single byte
+            if (value <= 0x7F) {
+                _buffer[_ptr++] = (byte) (value & 0x80);
+                return this;
+            }
+            // otherwise, count length first
+            int end = 0;
+            int tmp = (value >>> 7);
+            while (tmp > 0) {
+                tmp >>>= 7;
+                ++end;
+            }
+            // and then write out
+            _buffer[_ptr + end] = (byte) ((value & 0x7F) | 0x80);
+            do {
+                value >>>= 7;
+                _buffer[_ptr + end] = (byte) (value & 0x7F);
+            } while (--end >= 0);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendVLong(long value)
+        {
+            if (value < 0L) throw new IllegalArgumentException();
+            if (value < Integer.MAX_VALUE) {
+                return appendVInt((int) value);
+            }
+            // so we know it's at least 5 bytes long... count exact length
+            int end = 4;
+            // and can downgrade to ints for counting rest of byte length
+            int tmp = (int) (value >>> 35);
+            while (tmp > 0) {
+                tmp >>>= 7;
+                ++end;
+            }
+            // and then write out from end to beginning
+            _buffer[_ptr + end] = (byte) ((value & 0x7F) | 0x80);
+            do {
+                value >>>= 7;
+                _buffer[_ptr + end] = (byte) (value & 0x7F);
+            } while (--end >= 0);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendBytes(byte[] data, int offset, int length) {
+            _verifyBounds(length);
+            System.arraycopy(data, offset, _buffer, _ptr, length);
+            _ptr += length;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendLengthAndBytes(ByteContainer bytes)
+        {
+            if (bytes == null) { // nothing to add is same as byte[0] for us, so:
+                appendVInt(0);
+                return this;
+            }
+            appendVInt(bytes.byteLength());
+            bytes.withBytes(this);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes withBytes(byte[] buffer, int offset, int length) {
+            return appendBytes(buffer, offset, length);
+        }
+        
+        /*
+        /**********************************************************************
+        /* Internal methods
+        /**********************************************************************
+         */
+
+        protected void _appendInt(int i)
+        {
+            int ptr = _ptr;
+            final byte[] buf = _buffer;
+            
+            buf[ptr++] = (byte) (i >> 24);
+            buf[ptr++] = (byte) (i >> 16);
+            buf[ptr++] = (byte) (i >> 8);
+            buf[ptr++] = (byte) i;
+            
+            _ptr = ptr;
+        }
+        
+        protected void _verifyBounds(int bytesNeeded)
+        {
+            if ((_ptr + bytesNeeded) > _end) {
+                _reportBounds(bytesNeeded);
+            }
+        }
+        
+        protected void _reportBounds(int bytesNeeded)
+        {
+            int left = _end - _ptr;
+            throw new IllegalStateException("Buffer overrun: need "+bytesNeeded
+                    +"; only have "+left+" (offset "+_ptr+")");
         }
     }
-    
-    protected void _reportBounds(int bytesNeeded)
+
+    protected static class Estimator extends StuffToBytes
     {
-        int left = _end - _ptr;
-        throw new IllegalStateException("Buffer overrun: need "+bytesNeeded
-                +"; only have "+left+" (offset "+_ptr+")");
+        protected Estimator() { }
+
+        public <T> T withResult(WithBytesCallback<T> cb) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public byte[] buffer() {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public StuffToBytes appendByte(byte b) {
+            ++_ptr;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendLong(long l) {
+            _ptr += 8;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendInt(int i)
+        {
+            _ptr += 4;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendVInt(int i)
+        {
+            if (i <= 0x7F) {
+                ++_ptr;
+                return this;
+            }
+            do {
+                i >>>= 7;
+                ++_ptr;
+            } while (i != 0);
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendVLong(long l)
+        {
+            if (l < Integer.MAX_VALUE) {
+                return appendVInt((int) l);
+            }
+            _ptr += 5;
+            int rem = (int) (l >>> 35);
+            while (rem > 0) {
+                rem >>>= 7;
+                ++_ptr;
+            }
+            return this;
+        }
+        
+        @Override
+        public StuffToBytes appendBytes(byte[] data, int offset, int length) {
+            _ptr += length;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendLengthAndBytes(ByteContainer bytes)
+        {
+            if (bytes == null) {
+                ++_ptr;
+            } else {
+                int len = bytes.byteLength();
+                appendVInt(len);
+                _ptr += len;
+            }
+            return this;
+        }
     }
 }
