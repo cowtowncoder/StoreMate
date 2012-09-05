@@ -10,6 +10,8 @@ import com.fasterxml.storemate.shared.compress.Compressors;
 
 public class IOUtil
 {
+    private final static byte[] NO_BYTES = new byte[0];
+    
     public static int readFully(InputStream in, byte[] buffer) throws IOException
     {
         int offset = 0;
@@ -59,4 +61,31 @@ public class IOUtil
         return null;
     }
 
+    public static String getAsciiString(byte[] bytes) {
+        return getAsciiString(bytes, 0, bytes.length);
+    }
+
+    public static String getAsciiString(byte[] bytes, int offset, int length)
+    {
+        if (bytes == null) return null;
+        if (length == 0) return "";
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = offset, end = offset+length; i < end; ++i) {
+            // due to sign extension, 0x80-0xFF will become "funny"; caller is only to feed ASCII
+            sb.append((char) bytes[i]);
+        }
+        return sb.toString();
+    }
+    
+    public static byte[] getAsciiBytes(String str)
+    {
+        if (str == null) return null;
+        final int len = str.length();
+        if (len == 0) return NO_BYTES;
+        final byte[] result = new byte[len];
+        for (int i = 0; i < len; ++i) {
+            result[i] = (byte) str.charAt(i);
+        }
+        return result;
+    }
 }

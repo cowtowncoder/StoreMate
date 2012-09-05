@@ -215,17 +215,48 @@ public class StorableStore
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException
     {
-        return putEntry(key, input, stdMetadata, customMetadata, false);
+        return _putEntry(key, input, stdMetadata, customMetadata, false);
     }
 
     /**
-     * Method for inserting entry, <b>if and only if</b> no entry exists for
-     * given key.
+     * Method for inserting entry, if no entry exists for the key, or updating
+     * entry if one does. In case of update, results will contain information
+     * about overwritten entry.
+     * 
+     * @param input Input stream used for reading the content. NOTE: method never
+     *   closes this stream
+     * @param removeOldDataFile Whether method should delete backing data file for
+     *   the existing entry (if one was found) or not.
+     */
+    public StorableCreationResult upsert(StorableKey key, InputStream input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile)
+        throws IOException, StoreException
+    {
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, false);
+        if (removeOldDataFile) {
+            Storable old = result.getPreviousEntry();
+            if (old != null) {
+                _deleteBackingFile(key, old.getExternalFile(_fileManager));
+            }
+        }
+        return result;
+    }
+    
+    /*
+    /**********************************************************************
+    /* Internal methods for entry creation
+    /**********************************************************************
+     */
+    
+    /**
+     * Method for putting an entry in the database; depending on arguments, either
+     * overwriting existing entry (if overwrites allowed), or failing insertion.
      * 
      * @param input Input stream used for reading the content. NOTE: method never
      *   closes this stream
      */
-    public StorableCreationResult putEntry(StorableKey key, InputStream input,
+    protected StorableCreationResult _putEntry(StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean allowOverwrite)
         throws IOException, StoreException
@@ -262,12 +293,6 @@ public class StorableStore
             bufferHolder.returnBuffer(readBuffer);
         }
     }
-
-    /*
-    /**********************************************************************
-    /* Internal methods for entry creation
-    /**********************************************************************
-     */
     
     protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
@@ -381,10 +406,10 @@ public class StorableStore
             storable = _storableConverter.encodeOfflined(key, now,
                     stdMetadata, customMetadata, fileRef);
         }
-        return _partitions.put(key, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, stdMetadata, storable, allowOverwrite);
     }
 
-    public StorableCreationResult _putLargeEntry(StorableKey key,
+    protected StorableCreationResult _putLargeEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean allowOverwrite,
             byte[] readBuffer, int readByteCount,
@@ -513,15 +538,49 @@ public class StorableStore
         Storable storable = _storableConverter.encodeOfflined(key, now,
                 stdMetadata, customMetadata, fileRef);
 
-        return _partitions.put(key, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, stdMetadata, storable, allowOverwrite);
+    }
+
+    protected StorableCreationResult _putPartitionedEntry(StorableKey key,
+                StorableCreationMetadata stdMetadata, Storable storable,
+                boolean allowOverwrite)
+        throws IOException, StoreException
+    {
+        StorableCreationResult result = _partitions.put(key, stdMetadata, storable, allowOverwrite);
+        if (!result.succeeded()) {
+            // One piece of clean up: for failed insert, delete backing file, if any
+            if (!allowOverwrite) {
+                // otherwise, may need to delete file that was created
+                FileReference ref = stdMetadata.dataFile;
+                if (ref != null) {
+                    _deleteBackingFile(key, ref.getFile());
+                }
+            }
+        }
+        return result;
     }
     
     /*
     /**********************************************************************
-    /* Internal methods
+    /* Internal methods, other
     /**********************************************************************
      */
-    
+
+    protected void _deleteBackingFile(StorableKey key, File extFile)
+    {
+        if (extFile != null) {
+            try {
+                boolean ok = extFile.delete();
+                if (!ok) {
+                    LOG.warn("Failed to delete backing data file of key {}, path: {}",
+                            key, extFile.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                LOG.warn("Failed to delete backing data file of key "+key+", path: "+extFile.getAbsolutePath(), e);
+            }
+        }
+    }    
+            
     protected int _calcChecksum(byte[] buffer, int offset, int length)
     {
         return BlockMurmur3Hasher.hash(HASH_SEED, buffer, offset, length);

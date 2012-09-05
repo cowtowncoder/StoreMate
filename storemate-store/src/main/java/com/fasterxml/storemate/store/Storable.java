@@ -1,7 +1,12 @@
 package com.fasterxml.storemate.store;
 
+import java.io.File;
+
 import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
+import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.file.FileReference;
+import com.fasterxml.storemate.store.util.IOUtil;
 
 /**
  * Class that represents an entry read from the backing BDB-JE store.
@@ -102,7 +107,23 @@ public class Storable
 
     /*
     /**********************************************************************
-    /* API, data reads
+    /* API, accessors
+    /**********************************************************************
+     */
+
+    public boolean isDeleted() { return _isDeleted; }
+
+    public File getExternalFile(FileManager mgr)
+    {
+        if (_externalPathLength <= 0) {
+            return null;
+        }
+        return mgr.derefenceFile(IOUtil.getAsciiString(_rawEntry, _payloadOffset, _externalPathLength));
+    }
+    
+    /*
+    /**********************************************************************
+    /* API, access to raw serialization
     /**********************************************************************
      */
 

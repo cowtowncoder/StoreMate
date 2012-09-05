@@ -75,15 +75,17 @@ public abstract class PhysicalStore
             boolean allowOverwrite)
         throws IOException, StoreException
     {
-        if (allowOverwrite) {
+        if (allowOverwrite) { // "upsert"
             Storable old = putEntry(key, stdMetadata, storable);
-            if (old == null) { // ok
-                return new StorableCreationResult(key, true, null);
-            }
-            return new StorableCreationResult(key, false, old);
+            return new StorableCreationResult(key, true, old);
         }
+        // strict "insert"
         Storable old = putEntry(key, stdMetadata, storable);
-        return new StorableCreationResult(key, true, old);
+        if (old == null) { // ok, succeeded
+            return new StorableCreationResult(key, true, null);
+        }
+        // fail: caller may need to clean up the underlying file
+        return new StorableCreationResult(key, false, old);
     }
     
     /**
