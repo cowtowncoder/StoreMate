@@ -28,6 +28,10 @@ public final class StuffToBytes
     /**********************************************************************
      */
 
+    /**
+     * Buffer in which to append stuff (for real writers); if null, used in
+     * "byte counting" mode
+     */
     protected final byte[] _buffer;
 
     protected final int _end;
@@ -39,13 +43,30 @@ public final class StuffToBytes
     /* Life-cycle
     /**********************************************************************
      */
-    
-    public StuffToBytes(int maxLen)
+
+    private StuffToBytes(byte[] buffer, int maxLen)
     {
+        _buffer = buffer;
         _end = maxLen;
-        _buffer = new byte[maxLen];
     }
 
+    /**
+     * Factory method for constructing actual "writer" instance; something
+     * used for building serializations of data.
+     */
+    public static StuffToBytes writer(int maxLen) {
+        return new StuffToBytes(new byte[maxLen], maxLen);
+    }
+
+    /**
+     * Factory method for building "estimator", thing that just counts upper
+     * bound of bytes that would be produced, without actually doing
+     * any encoding or copying.
+     */
+    public static StuffToBytes estimator() {
+        return new StuffToBytes(null, Integer.MAX_VALUE);
+    }
+    
     public int offset() {
         return _ptr;
     }

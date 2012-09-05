@@ -123,7 +123,22 @@ public class StorableConverter
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             byte[] inlineData, int inlineOffset, int inlineLength)
     {
-        // Guesstimate size we need first (assuming max lengths for varlen fields)
+        StuffToBytes estimator = StuffToBytes.estimator();
+        _encodeInlined(estimator,
+                modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
+        StuffToBytes writer = StuffToBytes.writer(estimator.offset());
+        _encodeInlined(writer,
+                modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
+//      return new Storable();
+      return null;
+    }
+
+    private void _encodeInlined(StuffToBytes writer, long modtime,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            byte[] inlineData, int inlineOffset, int inlineLength)
+    {
+        writer.appendLong(modtime);
+
         int len = StuffToBytes.BASE_LENGTH;
         if (stdMetadata.usesCompression()) {
             len += (4 + StuffToBytes.MAX_VLONG_LENGTH);
@@ -136,19 +151,27 @@ public class StorableConverter
         }
         // and inlined reference
         len += (StuffToBytes.MAX_VINT_LENGTH + inlineLength);
-        
-        StuffToBytes writer = new StuffToBytes(len);
-        
-        writer.appendLong(modtime);
-        
-        return null;
     }
 
     public Storable encodeOfflined(StorableKey key, long modtime,
-            StorableCreationMetadata metadata, ByteContainer customMetadata,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             FileReference externalData)
     {
+        StuffToBytes estimator = StuffToBytes.estimator();
+        _encodeOfflined(estimator,
+                modtime, stdMetadata, customMetadata, externalData);
+        StuffToBytes writer = StuffToBytes.writer(estimator.offset());
+        _encodeOfflined(writer,
+                modtime, stdMetadata, customMetadata, externalData);
+//        return new Storable();
         return null;
+    }
+
+    private void _encodeOfflined(StuffToBytes writer, long modtime,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            FileReference externalData)
+    {
+        writer.appendLong(modtime);
     }
     
     /*
