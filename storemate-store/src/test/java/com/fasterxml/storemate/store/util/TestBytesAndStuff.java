@@ -18,10 +18,13 @@ public class TestBytesAndStuff extends StoreTestBase
         est.appendLengthAndBytes(ByteContainer.simple(EMPTY5));
         assertEquals(20, est.offset());
 
+        final int VALUE_I = Integer.MAX_VALUE - 1;
+        final long VALUE_L = Long.MAX_VALUE - 3L;
+
         // then write it out
         StuffToBytes w = StuffToBytes.writer(20);
-        w.appendVInt(Integer.MAX_VALUE);
-        w.appendVLong(Long.MAX_VALUE);
+        w.appendVInt(VALUE_I);
+        w.appendVLong(VALUE_L);
         assertEquals(14, w.offset());
         w.appendLengthAndBytes(ByteContainer.simple(new byte[5]));
         assertEquals(20, w.offset());
@@ -31,8 +34,8 @@ public class TestBytesAndStuff extends StoreTestBase
         assertEquals(20, stuff.length);
         BytesToStuff reader = new BytesToStuff(stuff);
         
-        assertEquals(Integer.MAX_VALUE, reader.nextVInt());
-        assertEquals(Long.MAX_VALUE, reader.nextVLong());
+        assertEquals(VALUE_I, reader.nextVInt());
+        assertEquals(VALUE_L, reader.nextVLong());
         
         assertEquals(5, reader.nextVInt());
         byte[] b = reader.nextBytes(5);

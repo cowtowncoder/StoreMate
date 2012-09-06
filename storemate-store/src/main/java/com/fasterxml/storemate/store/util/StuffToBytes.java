@@ -164,7 +164,7 @@ public abstract class StuffToBytes
             if (value < 0) throw new IllegalArgumentException();
             // minor optimization for trivial case of single byte
             if (value <= 0x7F) {
-                _buffer[_ptr++] = (byte) (value & 0x80);
+                _buffer[_ptr++] = (byte) (value | 0x80);
                 return this;
             }
             // otherwise, count length first

@@ -58,7 +58,7 @@ public class BytesToStuff
         _verifyBounds(amount);
         final int ptr = _ptr;
         _ptr += amount;
-        return Arrays.copyOfRange(_data, _ptr, ptr+amount);
+        return Arrays.copyOfRange(_data, ptr, ptr+amount);
     }
     
     public int nextInt()
