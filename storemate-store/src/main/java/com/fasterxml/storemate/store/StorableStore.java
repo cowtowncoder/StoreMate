@@ -15,7 +15,6 @@ import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
-import com.fasterxml.storemate.store.util.IOUtil;
 
 /**
  * Simple abstraction for storing "decorated BLOBs", with a single

@@ -1,20 +1,37 @@
-package com.fasterxml.storemate.store.util;
+package com.fasterxml.storemate.shared;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 
 public class IOUtil
 {
-    private final static byte[] NO_BYTES = new byte[0];
-    
-    public static int readFully(InputStream in, byte[] buffer) throws IOException
+    private final static int MAX_EXCERPT_BYTES = 500;
+
+	private final static byte[] NO_BYTES = new byte[0];
+
+	/*
+    /**********************************************************************
+    /* Helpers methods to deal with HTTP
+    /**********************************************************************
+     */
+	
+    public static boolean isHTTPSuccess(int statusCode)
+    {
+        return (statusCode >= 200) && (statusCode <= 299);
+    }
+	
+	/*
+    /**********************************************************************
+    /* Read/write helpers for I/O
+    /**********************************************************************
+     */
+
+	public static int readFully(InputStream in, byte[] buffer) throws IOException
     {
         int offset = 0;
 
@@ -42,6 +59,12 @@ public class IOUtil
         out.write(data, offset, length);
         out.close();
     }
+
+	/*
+    /**********************************************************************
+    /* Helpers for compression handling
+    /**********************************************************************
+     */
     
     public static String verifyCompression(Compression alleged, byte[] readBuffer, int len)
     {
@@ -63,6 +86,46 @@ public class IOUtil
         return null;
     }
 
+    /*
+    /**********************************************************************
+    /* Helper methods for error handling
+    /**********************************************************************
+     */
+
+    public static String getExcerpt(byte[] stuff)
+    {
+        final int end = Math.min(MAX_EXCERPT_BYTES, stuff.length);
+        try {   
+            return new String(stuff, 0, end, "ISO-8859-1");
+        } catch (Exception e) {
+            return "N/A";
+        }
+    }
+
+    public static String getExcerpt(InputStream in)
+    {
+        try {
+            byte[] buffer = new byte[MAX_EXCERPT_BYTES];
+            int offset = 0;
+            int count;
+            while ((count = in.read(buffer, offset, buffer.length-offset)) > 0) {
+                offset += count;
+            }
+            if (offset == 0) {
+                return "";
+            }
+            return new String(buffer, 0, offset, "ISO-8859-1");
+        } catch (Exception e) {
+            return "N/A";
+        }
+    }
+
+    /*
+    /**********************************************************************
+    /* Handling of ASCII conversions
+    /**********************************************************************
+     */
+    
     /**
      * Helper method for constructing a String from bytes assumed to be
      * 7-bit ASCII characters, given a {@link ByteContainer}.
