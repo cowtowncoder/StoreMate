@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.store.util;
 
+import java.util.Arrays;
+
 /**
  * Simple utility class for decoding semi-structured data.
  *<p>
@@ -24,6 +26,12 @@ public class BytesToStuff
         _end = offset+len;
     }
 
+    /*
+    /**********************************************************************
+    /* Public API
+    /**********************************************************************
+     */
+    
     public void skip(int count) {
         _verifyBounds(count);
         _ptr += count;
@@ -43,6 +51,14 @@ public class BytesToStuff
             _reportBounds(1);
         }
         return _data[_ptr++];
+    }
+
+    public byte[] nextBytes(int amount)
+    {
+        _verifyBounds(amount);
+        final int ptr = _ptr;
+        _ptr += amount;
+        return Arrays.copyOfRange(_data, _ptr, ptr+amount);
     }
     
     public int nextInt()
@@ -69,7 +85,7 @@ public class BytesToStuff
         
         while (true) {
             ++bytesDone;
-            if (_ptr >= _end) {
+            if (ptr >= _end) {
                 _reportBounds(bytesDone);
             }
             value = (value << 7);
@@ -96,7 +112,7 @@ public class BytesToStuff
         
         while (true) {
             ++bytesDone;
-            if (_ptr >= _end) {
+            if (ptr >= _end) {
                 _reportBounds(bytesDone);
             }
             value = (value << 7);
@@ -114,6 +130,12 @@ public class BytesToStuff
         }
         return value;
     }
+
+    /*
+    /**********************************************************************
+    /* Internal methods
+    /**********************************************************************
+     */
     
     private int _nextInt()
     {

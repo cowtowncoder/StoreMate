@@ -2,6 +2,7 @@ package com.fasterxml.storemate.shared;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * Simple read-only wrapper around basic in-heap byte array, used for buffering.
@@ -12,11 +13,11 @@ public abstract class ByteContainer
         return NoBytesContainer.instance;
     }
 
-    public final static ByteContainer simpleContainer(byte[] bytes) {
-        return simpleContainer(bytes, 0, bytes.length);
+    public final static ByteContainer simple(byte[] bytes) {
+        return simple(bytes, 0, bytes.length);
     }
     
-    public final static ByteContainer simpleContainer(byte[] bytes, int offset, int len) {
+    public final static ByteContainer simple(byte[] bytes, int offset, int len) {
         if (len <= 0) {
             return emptyContainer();
         }
@@ -28,6 +29,19 @@ public abstract class ByteContainer
      */
     public abstract int byteLength();
 
+    /**
+     * Factory method for creating a view of contents of this container.
+     * 
+     * @param offset Offset in the original buffer; has to be between
+     *    0 and <code>length - 1</code> (inclusive)
+     * @param length Length of the slice to create: must not extend past
+     *   end of this instance
+     *   
+     * @return New container with the view, if necessary; or this instance
+     *    if no change
+     */
+    public abstract ByteContainer view(int offset, int length);
+    
     public abstract <T> T withBytes(WithBytesCallback<T> cb);
     
     /**
@@ -37,6 +51,8 @@ public abstract class ByteContainer
      * @return Offset after copying the bytes, that is: <code>offset + byteLength()</code>
      */
     public abstract int getBytes(byte[] buffer, int offset);
+    
+    public abstract byte[] asBytes();
 
     public abstract void writeBytes(OutputStream out) throws IOException;
 
@@ -56,10 +72,20 @@ public abstract class ByteContainer
             return offset;
         }
 
+        @Override public byte[] asBytes() { return NO_BYTES; }
+
         @Override public void writeBytes(OutputStream out) throws IOException { }
         @Override public <T> T withBytes(WithBytesCallback<T> cb) {
             return cb.withBytes(NO_BYTES, 0, 0);
         }
+
+        @Override
+        public ByteContainer view(int offset, int length) {
+            if (offset == 0 && length == 0) {
+                return this;
+            }
+            throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is 0");
+        }        
     }
 
     private final static class SimpleContainer extends ByteContainer
@@ -82,12 +108,31 @@ public abstract class ByteContainer
             return (offset + _length);
         }
 
+        @Override
+        public byte[] asBytes() {
+            if (_offset == 0) {
+                return Arrays.copyOf(_data, _length);
+            }
+            return Arrays.copyOfRange(_data, _offset, _offset + _length);
+        }
+        
         @Override public void writeBytes(OutputStream out) throws IOException {
             out.write(_data, _offset, _length);
         }
 
         @Override public <T> T withBytes(WithBytesCallback<T> cb) {
             return cb.withBytes(_data, _offset, _length);
+        }
+
+        @Override
+        public ByteContainer view(int offset, int length) {
+            if (offset == 0 && length == _length) {
+                return this;
+            }
+            if (offset < 0 || (offset+length) > _length) {
+                throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is "+_length);
+            }
+            return new SimpleContainer(_data, _offset + offset, length);
         }
     }
 }

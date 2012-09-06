@@ -5,7 +5,7 @@ import java.io.*;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.*;
 
-public class EmptyStoreTest extends ServerTestBase
+public class EmptyStoreTest extends StoreTestBase
 {
     /**
      * Simple verification of basic invariants of a newly created

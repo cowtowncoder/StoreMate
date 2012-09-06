@@ -16,7 +16,7 @@ import com.fasterxml.storemate.store.file.FileManagerConfig;
 /**
  * Base class for unit tests of server sub-module
  */
-public abstract class ServerTestBase extends TestCase
+public abstract class StoreTestBase extends TestCase
 {
     /**
      * Method to be called before tests, to ensure log4j does not whine.

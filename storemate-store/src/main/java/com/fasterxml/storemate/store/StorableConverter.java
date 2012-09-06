@@ -105,13 +105,13 @@ public class StorableConverter
             throw new IllegalArgumentException("Had "+left+" bytes left after decoding entry (out of "
                     +raw.length+")");
         }
-        return new Storable(raw, offset, length,
+        return new Storable(ByteContainer.simple(raw, offset, length),
                 lastmod,
                 deleted, compression, externalPathLength,
                 contentHash, compressedHash, originalLength,
                 metadataOffset, metadataLength,
                 payloadOffset, storageLength
-                );
+            );
     }
 
     /*
@@ -169,11 +169,7 @@ public class StorableConverter
             return null;
             
         }
-        byte[] raw = writer.buffer();
-        int rawLength = writer.offset();
-        
-        return new Storable(raw, 0, rawLength,
-                modtime,
+        return new Storable(writer.bufferedBytes(), modtime,
                 stdMetadata.deleted, stdMetadata.compression, 0,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,
@@ -232,13 +228,8 @@ public class StorableConverter
 
         if (!createStorable) {
             return null;
-            
         }
-        byte[] raw = writer.buffer();
-        int rawLength = writer.offset();
-        
-        return new Storable(raw, 0, rawLength,
-                modtime,
+        return new Storable(writer.bufferedBytes(), modtime,
                 stdMetadata.deleted, stdMetadata.compression, 0,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,

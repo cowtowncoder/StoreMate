@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.fasterxml.storemate.shared.ByteContainer;
+import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 
@@ -61,10 +63,18 @@ public class IOUtil
         return null;
     }
 
+    /**
+     * Helper method for constructing a String from bytes assumed to be
+     * 7-bit ASCII characters, given a {@link ByteContainer}.
+     */
+    public static String getAsciiString(ByteContainer bytes) {
+        return bytes.withBytes(AsciiViaCallback.instance);
+    }
+    
     public static String getAsciiString(byte[] bytes) {
         return getAsciiString(bytes, 0, bytes.length);
     }
-
+    
     public static String getAsciiString(byte[] bytes, int offset, int length)
     {
         if (bytes == null) return null;
@@ -87,5 +97,21 @@ public class IOUtil
             result[i] = (byte) str.charAt(i);
         }
         return result;
+    }
+
+    /*
+    /**********************************************************************
+    /* Helper classes
+    /**********************************************************************
+     */
+    
+    private final static class AsciiViaCallback implements WithBytesCallback<String>
+    {
+        public final static AsciiViaCallback instance = new AsciiViaCallback();
+        
+        @Override
+        public String withBytes(byte[] buffer, int offset, int length) {
+            return getAsciiString(buffer, offset, length);
+        }
     }
 }

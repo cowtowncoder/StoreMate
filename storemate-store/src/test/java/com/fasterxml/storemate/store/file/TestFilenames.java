@@ -1,9 +1,9 @@
 package com.fasterxml.storemate.store.file;
 
-import com.fasterxml.storemate.store.ServerTestBase;
+import com.fasterxml.storemate.store.StoreTestBase;
 import com.fasterxml.storemate.store.file.FilenameConverter;
 
-public class TestFilenames extends ServerTestBase
+public class TestFilenames extends StoreTestBase
 {
 	public void testNameMangling() throws Exception
 	{

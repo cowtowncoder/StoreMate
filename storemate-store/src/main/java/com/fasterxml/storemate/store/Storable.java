@@ -2,6 +2,7 @@ package com.fasterxml.storemate.store;
 
 import java.io.File;
 
+import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.file.FileManager;
@@ -12,14 +13,7 @@ import com.fasterxml.storemate.store.util.IOUtil;
  */
 public class Storable
 {
-    /**
-     * Lazily populated copy of raw data from within entry
-     */
-    protected final byte[] _rawEntry;
-
-    protected final int _rawOffset;
-    
-    protected final int _rawLength;
+    protected final ByteContainer _rawEntry;
 
     /*
     /**********************************************************************
@@ -76,16 +70,14 @@ public class Storable
     /**********************************************************************
      */
     
-    public Storable(byte[] raw, int rawOffset, int rawLength,
+    public Storable(ByteContainer bytes,
             long lastMod,
             boolean isDeleted, Compression comp, int externalPathLength,
             int contentHash, int compressedHash, long originalLength,
             int metadataOffset, int metadataLength,
             int payloadOffset, long storageLength)
     {
-        _rawEntry = raw;
-        _rawOffset = rawOffset;
-        _rawLength = rawLength;
+        _rawEntry = bytes;
 
         _lastModified = lastMod;
 
@@ -117,7 +109,8 @@ public class Storable
         if (_externalPathLength <= 0) {
             return null;
         }
-        return mgr.derefenceFile(IOUtil.getAsciiString(_rawEntry, _payloadOffset, _externalPathLength));
+        ByteContainer extRef = _rawEntry.view(_payloadOffset, _externalPathLength);
+        return mgr.derefenceFile(IOUtil.getAsciiString(extRef));
     }
     
     /*
@@ -127,6 +120,6 @@ public class Storable
      */
 
     public <T> T withRaw(WithBytesCallback<T> cb) {
-        return cb.withBytes(_rawEntry, _rawOffset, _rawLength);
+        return _rawEntry.withBytes(cb);
     }
 }

@@ -65,8 +65,6 @@ public abstract class StuffToBytes
     public final int offset() {
         return _ptr;
     }
-
-    public abstract byte[] buffer();
     
     public abstract StuffToBytes appendByte(byte b);
     public abstract StuffToBytes appendInt(int i);
@@ -85,6 +83,12 @@ public abstract class StuffToBytes
 
     public abstract StuffToBytes appendLengthAndBytes(ByteContainer bytes);
 
+    /**
+     * Method for constructing actual serialization with appended data.
+     * Will only work for writer, not estimate.
+     */
+    public abstract ByteContainer bufferedBytes();
+    
     /*
     /**********************************************************************
     /* Implementations
@@ -115,7 +119,7 @@ public abstract class StuffToBytes
         public <T> T withResult(WithBytesCallback<T> cb) {
             return cb.withBytes(_buffer,  0, _ptr);
         }
-        
+
         /*
         /**********************************************************************
         /* API
@@ -123,8 +127,8 @@ public abstract class StuffToBytes
          */
 
         @Override
-        public byte[] buffer() {
-            return _buffer;
+        public ByteContainer bufferedBytes() {
+            return ByteContainer.simple(_buffer, 0, _ptr);
         }
 
         @Override
@@ -164,18 +168,20 @@ public abstract class StuffToBytes
                 return this;
             }
             // otherwise, count length first
-            int end = 0;
+            final int start = _ptr;
+            int end = start;
             int tmp = (value >>> 7);
             while (tmp > 0) {
                 tmp >>>= 7;
                 ++end;
             }
+            _ptr = end+1;
             // and then write out
-            _buffer[_ptr + end] = (byte) ((value & 0x7F) | 0x80);
+            _buffer[end] = (byte) ((value & 0x7F) | 0x80);
             do {
                 value >>>= 7;
-                _buffer[_ptr + end] = (byte) (value & 0x7F);
-            } while (--end >= 0);
+                _buffer[--end] = (byte) (value & 0x7F);
+            } while (end > start);
             return this;
         }
 
@@ -187,19 +193,21 @@ public abstract class StuffToBytes
                 return appendVInt((int) value);
             }
             // so we know it's at least 5 bytes long... count exact length
-            int end = 4;
+            final int start = _ptr;
+            int end = start+4;
             // and can downgrade to ints for counting rest of byte length
             int tmp = (int) (value >>> 35);
             while (tmp > 0) {
                 tmp >>>= 7;
                 ++end;
             }
+            _ptr = end+1;
             // and then write out from end to beginning
-            _buffer[_ptr + end] = (byte) ((value & 0x7F) | 0x80);
+            _buffer[end] = (byte) ((value & 0x7F) | 0x80);
             do {
                 value >>>= 7;
-                _buffer[_ptr + end] = (byte) (value & 0x7F);
-            } while (--end >= 0);
+                _buffer[--end] = (byte) (value & 0x7F);
+            } while (end > start);
             return this;
         }
 
@@ -262,6 +270,10 @@ public abstract class StuffToBytes
         }
     }
 
+    /**
+     * Implementation that merely counts size that would be taken if content
+     * was written.
+     */
     protected static class Estimator extends StuffToBytes
     {
         protected Estimator() { }
@@ -271,7 +283,7 @@ public abstract class StuffToBytes
         }
 
         @Override
-        public byte[] buffer() {
+        public ByteContainer bufferedBytes() {
             throw new UnsupportedOperationException();
         }
         
