@@ -49,6 +49,10 @@ public class Compressors
     /**********************************************************************
      */
 
+    public static byte[] gzipCompress(byte[] data) throws IOException {
+        return gzipCompress(data, 0, data.length);
+    }
+
     public static byte[] gzipCompress(byte[] data, int offset, int len) throws IOException
     {
         // assume 50% compression rate
@@ -59,8 +63,11 @@ public class Compressors
         return bytes.toByteArray();
     }
 
-    public static byte[] lzfCompress(byte[] data, int offset, int len) throws IOException
-    {
+    public static byte[] lzfCompress(byte[] data) throws IOException {
+        return lzfCompress(data, 0, data.length);
+    }
+
+    public static byte[] lzfCompress(byte[] data, int offset, int len) throws IOException {
         return LZFEncoder.encode(data, offset, len);
     }
 

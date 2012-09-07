@@ -3,6 +3,8 @@ package com.fasterxml.storemate.store;
 import java.io.File;
 import java.io.IOException;
 
+import org.joda.time.DateTime;
+
 //import ch.qos.logback.classic.Level;
 
 import com.fasterxml.storemate.shared.StorableKey;
@@ -93,4 +95,24 @@ public abstract class StoreTestBase extends SharedTestBase
             throw new IOException("Failed to delete test file/directory '"+fileOrDir.getAbsolutePath()+"'");
         }
     }
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // Methods, other
+    ///////////////////////////////////////////////////////////////////////
+     */
+    
+    protected static long _date(int year, int month, int day)
+    {
+        return new DateTime(0L)
+                .withYear(year)
+                .withMonthOfYear(month)
+                .withDayOfMonth(day)
+                .withHourOfDay(0)
+                .withMinuteOfHour(0)
+                .withSecondOfMinute(0)
+                .withMillisOfDay(0)
+                .getMillis();
+    }
+    
 }

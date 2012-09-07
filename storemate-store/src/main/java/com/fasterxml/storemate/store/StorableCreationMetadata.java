@@ -33,7 +33,6 @@ public class StorableCreationMetadata
      * 0 means "not available"
      */
     public int compressedContentHash;
-
     /**
      * Compression method used for content, if any. If left as null,
      * means "not known" and store can compress it as it sees fit;

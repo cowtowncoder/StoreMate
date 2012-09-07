@@ -336,6 +336,7 @@ public class StorableStore
             } else {
                 readBuffer = compBytes;
                 readByteCount = compBytes.length;
+                metadata.compression = compression;
                 metadata.uncompressedSize = origLength;
                 metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
             }
