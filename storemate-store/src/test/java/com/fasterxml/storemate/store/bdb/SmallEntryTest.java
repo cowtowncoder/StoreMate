@@ -2,6 +2,9 @@ package com.fasterxml.storemate.store.bdb;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Calendar;
+
+import org.joda.time.DateTime;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
@@ -9,10 +12,24 @@ import com.fasterxml.storemate.store.*;
 
 public class SmallEntryTest extends StoreTestBase
 {
+    private long _date(int year, int month, int day)
+    {
+        return new DateTime(0L)
+                .withYear(year)
+                .withMonthOfYear(month)
+                .withDayOfMonth(day)
+                .withHourOfDay(0)
+                .withMinuteOfHour(0)
+                .withSecondOfMinute(0)
+                .withMillisOfDay(0)
+                .getMillis();
+    }
+    
     public void testSimpleSmall() throws IOException
     {
-    	final long startTime = 1234L;
         initTestLogging();
+        
+        final long startTime = _date(2012, 6, 6);
         
         StorableStore store = createStore("bdb-small-1", startTime);
 
@@ -36,17 +53,17 @@ public class SmallEntryTest extends StoreTestBase
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
 
-        /*
-        assertEquals(200, response.getStatus());
         // can we count on this getting updated? Seems to be, FWIW
-        assertEquals(1, entries.getEntryCount());
+        assertEquals(1L, store.getEntryCount());
+        assertEquals(1L, store.getIndexedCount());
 
         // Ok. Then, we should also be able to fetch it, right?
-        response = new FakeHttpResponse();
-        resource.getHandler().getEntry(new FakeHttpRequest(), response,
-                INTERNAL_KEY1, null, null, creationTime);
-        assertEquals(200, response.getStatus());
+        Storable entry = store.findEntry(INTERNAL_KEY1);
+        assertNotNull(entry);
 
+        assertEquals(startTime, entry.getLastModified());
+        
+        /*
         // let's verify it then; small request...
         assertTrue(response.hasStreamingContent());
         assertTrue(response.hasInlinedData());

@@ -102,6 +102,8 @@ public class Storable
     /**********************************************************************
      */
 
+    public long getLastModified() { return _lastModified; }
+    
     public boolean isDeleted() { return _isDeleted; }
 
     public File getExternalFile(FileManager mgr)

@@ -64,8 +64,18 @@ public class StorableConverter
         // as per Javadocs, offset always 0, size same as arrays:
         BytesToStuff reader = new BytesToStuff(raw, offset, length);
 
+for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
+    System.out.println("#"+i+" -> 0x"+Integer.toHexString(raw[offset+i] & 0xFF));
+}
+        
+System.out.println("Decode for offset "+offset+", length "+length);
+
         final long lastmod = reader.nextLong();
 
+        
+System.out.println("Now: "+Long.toHexString(System.currentTimeMillis()));        
+System.out.println("Mod date: (0x"+Long.toHexString(lastmod)+") "+new java.util.Date(lastmod));
+        
         // Ok: ensure version number is valid
         _verifyVersion(reader.nextByte());
         

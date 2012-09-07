@@ -70,11 +70,10 @@ public class BytesToStuff
     public long nextLong()
     {
         _verifyBounds(8);
-        long l1 = _nextInt() << 32;
+        long l1 = _nextInt();
         long l2 = _nextInt();
-
         // this may look silly, but the thing is to avoid sign-extension...
-        return l1 | ((l2 << 32) >>> 32);
+        return (l1 << 32) | ((l2 << 32) >>> 32);
     }
 
     public int nextVInt()
@@ -144,7 +143,7 @@ public class BytesToStuff
         i |= (_data[ptr++] & 0xFF) << 16;
         i |= (_data[ptr++] & 0xFF) << 8;
         i |= (_data[ptr++] & 0xFF);
-        _ptr = i;
+        _ptr = ptr;
         return i;
     }
 
