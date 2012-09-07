@@ -2,12 +2,15 @@ package com.fasterxml.storemate.store.bdb;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Calendar;
+
+import static org.junit.Assert.assertArrayEquals;
 
 import org.joda.time.DateTime;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.WithBytesAsArray;
+import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.*;
 
 public class SmallEntryTest extends StoreTestBase
@@ -46,7 +49,8 @@ public class SmallEntryTest extends StoreTestBase
 
         // Ok: store a small entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
-        		null, calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+        		/*existing compression*/ null,
+        		calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(
         		INTERNAL_KEY1, new ByteArrayInputStream(SMALL_DATA),
         		metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
@@ -62,39 +66,27 @@ public class SmallEntryTest extends StoreTestBase
         assertNotNull(entry);
 
         assertEquals(startTime, entry.getLastModified());
+        assertTrue(entry.hasInlineData());
+        assertFalse(entry.hasExternalData());
+        // too short to be compressed:
+        assertEquals(Compression.NONE, entry.getCompression());
+        assertEquals(SMALL_DATA.length, entry.getStorageLength());
+        // -1 means N/A, used when no compression is used:
+        assertEquals(-1L, entry.getOriginalLength());
+
+        // we passed no metadata, so:
+        assertEquals(3, entry.getMetadataLength());
+        byte[] actualMetadata1 = entry.withMetadata(WithBytesAsArray.instance);
+        byte[] actualMetadata2 = entry.getMetadata().asBytes();
+        assertArrayEquals(CUSTOM_METADATA_IN, actualMetadata1);
+        assertArrayEquals(CUSTOM_METADATA_IN, actualMetadata2);
         
-        /*
-        // let's verify it then; small request...
-        assertTrue(response.hasStreamingContent());
-        assertTrue(response.hasInlinedData());
-        byte[] data = collectOutput(response);
-        assertEquals(SMALL_STRING, new String(data, "UTF-8"));
-
-        // false->do NOT (yet) update last-accessed:
-        EntryMetadata entry = entries.findEntry(INTERNAL_KEY1, false);
-        assertNotNull(entry);
-        // too small to be compressed, so:
-        assertEquals(Compression.NONE.asByte(), entry.isCompressed);
-        assertNull(entry.path);
-        assertNotNull(entry.inlinedData);
-        assertEquals(SMALL_DATA.length, entry.inlinedData.length);
-        assertEquals(creationTime, entry.getCreationTime());
-        assertEquals(creationTime, entry.getInsertionTime());
-        assertEquals(0L, entry.lastAccess);
-
-        // one more access; this time to modify last accessed
-        long accessTime = creationTime + 999L;
-        response = new FakeHttpResponse();
-        resource.getHandler().getEntry(new FakeHttpRequest(), response,
-                INTERNAL_KEY1, null, null, accessTime);
-        assertEquals(200, response.getStatus());
-
-        // true->should update last-accessed timestamp
-        entry = entries.findEntry(INTERNAL_KEY1, true);
-        assertNotNull(entry);
-        assertEquals(accessTime, entry.lastAccess);
-        */
-
+        // then let's verify inlined content itself
+        byte[] actualContents1 = entry.getInlinedData().asBytes();
+        byte[] actualContents2 = entry.withInlinedData(WithBytesAsArray.instance);
+        assertArrayEquals(SMALL_DATA, actualContents1);
+        assertArrayEquals(SMALL_DATA, actualContents2);
+        
         store.stop();
     }
 

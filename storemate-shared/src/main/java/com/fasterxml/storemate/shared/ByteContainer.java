@@ -14,12 +14,20 @@ public abstract class ByteContainer
     }
 
     public final static ByteContainer simple(byte[] bytes) {
-        return simple(bytes, 0, bytes.length);
+        return new SimpleContainer(bytes, 0, bytes.length);
     }
     
-    public final static ByteContainer simple(byte[] bytes, int offset, int len) {
-        if (len <= 0) {
+    public final static ByteContainer simple(byte[] bytes, int offset, int len)
+    {
+        if (len == 0) {
             return emptyContainer();
+        }
+        // Let's do some sanity checks, saves us debugging
+        if (bytes == null) throw new IllegalArgumentException("Null 'bytes'");
+        final int arrayLen = bytes.length;
+        if (offset < 0 || len < 0 || (offset + len) > arrayLen) {
+            throw new IllegalArgumentException("Illegal offset/length ("+offset+"/"+len
+                    +"): extend beyond start/end of array of "+arrayLen);
         }
         return new SimpleContainer(bytes, offset, len);
     }
@@ -29,6 +37,12 @@ public abstract class ByteContainer
      */
     public abstract int byteLength();
 
+    /**
+     * Simple accessor only to be used by tests (real code should use
+     * callbacks or bulk access)
+     */
+    public abstract byte get(int index);
+    
     /**
      * Factory method for creating a view of contents of this container.
      * 
@@ -43,6 +57,8 @@ public abstract class ByteContainer
     public abstract ByteContainer view(int offset, int length);
     
     public abstract <T> T withBytes(WithBytesCallback<T> cb);
+
+    public abstract <T> T withBytes(WithBytesCallback<T> cb, int offset, int length);
     
     /**
      * @param buffer Buffer into which copy bytes
@@ -68,6 +84,10 @@ public abstract class ByteContainer
             return 0;
         }
 
+        @Override public byte get(int index) {
+            throw new IllegalArgumentException("Bad offset ("+index+"); this length is 0");
+        }
+        
         @Override public int getBytes(byte[] buffer, int offset) {
             return offset;
         }
@@ -79,6 +99,13 @@ public abstract class ByteContainer
             return cb.withBytes(NO_BYTES, 0, 0);
         }
 
+        @Override public <T> T withBytes(WithBytesCallback<T> cb, int offset, int length) {
+            if (offset == 0 && length == 0) {
+                return cb.withBytes(NO_BYTES, 0, 0);
+            }
+            throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is 0");
+        }
+        
         @Override
         public ByteContainer view(int offset, int length) {
             if (offset == 0 && length == 0) {
@@ -103,6 +130,13 @@ public abstract class ByteContainer
             return _length;
         }
 
+        @Override public byte get(int index) {
+            if (index < 0 || index >= _length) {
+                throw new IllegalArgumentException("Bad offset ("+index+"); this length is "+_length);
+            }
+            return _data[_offset + index];
+        }
+        
         @Override public int getBytes(byte[] buffer, int offset) {
             System.arraycopy(_data, _offset, buffer, offset, _length);
             return (offset + _length);
@@ -124,6 +158,16 @@ public abstract class ByteContainer
             return cb.withBytes(_data, _offset, _length);
         }
 
+        @Override public <T> T withBytes(WithBytesCallback<T> cb, int offset, int length) {
+            if (offset == 0 && length == _length) {
+                return cb.withBytes(_data, _offset, _length);
+            }
+            if (offset < 0 || (offset+length) > _length) {
+                throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is "+_length);
+            }
+            return cb.withBytes(_data, _offset + offset, length);
+        }
+        
         @Override
         public ByteContainer view(int offset, int length) {
             if (offset == 0 && length == _length) {

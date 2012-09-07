@@ -82,7 +82,7 @@ public class Storable
         _lastModified = lastMod;
 
         _isDeleted = isDeleted;
-        _compression = comp;
+        _compression = (comp == null) ? Compression.NONE : comp;
         _externalPathLength = externalPathLength;
         
         _contentHash = contentHash;
@@ -98,14 +98,35 @@ public class Storable
 
     /*
     /**********************************************************************
-    /* API, accessors
+    /* API, accessors, simple/boolean
     /**********************************************************************
      */
 
     public long getLastModified() { return _lastModified; }
+    public Compression getCompression() { return _compression; }
+
+    public long getStorageLength() { return _storageLength; }
+    public long getOriginalLength() { return _originalLength; }
+    public int getMetadataLength() { return _metadataLength; }
     
     public boolean isDeleted() { return _isDeleted; }
 
+    public boolean hasInlineData() {
+        // check for deletion, since deleting may nuke external path settings
+        return (_externalPathLength == 0L) && !_isDeleted;
+    }
+
+    public boolean hasExternalData() {
+        // should this check for deletion?
+        return (_externalPathLength > 0L);
+    }
+
+    /*
+    /**********************************************************************
+    /* API, accessors for data
+    /**********************************************************************
+     */
+    
     public File getExternalFile(FileManager mgr)
     {
         if (_externalPathLength <= 0) {
@@ -113,6 +134,44 @@ public class Storable
         }
         ByteContainer extRef = _rawEntry.view(_payloadOffset, _externalPathLength);
         return mgr.derefenceFile(IOUtil.getAsciiString(extRef));
+    }
+
+    public ByteContainer getMetadata() {
+        if (_metadataLength <= 0) {
+            return ByteContainer.emptyContainer();
+        }
+        return _rawEntry.view(_metadataOffset, _metadataLength);
+    }
+
+    public <T> T withMetadata(WithBytesCallback<T> cb) {
+        if (_metadataLength <= 0) {
+            return ByteContainer.emptyContainer().withBytes(cb);
+        }
+        return _rawEntry.withBytes(cb, _metadataOffset, _metadataLength);
+    }
+
+    public ByteContainer getInlinedData()
+    {
+        if (_isDeleted || _externalPathLength > 0) {
+            return null;
+        }
+        int len = (int) _storageLength;
+        if (len <= 0) {
+            return ByteContainer.emptyContainer();
+        }
+        return _rawEntry.view(_payloadOffset, len);
+    }
+
+    public <T> T withInlinedData(WithBytesCallback<T> cb)
+    {
+        if (_isDeleted || _externalPathLength > 0) {
+            return null;
+        }
+        int len = (int) _storageLength;
+        if (len <= 0) {
+            return ByteContainer.emptyContainer().withBytes(cb);
+        }
+        return _rawEntry.withBytes(cb, _payloadOffset, len);
     }
     
     /*
