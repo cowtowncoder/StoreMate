@@ -21,7 +21,6 @@ public class SmallEntryTest extends StoreTestBase
      */
     public void testSimpleSmall() throws IOException
     {
-        initTestLogging();
         final long startTime = _date(2012, 6, 6);
         StorableStore store = createStore("bdb-small-simple", startTime);
         assertEquals(0L, store.getEntryCount());
@@ -79,7 +78,6 @@ public class SmallEntryTest extends StoreTestBase
      */
     public void testSmallAcceptGzip() throws IOException
     {
-        initTestLogging();
         final long startTime = _date(2012, 7, 7);
         StorableStore store = createStore("bdb-small-gzip", startTime);
         assertEquals(0L, store.getEntryCount());
@@ -132,7 +130,6 @@ public class SmallEntryTest extends StoreTestBase
      */
     public void testDuplicates() throws IOException
     {
-        initTestLogging();
         final long startTime = _date(2012, 7, 8);
         StorableStore store = createStore("bdb-small-dups", startTime);
         assertEquals(0L, store.getEntryCount());
@@ -183,7 +180,6 @@ public class SmallEntryTest extends StoreTestBase
      */
     public void testSmallTextAlreadyLZF() throws IOException
     {
-        initTestLogging();
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzf", startTime);
         assertEquals(0L, store.getEntryCount());
@@ -232,7 +228,6 @@ public class SmallEntryTest extends StoreTestBase
      */
     public void testSmallTextAllegedLZF() throws IOException
     {
-        initTestLogging();
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzffail", startTime);
         assertEquals(0L, store.getEntryCount());
@@ -266,13 +261,9 @@ public class SmallEntryTest extends StoreTestBase
     /* Helper methods
     /**********************************************************************
      */
-    
-    protected void _verifyMetadata(Storable entry, byte[] inputMetadata)
-    {
-        assertEquals(inputMetadata.length, entry.getMetadataLength());
-        byte[] actualMetadata1 = entry.withMetadata(WithBytesAsArray.instance);
-        byte[] actualMetadata2 = entry.getMetadata().asBytes();
-        assertArrayEquals(inputMetadata, actualMetadata1);
-        assertArrayEquals(inputMetadata, actualMetadata2);
+
+    @Override
+    public void setUp() {
+        initTestLogging();
     }
 }

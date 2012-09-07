@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.store;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -10,6 +12,7 @@ import org.joda.time.DateTime;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.TimeMaster;
 import com.fasterxml.storemate.shared.UTF8Encoder;
+import com.fasterxml.storemate.shared.WithBytesAsArray;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileManagerConfig;
 
@@ -94,6 +97,21 @@ public abstract class StoreTestBase extends SharedTestBase
         if (!fileOrDir.delete()) {
             throw new IOException("Failed to delete test file/directory '"+fileOrDir.getAbsolutePath()+"'");
         }
+    }
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // Methods, verifying data
+    ///////////////////////////////////////////////////////////////////////
+     */
+    
+    protected void _verifyMetadata(Storable entry, byte[] inputMetadata)
+    {
+        assertEquals(inputMetadata.length, entry.getMetadataLength());
+        byte[] actualMetadata1 = entry.withMetadata(WithBytesAsArray.instance);
+        byte[] actualMetadata2 = entry.getMetadata().asBytes();
+        assertArrayEquals(inputMetadata, actualMetadata1);
+        assertArrayEquals(inputMetadata, actualMetadata2);
     }
 
     /*

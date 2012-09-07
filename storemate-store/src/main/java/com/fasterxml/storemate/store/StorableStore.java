@@ -333,13 +333,17 @@ public class StorableStore
             // if compression would not, like, compress, don't bother:
             if (compBytes.length >= origLength) {
                 compression = null;
+                metadata.storageSize = readByteCount;
             } else {
                 readBuffer = compBytes;
                 readByteCount = compBytes.length;
                 metadata.compression = compression;
                 metadata.uncompressedSize = origLength;
+                metadata.storageSize = compBytes.length;
                 metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
             }
+        } else {
+            metadata.storageSize = readByteCount;
         }
         return _putSmallEntry(key, metadata, customMetadata,
                 allowOverwrite, readBuffer, readByteCount);

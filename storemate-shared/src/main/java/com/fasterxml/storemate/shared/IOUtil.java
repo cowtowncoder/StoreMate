@@ -12,9 +12,9 @@ public class IOUtil
 {
     private final static int MAX_EXCERPT_BYTES = 500;
 
-	private final static byte[] NO_BYTES = new byte[0];
+    private final static byte[] NO_BYTES = new byte[0];
 
-	/*
+    /*
     /**********************************************************************
     /* Helpers methods to deal with HTTP
     /**********************************************************************
@@ -25,13 +25,13 @@ public class IOUtil
         return (statusCode >= 200) && (statusCode <= 299);
     }
 	
-	/*
+    /*
     /**********************************************************************
     /* Read/write helpers for I/O
     /**********************************************************************
      */
 
-	public static int readFully(InputStream in, byte[] buffer) throws IOException
+    public static int readFully(InputStream in, byte[] buffer) throws IOException
     {
         int offset = 0;
 
@@ -51,7 +51,7 @@ public class IOUtil
         }
         return offset;
     }
-
+    
     public static void writeFile(File file, byte[] data, int offset, int length)
             throws IOException
     {

@@ -1,5 +1,8 @@
 package com.fasterxml.storemate.shared;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Random;
 
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
@@ -17,15 +20,15 @@ public abstract class SharedTestBase extends TestCase
     ///////////////////////////////////////////////////////////////////////
      */
 
-	protected int calcChecksum32(byte[] data) {
-		return calcChecksum32(data, 0, data.length);
-	}
+    protected int calcChecksum32(byte[] data) {
+        return calcChecksum32(data, 0, data.length);
+    }
 
-	protected int calcChecksum32(byte[] data, int offset, int len ) {
-		return BlockMurmur3Hasher.hash(0, data, offset, len);
-	}
+    protected int calcChecksum32(byte[] data, int offset, int len ) {
+        return BlockMurmur3Hasher.hash(0, data, offset, len);
+    }
 	
-	/*
+    /*
     ///////////////////////////////////////////////////////////////////////
     // Data generation methods
     ///////////////////////////////////////////////////////////////////////
@@ -100,4 +103,32 @@ public abstract class SharedTestBase extends TestCase
                     +actual+"'");
         }
     }
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // I/O helpers
+    ///////////////////////////////////////////////////////////////////////
+     */
+    
+    protected final byte[] readFile(File f) throws IOException
+    {
+        final int len = (int) f.length();
+        byte[] result = new byte[len];
+        int offset = 0;
+
+        FileInputStream in = new FileInputStream(f);
+        try {
+            while (offset < len) {
+                int count = in.read(result, offset, len-offset);
+                if (count <= 0) {
+                    throw new IOException("Failed to read file '"+f.getAbsolutePath()+"'; needed "+len+" bytes, got "+offset);
+                }
+                offset += count;
+            }
+        } finally {
+            try { in.close(); } catch (IOException e) { }
+        }
+        return result;
+    }
+
 }

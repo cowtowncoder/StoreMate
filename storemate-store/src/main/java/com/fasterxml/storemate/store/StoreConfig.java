@@ -7,6 +7,12 @@ import com.fasterxml.storemate.store.file.FilenameConverter;
  */
 public class StoreConfig
 {
+    // // Constants for tests
+    
+    public final static int DEFAULT_MAX_INLINED = 4000;
+    public final static int DEFAULT_MIN_FOR_COMPRESS = 200;
+    public final static int DEFAULT_MAX_FOR_GZIP = 16000;
+    
     /*
     /**********************************************************************
     /* Simple config properties, enable/disable
@@ -63,14 +69,14 @@ public class StoreConfig
      *<p>
      * Defualt value of about 4k is aligned to typical page size.
      */
-    public int maxInlinedStorageSize = 4000;
+    public int maxInlinedStorageSize = DEFAULT_MAX_INLINED;
 
     /**
      * Minimum size an entry needs to have before we consider trying to
      * compress it. Low threshold used since smallest of content will
      * not compress (due to header overhead etc).
      */
-    public int minUncompressedSizeForCompression = 200;
+    public int minUncompressedSizeForCompression = DEFAULT_MIN_FOR_COMPRESS;
     
     /**
      * Maximum uncompressed size of payload that will try to use GZIP
@@ -80,7 +86,7 @@ public class StoreConfig
      * Goal is to try to gzip inlined entries, use LZF for disk; and
      * assuming 4-to-1 compression we will use default size of 16k
      */
-    public int maxUncompressedSizeForGZIP = 16000;
+    public int maxUncompressedSizeForGZIP = DEFAULT_MAX_FOR_GZIP;
     
     /*
     /**********************************************************************
