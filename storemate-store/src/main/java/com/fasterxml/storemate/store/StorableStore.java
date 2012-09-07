@@ -48,6 +48,8 @@ public class StorableStore
     protected final int _minCompressibleSize;
     protected final int _maxGZIPCompressibleSize;
 
+    protected final int _minBytesToStream;
+    
     protected final boolean _requireChecksumForPreCompressed;
     
     /*
@@ -91,7 +93,7 @@ public class StorableStore
      * possible compression).
      * Currently we'll use 64k as the cut-off point.
      */
-    protected final static BufferRecycler _readBuffers = new BufferRecycler(64000);
+    protected final static BufferRecycler _readBuffers = new BufferRecycler(StoreConfig.DEFAULT_MIN_PAYLOAD_FOR_STREAMING);
 
     /*
     /**********************************************************************
@@ -114,6 +116,7 @@ public class StorableStore
         _minCompressibleSize = config.minUncompressedSizeForCompression;
         _maxGZIPCompressibleSize = config.maxUncompressedSizeForGZIP;
         _maxInlinedStorageSize = config.maxInlinedStorageSize;
+        _minBytesToStream = config.minPayloadForStreaming;
         
         _requireChecksumForPreCompressed = config.requireChecksumForPreCompressed;
 
@@ -260,12 +263,15 @@ public class StorableStore
      *   closes this stream
      */
     protected StorableCreationResult _putEntry(StorableKey key, InputStream input,
-            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            StorableCreationMetadata stdMetadata0, ByteContainer customMetadata,
             boolean allowOverwrite)
         throws IOException, StoreException
     {
+        // First things first: we'll be modifying state, make a copy to play with
+        StorableCreationMetadata stdMetadata = stdMetadata0.clone();
+        
         BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
-        final byte[] readBuffer = bufferHolder.borrowBuffer();
+        final byte[] readBuffer = bufferHolder.borrowBuffer(_minBytesToStream);
         int len = 0;
 
         try {

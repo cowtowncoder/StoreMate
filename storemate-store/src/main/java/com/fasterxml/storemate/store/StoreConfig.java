@@ -12,6 +12,7 @@ public class StoreConfig
     public final static int DEFAULT_MAX_INLINED = 4000;
     public final static int DEFAULT_MIN_FOR_COMPRESS = 200;
     public final static int DEFAULT_MAX_FOR_GZIP = 16000;
+    public final static int DEFAULT_MIN_PAYLOAD_FOR_STREAMING = 64000;
     
     /*
     /**********************************************************************
@@ -87,6 +88,14 @@ public class StoreConfig
      * assuming 4-to-1 compression we will use default size of 16k
      */
     public int maxUncompressedSizeForGZIP = DEFAULT_MAX_FOR_GZIP;
+
+    /**
+     * We will read up to this number of bytes in memory, before switching
+     * to actual streaming handling. Note that streaming content will
+     * never be inlined; and compression choice can not check whether
+     * content is compressible (beyond basic compression prefix checks)
+     */
+    public int minPayloadForStreaming = DEFAULT_MIN_PAYLOAD_FOR_STREAMING;
     
     /*
     /**********************************************************************

@@ -8,6 +8,7 @@ import com.fasterxml.storemate.store.file.FileReference;
  * entries.
  */
 public class StorableCreationMetadata
+    implements Cloneable
 {
     /*
     /**********************************************************************
@@ -74,6 +75,14 @@ public class StorableCreationMetadata
         compression = comp;
         this.contentHash = contentHash;
         this.compressedContentHash = compressedContentHash; 
+    }
+
+    public StorableCreationMetadata clone() {
+        try {
+            return (StorableCreationMetadata) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Failed clone(): "+e.getMessage(), e);
+        }
     }
     
     /*
