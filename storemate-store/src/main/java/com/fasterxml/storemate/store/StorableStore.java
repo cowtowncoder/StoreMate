@@ -153,6 +153,10 @@ public class StorableStore
         return _fileManager;
     }
 
+    public TimeMaster getTimeMaster() {
+    	return _timeMaster;
+    }
+    
     /*
     /**********************************************************************
     /* API, metadata access

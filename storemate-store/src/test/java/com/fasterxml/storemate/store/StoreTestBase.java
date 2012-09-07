@@ -3,8 +3,6 @@ package com.fasterxml.storemate.store;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
 //import ch.qos.logback.classic.Level;
 
 import com.fasterxml.storemate.shared.StorableKey;
@@ -13,10 +11,12 @@ import com.fasterxml.storemate.shared.UTF8Encoder;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileManagerConfig;
 
+import com.fasterxml.storemate.shared.SharedTestBase;
+
 /**
  * Base class for unit tests of server sub-module
  */
-public abstract class StoreTestBase extends TestCase
+public abstract class StoreTestBase extends SharedTestBase
 {
     /**
      * Method to be called before tests, to ensure log4j does not whine.
@@ -36,34 +36,23 @@ public abstract class StoreTestBase extends TestCase
         return new StorableKey(UTF8Encoder.encodeAsUTF8(str));
     }
 
-    protected StorableStore createStore(String nameSuffix) throws IOException
+    
+    protected StorableStore createStore(String nameSuffix) throws IOException {
+    	return createStore(nameSuffix, new TimeMasterForSimpleTesting(123));
+    }
+
+    protected StorableStore createStore(String nameSuffix, long startTime) throws IOException {
+    	return createStore(nameSuffix, new TimeMasterForSimpleTesting(startTime));
+    }
+    
+    protected StorableStore createStore(String nameSuffix, TimeMaster timeMaster) throws IOException
     {
-        final TimeMaster timeMaster = new TimeMasterForSimpleTesting(123);
         File testRoot = getTestScratchDir("bdb-empty-1", true);
         FileManagerConfig fmConfig = new FileManagerConfig(new File(testRoot, "files"));
         StoreConfig cfg = new StoreConfig();
         cfg.dataRootPath = new File(testRoot, "bdb").getCanonicalPath();
         StoreBuilder b = new StoreBuilder(cfg, timeMaster, new FileManager(fmConfig, timeMaster));
         return b.buildCreateAndInit();
-    }
-    
-    /*
-    ///////////////////////////////////////////////////////////////////////
-    // Test methods: exception verification
-    ///////////////////////////////////////////////////////////////////////
-     */
-
-    protected void verifyException(Exception e, String expected)
-    {
-        verifyMessage(expected, e.getMessage());
-    }
-    
-    protected void verifyMessage(String expectedPiece, String actual)
-    {
-        if (actual == null || actual.toLowerCase().indexOf(expectedPiece.toLowerCase()) < 0) {
-            fail("Expected message that contains phrase '"+expectedPiece+"'; instead got: '"
-                    +actual+"'");
-        }
     }
 
     /*
