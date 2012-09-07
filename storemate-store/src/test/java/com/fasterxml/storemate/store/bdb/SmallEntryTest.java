@@ -5,17 +5,20 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import org.joda.time.DateTime;
-
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesAsArray;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+
 import com.fasterxml.storemate.store.*;
 
 public class SmallEntryTest extends StoreTestBase
 {
+    /**
+     * Basic unit test that inserts a tiny entry (small enough not to
+     * be compressed), verifies it can be read successfully.
+     */
     public void testSimpleSmall() throws IOException
     {
         initTestLogging();
@@ -97,15 +100,12 @@ public class SmallEntryTest extends StoreTestBase
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-
-        // can we count on this getting updated? Seems to be, FWIW
         assertEquals(1L, store.getEntryCount());
         assertEquals(1L, store.getIndexedCount());
 
         // Ok. Then, we should also be able to fetch it, right?
         Storable entry = store.findEntry(KEY1);
         assertNotNull(entry);
-
         assertEquals(startTime, entry.getLastModified());
         assertTrue(entry.hasInlineData());
         assertFalse(entry.hasExternalData());
@@ -126,6 +126,146 @@ public class SmallEntryTest extends StoreTestBase
         
         store.stop();
     }
+
+    /**
+     * Test to verify handling of duplicate entry
+     */
+    public void testDuplicates() throws IOException
+    {
+        initTestLogging();
+        final long startTime = _date(2012, 7, 8);
+        StorableStore store = createStore("bdb-small-dups", startTime);
+        assertEquals(0L, store.getEntryCount());
+        assertEquals(0L, store.getIndexedCount());
+
+        final StorableKey KEY1 = storableKey("data/entry/1");
+        final byte[] SMALL_DATA = "Some smallish data...".getBytes("UTF-8");
+        final byte[] CUSTOM_METADATA_IN = new byte[] { (byte) 255 };
+
+        assertNull(store.findEntry(KEY1));
+        
+        // Ok: insert entry
+        StorableCreationMetadata metadata = new StorableCreationMetadata(
+                        /*existing compression*/ null,
+                        calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+                        metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        assertTrue(resp.succeeded());
+        assertNull(resp.getPreviousEntry());
+        assertEquals(1L, store.getEntryCount());
+        assertEquals(1L, store.getIndexedCount());
+
+        // Ok: first, is ok to try to PUT again
+        StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        assertFalse(resp2.succeeded());
+        assertNotNull(resp2.getPreviousEntry());
+        assertEquals(1L, store.getEntryCount());
+        assertEquals(1L, store.getIndexedCount());
+
+        // and then verify entry
+        Storable entry = store.findEntry(KEY1);
+        assertNotNull(entry);
+        assertEquals(startTime, entry.getLastModified());
+        assertTrue(entry.hasInlineData());
+        assertFalse(entry.hasExternalData());
+        assertEquals(Compression.NONE, entry.getCompression());
+        assertEquals(SMALL_DATA.length, entry.getStorageLength());
+
+        // we passed bit of custom metadata, verify:
+        _verifyMetadata(entry, CUSTOM_METADATA_IN);
+
+        store.stop();
+    }
+
+    /**
+     * Test to check that if we already have LZF, we don't even try to re-compress it
+     */
+    public void testSmallTextAlreadyLZF() throws IOException
+    {
+        initTestLogging();
+        final long startTime = _date(2012, 7, 9);
+        StorableStore store = createStore("bdb-small-lzf", startTime);
+        assertEquals(0L, store.getEntryCount());
+        assertEquals(0L, store.getIndexedCount());
+
+        final StorableKey KEY1 = storableKey("data/small-LZF-1");
+        final byte[] SMALL_DATA_ORIG = biggerCompressibleData(400).getBytes("UTF-8");
+        final byte[] SMALL_DATA_LZF = Compressors.lzfCompress(SMALL_DATA_ORIG);
+        final byte[] CUSTOM_METADATA_IN = new byte[] { (byte) 255 };
+
+        assertNull(store.findEntry(KEY1));
+        
+        // Let's NOT indicate as compressed, should figure it out
+        // and then verify that it is stored as if not compressed
+        StorableCreationMetadata metadata = new StorableCreationMetadata(
+                        /*existing compression*/ null,
+                        calcChecksum32(SMALL_DATA_LZF), StoreConstants.NO_CHECKSUM);
+        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA_LZF),
+                        metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        assertTrue(resp.succeeded());
+        assertNull(resp.getPreviousEntry());
+        assertEquals(1L, store.getEntryCount());
+        assertEquals(1L, store.getIndexedCount());
+
+        // and then verify entry
+        Storable entry = store.findEntry(KEY1);
+        assertNotNull(entry);
+        assertEquals(startTime, entry.getLastModified());
+        assertTrue(entry.hasInlineData());
+        assertFalse(entry.hasExternalData());
+        // allegedly no compression (to disable any other automatic handling):
+        assertEquals(Compression.NONE, entry.getCompression());
+        assertEquals(SMALL_DATA_LZF.length, entry.getStorageLength());
+        // caller can only specify original length if compression was enabled
+        assertEquals(-1L, entry.getOriginalLength());
+
+        // we passed bit of custom metadata, verify:
+        _verifyMetadata(entry, CUSTOM_METADATA_IN);
+
+        store.stop();
+    }
+    
+    /**
+     * Test to verify that trying to send non-LZF content, claiming to be LZF,
+     * fails.
+     */
+    public void testSmallTextAllegedLZF() throws IOException
+    {
+        initTestLogging();
+        final long startTime = _date(2012, 7, 9);
+        StorableStore store = createStore("bdb-small-lzffail", startTime);
+        assertEquals(0L, store.getEntryCount());
+        assertEquals(0L, store.getIndexedCount());
+
+        final StorableKey KEY1 = storableKey("data/small-LZF-invalid");
+        final byte[] SMALL_DATA = "ZV but not really LZF".getBytes("UTF-8");
+        final byte[] CUSTOM_METADATA_IN = new byte[] { 77, 65, 13, 19, 0, 0 };
+
+        assertNull(store.findEntry(KEY1));
+
+        // Ok, then with data that claims to be LZF, but is not. Should be caught:
+        StorableCreationMetadata metadata = new StorableCreationMetadata(
+                Compression.LZF,
+                calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+        try {
+            /*StorableCreationResult resp =*/ store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+            fail("Should have failed to add invalid data");
+        } catch (StoreException e) {
+            verifyException(e, "Invalid compression");
+        }
+        assertEquals(0L, store.getEntryCount());
+        assertEquals(0L, store.getIndexedCount());
+
+        store.stop();
+    }
+    
+    /*
+    /**********************************************************************
+    /* Helper methods
+    /**********************************************************************
+     */
     
     protected void _verifyMetadata(Storable entry, byte[] inputMetadata)
     {
