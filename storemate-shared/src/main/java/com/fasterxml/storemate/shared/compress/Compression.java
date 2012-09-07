@@ -41,9 +41,11 @@ public enum Compression
     public String asContentEncoding()
     {
         // for NONE we could also use "identity" but...
+        /*
         if (this == NONE) {
             return null;
         }
+        */
         return _contentEncoding;
     }
 
@@ -66,7 +68,27 @@ public enum Compression
         return acceptableEncodings.indexOf(_contentEncoding) >= 0;
     }
 
-    public static Compression valueOf(int index, boolean errorForUnknown)
+    public static Compression valueOf(byte b, boolean errorForUnknown) {
+        return valueOf((char) b, errorForUnknown);
+    }
+    
+    @Deprecated
+    public static Compression valueOf(char c, boolean errorForUnknown)
+    {
+        if (c == '\0') return NONE;
+        for (Compression comp : values()) {
+            if (comp.asChar() == c) {
+                return comp;
+            }
+        }
+        if (errorForUnknown) {
+            throw new IllegalArgumentException("Unrecognized compression value: 0x"
+                    +Integer.toHexString(c)+"");
+        }
+        return null;
+    }
+
+    public static Compression forIndex(int index, boolean errorForUnknown)
     {
         for (Compression comp : values()) {
             if (comp.asIndex() == index) {

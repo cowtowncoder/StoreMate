@@ -268,6 +268,6 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
     }
 
     protected Compression _decodeCompression(byte b) throws IllegalArgumentException {
-        return Compression.valueOf((int) b, true);
+        return Compression.forIndex((int) b, true);
     }
 }
