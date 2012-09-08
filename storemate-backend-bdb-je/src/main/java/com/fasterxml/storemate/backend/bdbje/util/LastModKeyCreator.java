@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.backend.bdbje;
+package com.fasterxml.storemate.backend.bdbje.util;
 
 import java.util.Arrays;
 

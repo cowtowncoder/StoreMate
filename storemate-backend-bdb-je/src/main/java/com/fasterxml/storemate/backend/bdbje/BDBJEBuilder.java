@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.sleepycat.je.*;
 
+import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.store.StorableConverter;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
@@ -15,12 +16,14 @@ import com.fasterxml.storemate.store.StoreConfig;
  */
 public class BDBJEBuilder
 {
-    protected StoreConfig _config;
+    protected StoreConfig _storeConfig;
+    protected BDBJEConfig _bdbConfig;
 
     protected BDBJEBuilder() { }
-    public BDBJEBuilder(StoreConfig config)
+    public BDBJEBuilder(StoreConfig storeConfig, BDBJEConfig bdbConfig)
     {
-        _config = config;
+        _storeConfig = storeConfig;
+        _bdbConfig = bdbConfig;
     }
 
     /**
@@ -28,23 +31,24 @@ public class BDBJEBuilder
      * one if not, and create a store with that BDB. Underlying data storage
      * can do reads and writes.
      */
-    public PhysicalBDBStore buildCreateAndInit() {
+    public BDBJEStoreBackend buildCreateAndInit() {
         return _buildAndInit(true, true);
     }
 
-    public PhysicalBDBStore buildAndInitReadOnly() {
+    public BDBJEStoreBackend buildAndInitReadOnly() {
         return _buildAndInit(false, false);
     }
 
-    public PhysicalBDBStore buildAndInitReadWrite() {
+    public BDBJEStoreBackend buildAndInitReadWrite() {
         return _buildAndInit(false, true);
     }
     
-    protected PhysicalBDBStore _buildAndInit(boolean canCreate, boolean canWrite)
+    protected BDBJEStoreBackend _buildAndInit(boolean canCreate, boolean canWrite)
     {
-        if (_config == null) throw new IllegalStateException("Missing StoreConfig");
+        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
+        if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
         
-        File dbRoot = new File(_config.dataRootPath);
+        File dbRoot = new File(_storeConfig.dataRootPath);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
             if (!canCreate) {
                 throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
@@ -54,17 +58,14 @@ public class BDBJEBuilder
             }
         }
 
-        /* !!! TODO: make PhysicalStore configurable as well...
-         */
-
-        StorableConverter storableConv = _config.createStorableConverter();
+        StorableConverter storableConv = _storeConfig.createStorableConverter();
         Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
         Database entryDB = env.openDatabase(null, // no TX
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
-        PhysicalBDBStore physicalStore = new PhysicalBDBStore(storableConv,
-                dbRoot, entryDB, index, _config.cacheInBytes);
+        BDBJEStoreBackend physicalStore = new BDBJEStoreBackend(storableConv,
+                dbRoot, entryDB, index, _bdbConfig.cacheInBytes);
 
         try {
         	physicalStore.start();
@@ -81,10 +82,15 @@ public class BDBJEBuilder
      */
     
     public BDBJEBuilder with(StoreConfig config) {
-        _config = config;
+        _storeConfig = config;
         return this;
     }
 
+    public BDBJEBuilder with(BDBJEConfig config) {
+        _bdbConfig = config;
+        return this;
+    }
+    
     /*
     /**********************************************************************
     /* Internal methods
@@ -97,7 +103,7 @@ public class BDBJEBuilder
         config.setAllowCreate(allowCreate);
         config.setReadOnly(!writeAccess);
         config.setSharedCache(false);
-        config.setCacheSize(_config.cacheInBytes);
+        config.setCacheSize(_bdbConfig.cacheInBytes);
         /* Default of 500 msec way too low, let's see if 5 seconds works
          * better.
          */

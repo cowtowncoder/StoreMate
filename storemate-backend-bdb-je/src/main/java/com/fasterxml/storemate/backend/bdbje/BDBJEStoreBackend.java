@@ -9,15 +9,14 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
-import com.fasterxml.storemate.store.backend.PhysicalStore;
 
 /**
- * {@link PhysicalStore} implementation that builds on BDB-JE.
+ * {@link StoreBackend} implementation that builds on BDB-JE.
  * Note that per-entry locking is assumed to be provided by
  * caller; no attempt is made to synchronize individual operations
  * at store level.
  */
-public class PhysicalBDBStore extends PhysicalStore
+public class BDBJEStoreBackend extends StoreBackend
 {
     private final BDBConverter BDB_CONV = new BDBConverter();
     
@@ -51,7 +50,7 @@ public class PhysicalBDBStore extends PhysicalStore
     /**********************************************************************
      */
     
-    public PhysicalBDBStore(StorableConverter conv,
+    public BDBJEStoreBackend(StorableConverter conv,
             File dbRoot, Database entryDB, SecondaryDatabase lastModIndex,
             long bdbCacheSize)
     {

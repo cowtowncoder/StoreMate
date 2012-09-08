@@ -12,7 +12,6 @@ import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 
-import com.fasterxml.storemate.store.backend.PhysicalStore;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
@@ -63,7 +62,7 @@ public class StorableStore
 
     protected final FileManager _fileManager;
     
-    protected final PhysicalStore _physicalStore;
+    protected final StoreBackend _physicalStore;
 
     /*
     /**********************************************************************
@@ -110,7 +109,7 @@ public class StorableStore
     /**********************************************************************
      */
 
-    public StorableStore(StoreConfig config, PhysicalStore physicalStore,
+    public StorableStore(StoreConfig config, StoreBackend physicalStore,
             TimeMaster timeMaster, FileManager fileManager)
     {
         _compressionEnabled = config.compressionEnabled;

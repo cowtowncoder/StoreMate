@@ -54,11 +54,12 @@ public abstract class BDBJETestBase extends SharedTestBase
     {
         File testRoot = getTestScratchDir("bdb-empty-1", true);
         FileManagerConfig fmConfig = new FileManagerConfig(new File(testRoot, "files"));
-        StoreConfig cfg = new StoreConfig();
-        cfg.dataRootPath = new File(testRoot, "bdb").getCanonicalPath();
-        BDBJEBuilder b = new BDBJEBuilder(cfg);
-        PhysicalBDBStore physicalStore = b.buildCreateAndInit();
-        return new StorableStore(cfg, physicalStore,
+        StoreConfig storeConfig = new StoreConfig();
+        storeConfig.dataRootPath = new File(testRoot, "bdb").getCanonicalPath();
+        BDBJEConfig bdbConfig = new BDBJEConfig();
+        BDBJEBuilder b = new BDBJEBuilder(storeConfig, bdbConfig);
+        BDBJEStoreBackend physicalStore = b.buildCreateAndInit();
+        return new StorableStore(storeConfig, physicalStore,
                 timeMaster, new FileManager(fmConfig, timeMaster));
     }
 

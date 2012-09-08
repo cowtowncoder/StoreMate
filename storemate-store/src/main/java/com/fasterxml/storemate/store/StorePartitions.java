@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.concurrent.Semaphore;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.store.backend.PhysicalStore;
 
 /**
  * Helper class for partitioning keyspace into single-access 'slices'
@@ -18,7 +17,7 @@ public class StorePartitions
     /**
      * Actual underlying data store
      */
-    protected final PhysicalStore _store;
+    protected final StoreBackend _store;
     
     protected final int _modulo;
 
@@ -33,7 +32,7 @@ public class StorePartitions
      * @param fair Whether underlying semaphores should be fair or not; fair ones have
      *   more overhead, but mostly (only?) for contested access, not uncontested
      */
-    public StorePartitions(PhysicalStore store, int n, boolean fair)
+    public StorePartitions(StoreBackend store, int n, boolean fair)
     {
         _store = store;
         n = powerOf2(n);
