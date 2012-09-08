@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.store;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import com.sleepycat.je.*;
 
@@ -118,6 +119,12 @@ torableConverter conv,
         config.setReadOnly(!writeAccess);
         config.setSharedCache(false);
         config.setCacheSize(_config.cacheInBytes);
+        /* Default of 500 msec way too low, let's see if 5 seconds works
+         * better.
+         */
+        config.setLockTimeout(5000L, TimeUnit.MILLISECONDS);
+        // Default of 1 for lock count is not good; must be prime, so let's try 7
+        config.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, "7");
         return config;
     }
 
