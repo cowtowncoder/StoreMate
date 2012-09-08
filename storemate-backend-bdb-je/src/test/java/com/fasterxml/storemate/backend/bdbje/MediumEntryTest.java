@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -12,7 +12,7 @@ import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.store.*;
 
-public class MediumEntryTest extends StoreTestBase
+public class MediumEntryTest extends BDBJETestBase
 {
     // Test to use GZIP
     public void testMediumFile() throws IOException

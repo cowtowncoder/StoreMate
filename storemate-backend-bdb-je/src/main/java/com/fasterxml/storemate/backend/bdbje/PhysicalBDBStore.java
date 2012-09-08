@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.store.backend.PhysicalStore;
 
 /**
  * {@link PhysicalStore} implementation that builds on BDB-JE.

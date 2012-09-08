@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.backend.bdbje;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -10,15 +10,10 @@ import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
-import com.fasterxml.storemate.store.Storable;
-import com.fasterxml.storemate.store.StorableCreationMetadata;
-import com.fasterxml.storemate.store.StorableCreationResult;
-import com.fasterxml.storemate.store.StorableStore;
-import com.fasterxml.storemate.store.StoreConfig;
-import com.fasterxml.storemate.store.StoreConstants;
-import com.fasterxml.storemate.store.StoreTestBase;
 
-public class LargeEntryTest extends StoreTestBase
+import com.fasterxml.storemate.store.*;
+
+public class LargeEntryTest extends BDBJETestBase
 {
     /**
      * Simple unit test to verify handling of off-lined ("streaming")

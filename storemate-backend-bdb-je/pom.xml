@@ -5,10 +5,10 @@
     <artifactId>storemate-parent</artifactId>
     <version>0.1.2-SNAPSHOT</version>
   </parent>
-  <artifactId>storemate-store</artifactId>
-  <name>StoreMate-store</name>
+  <artifactId>storemate-backend-bdb-je</artifactId>
+  <name>StoreMate-backend-BDB-JE</name>
   <packaging>jar</packaging>
-  <description>Actual single-node store implementation
+  <description>Physical store backend using BDB-JE
   </description>
 
   <dependencies>
@@ -17,15 +17,15 @@
       <artifactId>storemate-shared</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- Standard Java APIs -->
-    <dependency> <!-- Servlet API -->
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
-      <scope>provided</scope>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-store</artifactId>
+      <version>${project.version}</version>
     </dependency>
-    <dependency><!-- Need some form of logging, too -->
+
+    <!-- Backend stores should need direct logging... -->
+<!--    
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.6.6</version>
@@ -35,7 +35,14 @@
         <artifactId>logback-classic</artifactId>
         <version>1.0.6</version>
     </dependency>
+-->
 
+    <!-- Storage using BDB-JE -->
+    <dependency>
+      <groupId>com.sleepycat</groupId>
+      <artifactId>je</artifactId>
+      <version>5.0.34</version>
+    </dependency>
     <!-- Joda for basic date/time stuff -->
     <dependency>
       <groupId>joda-time</groupId>
@@ -53,4 +60,14 @@
     </dependency>
 
   </dependencies>
+
+  <repositories>
+     <!-- Ugh. Oracle can't push to central repo? -->
+     <repository>
+         <id>oracleReleases</id>
+         <name>Oracle Released Java Packages</name>
+         <url>http://download.oracle.com/maven</url>
+         <layout>default</layout>
+     </repository>
+  </repositories>
 </project>

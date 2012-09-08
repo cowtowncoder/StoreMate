@@ -1,11 +1,11 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.*;
 
-public class EmptyStoreTest extends StoreTestBase
+public class EmptyStoreTest extends BDBJETestBase
 {
     /**
      * Simple verification of basic invariants of a newly created

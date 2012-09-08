@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store.bdb;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import com.fasterxml.storemate.shared.compress.Compressors;
 
 import com.fasterxml.storemate.store.*;
 
-public class SmallEntryTest extends StoreTestBase
+public class SmallEntryTest extends BDBJETestBase
 {
     /**
      * Basic unit test that inserts a tiny entry (small enough not to

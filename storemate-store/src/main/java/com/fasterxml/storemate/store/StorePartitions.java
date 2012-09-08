@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.Semaphore;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.backend.PhysicalStore;
 
 /**
  * Helper class for partitioning keyspace into single-access 'slices'

@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.store;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.util.concurrent.atomic.AtomicLong;
 

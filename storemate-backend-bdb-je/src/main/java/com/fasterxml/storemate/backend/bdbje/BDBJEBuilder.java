@@ -1,32 +1,26 @@
-package com.fasterxml.storemate.store;
+package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import com.sleepycat.je.*;
 
-import com.fasterxml.storemate.shared.TimeMaster;
-import com.fasterxml.storemate.store.bdb.LastModKeyCreator;
-import com.fasterxml.storemate.store.bdb.PhysicalBDBStore;
-import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.StorableConverter;
+import com.fasterxml.storemate.store.StorableStore;
+import com.fasterxml.storemate.store.StoreConfig;
 
 /**
  * Helper object used for configuring and instantiating
  * {@link StorableStore} instances.
  */
-public class StoreBuilder
+public class BDBJEBuilder
 {
-    protected FileManager _fileManager;
-    protected TimeMaster _timeMaster;
     protected StoreConfig _config;
 
-    protected StoreBuilder() { }
-    public StoreBuilder(StoreConfig config,
-            TimeMaster timeMaster, FileManager fileManager)
+    protected BDBJEBuilder() { }
+    public BDBJEBuilder(StoreConfig config)
     {
         _config = config;
-        _timeMaster = timeMaster;
-        _fileManager = fileManager;
     }
 
     /**
@@ -34,22 +28,21 @@ public class StoreBuilder
      * one if not, and create a store with that BDB. Underlying data storage
      * can do reads and writes.
      */
-    public StorableStore buildCreateAndInit() {
+    public PhysicalBDBStore buildCreateAndInit() {
         return _buildAndInit(true, true);
     }
 
-    public StorableStore buildAndInitReadOnly() {
+    public PhysicalBDBStore buildAndInitReadOnly() {
         return _buildAndInit(false, false);
     }
 
-    public StorableStore buildAndInitReadWrite() {
+    public PhysicalBDBStore buildAndInitReadWrite() {
         return _buildAndInit(false, true);
     }
     
-    protected StorableStore _buildAndInit(boolean canCreate, boolean canWrite)
+    protected PhysicalBDBStore _buildAndInit(boolean canCreate, boolean canWrite)
     {
         if (_config == null) throw new IllegalStateException("Missing StoreConfig");
-        if (_fileManager == null) throw new IllegalStateException("Missing FileManager");
         
         File dbRoot = new File(_config.dataRootPath);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
@@ -65,29 +58,20 @@ public class StoreBuilder
          */
 
         StorableConverter storableConv = _config.createStorableConverter();
-
-        /*
-torableConverter conv,
-            File dbRoot, Database entryDB, SecondaryDatabase lastModIndex,
-            StorableConverter converter,
-            long bdbCacheSize)         */
-        
         Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
         Database entryDB = env.openDatabase(null, // no TX
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
-        PhysicalStore physicalStore = new PhysicalBDBStore(storableConv,
+        PhysicalBDBStore physicalStore = new PhysicalBDBStore(storableConv,
                 dbRoot, entryDB, index, _config.cacheInBytes);
 
         try {
-            StorableStore store = new StorableStore(_config, physicalStore,
-                    _timeMaster, _fileManager);
-            store.start();
-            return store;
+        	physicalStore.start();
         } catch (DatabaseException e) {
             throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
         }
+        return physicalStore;
     }
 
     /*
@@ -96,13 +80,8 @@ torableConverter conv,
     /**********************************************************************
      */
     
-    public StoreBuilder with(StoreConfig config) {
+    public BDBJEBuilder with(StoreConfig config) {
         _config = config;
-        return this;
-    }
-
-    public StoreBuilder with(FileManager mgr) {
-        _fileManager = mgr;
         return this;
     }
 
