@@ -242,10 +242,22 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
                 metadataOffset, metadataLength,
                 payloadOffset, stdMetadata.storageSize);
     }
+
+    /*
+    /**********************************************************************
+    /* Public API, modifying instances
+    /**********************************************************************
+     */
+
+    public Storable softDeletedCopy(StorableKey key,
+            boolean deleteInlined, boolean deleteExternal)
+    {
+        return null;
+    }
     
     /*
     /**********************************************************************
-    /* Helper methods, conversions
+    /* Internal helper methods
     /**********************************************************************
      */
 

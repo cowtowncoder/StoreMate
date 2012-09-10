@@ -130,16 +130,8 @@ public class BDBJEStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
-    /**
-     * Method that tries to create specified entry in the database,
-     * if (and only if!) no entry exists for given key.
-     * If an entry exists, it will be returned and no changes are made.
-     * 
-     * @return Null if creation succeeded; or existing entry if not
-     */
     @Override
-    public Storable createEntry(StorableKey key,
-            StorableCreationMetadata stdMetadata, Storable storable)
+    public Storable createEntry(StorableKey key, Storable storable)
         throws IOException, StoreException
     {
         DatabaseEntry dbKey = dbKey(key);
@@ -160,15 +152,8 @@ public class BDBJEStoreBackend extends StoreBackend
         return _storableConverter.decode(result.getData());
     }
 
-    /**
-     * Method that inserts given entry in the database, possibly replacing
-     * an existing version; also returns the old entry.
-     * 
-     * @return Existing entry, if any
-     */
     @Override
-    public Storable putEntry(StorableKey key,
-            StorableCreationMetadata stdMetadata, Storable storable)
+    public Storable putEntry(StorableKey key, Storable storable)
         throws IOException, StoreException
     {
         DatabaseEntry dbKey = dbKey(key);
@@ -189,6 +174,16 @@ public class BDBJEStoreBackend extends StoreBackend
         return _storableConverter.decode(result.getData());
     }
 
+    @Override
+    public void ovewriteEntry(StorableKey key, Storable storable)
+        throws IOException, StoreException
+    {
+        OperationStatus status = _entries.put(null, dbKey(key), dbValue(storable));
+        if (status != OperationStatus.SUCCESS) {
+            throw new StoreException(key, "Failed to overwrite entry, OperationStatus="+status);
+        }
+    }
+    
     /*
     /**********************************************************************
     /* API Impl, delete

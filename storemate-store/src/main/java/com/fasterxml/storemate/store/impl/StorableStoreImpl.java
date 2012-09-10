@@ -562,11 +562,11 @@ public class StorableStoreImpl extends StorableStore
                         throws IOException, StoreException
                     {
                         if (allowOverwrite) { // "upsert"
-                            Storable old = backend.putEntry(key, stdMetadata, storable);
+                            Storable old = backend.putEntry(key, storable);
                             return new StorableCreationResult(key, true, old);
                         }
                         // strict "insert"
-                        Storable old = backend.putEntry(key, stdMetadata, storable);
+                        Storable old = backend.putEntry(key, storable);
                         if (old == null) { // ok, succeeded
                             return new StorableCreationResult(key, true, null);
                         }
@@ -654,8 +654,18 @@ public class StorableStoreImpl extends StorableStore
         throws IOException, StoreException
     {
         // Ok now... need to delete some data?
-        
-        return null;
+        boolean hasExternalToDelete = removeExternalData && entry.hasExternalData();
+        if (!entry.isDeleted() || hasExternalToDelete
+                || (removeInlinedData && entry.hasInlineData())) {
+            File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
+            Storable modEntry = _storableConverter.softDeletedCopy(key, removeInlinedData, removeExternalData);
+            _backend.ovewriteEntry(key, entry);
+            if (extFile != null) {
+                _deleteBackingFile(key, extFile);
+            }
+            return modEntry;
+        }
+        return entry;
     }
 
     protected Storable _hardDelete(StorableKey key, Storable entry,

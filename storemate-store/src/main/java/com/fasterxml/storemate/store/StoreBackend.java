@@ -78,8 +78,7 @@ public abstract class StoreBackend
      * 
      * @return Null if creation succeeded; or existing entry if not
      */
-    public abstract Storable createEntry(StorableKey key,
-            StorableCreationMetadata stdMetadata, Storable storable)
+    public abstract Storable createEntry(StorableKey key, Storable storable)
         throws IOException, StoreException;
 
     /**
@@ -88,10 +87,18 @@ public abstract class StoreBackend
      * 
      * @return Existing entry, if any
      */
-    public abstract Storable putEntry(StorableKey key,
-            StorableCreationMetadata stdMetadata, Storable storable)
+    public abstract Storable putEntry(StorableKey key, Storable storable)
         throws IOException, StoreException;
 
+    /**
+     * Method that forcibly inserts or ovewrites entry for given key,
+     * without trying to read possibly existing version. Should only
+     * be used when modifications are made from an atomic operation
+     * (to avoid race conditions).
+     */
+    public abstract void ovewriteEntry(StorableKey key, Storable storable)
+        throws IOException, StoreException;
+    
     /*
     /**********************************************************************
     /* API Impl, delete
