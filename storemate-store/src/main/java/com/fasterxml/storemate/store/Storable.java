@@ -101,14 +101,17 @@ public class Storable
      * marking an entry as soft-deleted, without actually removing inlined
      * or external data.
      */
-    public Storable softDeletedCopy(ByteContainer bytes)
+    public Storable softDeletedCopy(ByteContainer bytes, boolean removeData)
     {
+        
         return new Storable(bytes,
                 _lastModified,
-                true, _compression, _externalPathLength,
+                true, _compression,
+                removeData ? 0 : _externalPathLength,
                 _contentHash, _compressedHash, _originalLength,
                 _metadataOffset, _metadataLength,
-                _payloadOffset, _storageLength);
+                _payloadOffset,
+                removeData ? 0 : _storageLength);
                 
     }
     
@@ -124,6 +127,12 @@ public class Storable
     public long getStorageLength() { return _storageLength; }
     public long getOriginalLength() { return _originalLength; }
     public int getMetadataLength() { return _metadataLength; }
+    public int getInlineDataLength() {
+        if (_externalPathLength > 0L) {
+            return 0;
+        }
+        return (int) _storageLength;
+    }
     
     public boolean isDeleted() { return _isDeleted; }
 

@@ -131,6 +131,8 @@ public class BDBJEBuilder
         // should not need to auto-populate ever:
         config.setAllowPopulate(false);
         config.setKeyCreator(keyCreator);
+        // important: timestamps are not unique, need to allow dups:
+        config.setSortedDuplicates(true);
         // no, it is not immutable (entries will be updated with new timestamps)
         config.setImmutableSecondaryKey(false);
         return config;

@@ -660,7 +660,7 @@ public class StorableStoreImpl extends StorableStore
             File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
             Storable modEntry = _storableConverter.softDeletedCopy(key, entry,
                     removeInlinedData, removeExternalData);
-            _backend.ovewriteEntry(key, entry);
+            _backend.ovewriteEntry(key, modEntry);
             if (extFile != null) {
                 _deleteBackingFile(key, extFile);
             }

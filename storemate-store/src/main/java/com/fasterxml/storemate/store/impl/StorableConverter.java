@@ -265,26 +265,29 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         if (!(removeInlined || removeExternal)) {
             byte[] raw = orig.withRaw(WithBytesAsArray.instance);
             raw[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
-            return orig.softDeletedCopy(ByteContainer.simple(raw));
+            return orig.softDeletedCopy(ByteContainer.simple(raw), false);
         }
         /* otherwise we can still make use of first part of data, up to and
          * including optional metadata, and no minor in-place mod on copy
          */
-        byte[] base = orig.withRaw(new WithBytesCallback<byte[]>() {
+        byte[] base = orig.withRawWithoutPayload(new WithBytesCallback<byte[]>() {
             @Override
             public byte[] withBytes(byte[] buffer, int offset, int length) {
                 // minor kink: we need room for one more null byte:
                 byte[] result = Arrays.copyOfRange(buffer, offset, length+1);
                 result[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
-                result[length] = 0;
+                // Length is a VLong, so:
+                result[length] = StuffToBytes.ZERO_LENGTH_AS_BYTE;
                 return result;
             }
         });
         // also, clear up external path length
         if (removeExternal) {
+            // note: single byte, not variable length, hence plain zero
             base[OFFSET_EXT_PATH_LENGTH] = 0;
         }
-        return orig.softDeletedCopy(ByteContainer.simple(base));
+        Storable mod = orig.softDeletedCopy(ByteContainer.simple(base), true);
+        return mod;
     }
     
     /*

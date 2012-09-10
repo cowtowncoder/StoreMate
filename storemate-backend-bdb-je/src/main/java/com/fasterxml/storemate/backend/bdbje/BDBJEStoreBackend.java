@@ -101,7 +101,8 @@ public class BDBJEStoreBackend extends StoreBackend
     @Override
     public boolean hasEntry(StorableKey key)
     {
-        OperationStatus status = _entries.get(null, dbKey(key), null, LockMode.READ_COMMITTED);
+        OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(),
+                LockMode.READ_COMMITTED);
         switch (status) {
         case SUCCESS:
         case KEYEXIST:

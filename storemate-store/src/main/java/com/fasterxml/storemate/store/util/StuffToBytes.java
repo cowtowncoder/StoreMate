@@ -23,6 +23,13 @@ public abstract class StuffToBytes
      */
     public final static int BASE_LENGTH = 16;
 
+    /**
+     * Zero-length can be expressed as a single byte, but due to
+     * variable-lengthness it won't be plain 0, so let's define
+     * constant to use.
+     */
+    public final static byte ZERO_LENGTH_AS_BYTE = (byte) 0x80;
+    
     /*
     /**********************************************************************
     /* Shared state
