@@ -1,8 +1,12 @@
 package com.fasterxml.storemate.store.impl;
 
+import java.util.Arrays;
+
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.IOUtil;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.WithBytesAsArray;
+import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.Storable;
 import com.fasterxml.storemate.store.StorableCreationMetadata;
@@ -249,10 +253,38 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
     /**********************************************************************
      */
 
-    public Storable softDeletedCopy(StorableKey key,
+    public Storable softDeletedCopy(StorableKey key, Storable orig,
             boolean deleteInlined, boolean deleteExternal)
     {
-        return null;
+        final boolean removeExternal = deleteExternal && orig.hasExternalData();
+        final boolean removeInlined = deleteInlined && orig.hasInlineData();
+        
+        /* First things first: if we are retain external or inlined,
+         * it's just a single byte change.
+         */
+        if (!(removeInlined || removeExternal)) {
+            byte[] raw = orig.withRaw(WithBytesAsArray.instance);
+            raw[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
+            return orig.softDeletedCopy(ByteContainer.simple(raw));
+        }
+        /* otherwise we can still make use of first part of data, up to and
+         * including optional metadata, and no minor in-place mod on copy
+         */
+        byte[] base = orig.withRaw(new WithBytesCallback<byte[]>() {
+            @Override
+            public byte[] withBytes(byte[] buffer, int offset, int length) {
+                // minor kink: we need room for one more null byte:
+                byte[] result = Arrays.copyOfRange(buffer, offset, length+1);
+                result[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
+                result[length] = 0;
+                return result;
+            }
+        });
+        // also, clear up external path length
+        if (removeExternal) {
+            base[OFFSET_EXT_PATH_LENGTH] = 0;
+        }
+        return orig.softDeletedCopy(ByteContainer.simple(base));
     }
     
     /*

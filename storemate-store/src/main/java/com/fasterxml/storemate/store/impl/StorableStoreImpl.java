@@ -658,7 +658,8 @@ public class StorableStoreImpl extends StorableStore
         if (!entry.isDeleted() || hasExternalToDelete
                 || (removeInlinedData && entry.hasInlineData())) {
             File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
-            Storable modEntry = _storableConverter.softDeletedCopy(key, removeInlinedData, removeExternalData);
+            Storable modEntry = _storableConverter.softDeletedCopy(key, entry,
+                    removeInlinedData, removeExternalData);
             _backend.ovewriteEntry(key, entry);
             if (extFile != null) {
                 _deleteBackingFile(key, extFile);

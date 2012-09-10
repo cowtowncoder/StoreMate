@@ -10,6 +10,9 @@ import com.fasterxml.storemate.store.file.FileReference;
 public class StorableCreationMetadata
     implements Cloneable
 {
+    public final static byte STATUS_ACTIVE = 0;
+    public final static byte STATUS_DELETED = 1;
+    
     /*
     /**********************************************************************
     /* Input data, provided by caller
@@ -105,8 +108,8 @@ public class StorableCreationMetadata
     
     public byte statusAsByte() {
         if (deleted) {
-            return 1;
+            return STATUS_DELETED;
         }
-        return 0;
+        return STATUS_ACTIVE;
     }
 }

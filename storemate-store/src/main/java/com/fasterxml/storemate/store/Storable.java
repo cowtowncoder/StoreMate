@@ -96,6 +96,22 @@ public class Storable
         _storageLength = storageLength;
     }
 
+    /**
+     * "Mutant factory" used by <code>StorableConverter</code> when simply
+     * marking an entry as soft-deleted, without actually removing inlined
+     * or external data.
+     */
+    public Storable softDeletedCopy(ByteContainer bytes)
+    {
+        return new Storable(bytes,
+                _lastModified,
+                true, _compression, _externalPathLength,
+                _contentHash, _compressedHash, _originalLength,
+                _metadataOffset, _metadataLength,
+                _payloadOffset, _storageLength);
+                
+    }
+    
     /*
     /**********************************************************************
     /* API, accessors, simple/boolean
@@ -112,12 +128,10 @@ public class Storable
     public boolean isDeleted() { return _isDeleted; }
 
     public boolean hasInlineData() {
-        // check for deletion, since deleting may nuke external path settings
-        return (_externalPathLength == 0L) && !_isDeleted;
+        return (_externalPathLength == 0L) && (_storageLength > 0L);
     }
 
     public boolean hasExternalData() {
-        // should this check for deletion?
         return (_externalPathLength > 0L);
     }
 
@@ -152,8 +166,8 @@ public class Storable
 
     public ByteContainer getInlinedData()
     {
-        if (_isDeleted || _externalPathLength > 0) {
-            return null;
+        if (_externalPathLength > 0) {
+            return ByteContainer.emptyContainer();
         }
         int len = (int) _storageLength;
         if (len <= 0) {
@@ -164,8 +178,8 @@ public class Storable
 
     public <T> T withInlinedData(WithBytesCallback<T> cb)
     {
-        if (_isDeleted || _externalPathLength > 0) {
-            return null;
+        if (_externalPathLength > 0) {
+            return ByteContainer.emptyContainer().withBytes(cb);
         }
         int len = (int) _storageLength;
         if (len <= 0) {
@@ -182,5 +196,14 @@ public class Storable
 
     public <T> T withRaw(WithBytesCallback<T> cb) {
         return _rawEntry.withBytes(cb);
+    }
+
+    /**
+     * Method for accessing content up to and including opaque metadata section,
+     * but without payload section.
+     */
+    public <T> T withRawWithoutPayload(WithBytesCallback<T> cb) {
+        final int len = _metadataOffset + _metadataLength;
+        return _rawEntry.withBytes(cb, 0, len);
     }
 }
