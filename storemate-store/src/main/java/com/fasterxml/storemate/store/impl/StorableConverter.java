@@ -1,9 +1,11 @@
-package com.fasterxml.storemate.store;
+package com.fasterxml.storemate.store.impl;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.IOUtil;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
+import com.fasterxml.storemate.store.Storable;
+import com.fasterxml.storemate.store.StorableCreationMetadata;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.BytesToStuff;
 import com.fasterxml.storemate.store.util.StuffToBytes;

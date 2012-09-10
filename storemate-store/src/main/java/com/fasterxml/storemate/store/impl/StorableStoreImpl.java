@@ -653,12 +653,16 @@ public class StorableStoreImpl extends StorableStore
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
+        // Ok now... need to delete some data?
+        
         return null;
     }
+
     protected Storable _hardDelete(StorableKey key, Storable entry,
             final boolean removeExternalData)
         throws IOException, StoreException
     {
+        // Hard deletion is not hard at all (pun attack!)...
         if (removeExternalData && entry.hasExternalData()) {
             _deleteBackingFile(key, entry.getExternalFile(_fileManager));
         }

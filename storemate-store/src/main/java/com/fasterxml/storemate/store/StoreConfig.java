@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.store;
 
 import com.fasterxml.storemate.store.file.FilenameConverter;
+import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
  * Simple configuration class for {@link StorableStore}

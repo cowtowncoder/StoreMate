@@ -6,9 +6,9 @@ import java.util.concurrent.TimeUnit;
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
-import com.fasterxml.storemate.store.StorableConverter;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
+import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
  * Helper object used for configuring and instantiating

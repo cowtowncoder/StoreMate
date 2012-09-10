@@ -3,6 +3,7 @@ package com.fasterxml.storemate.store;
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
  * Abstraction used by {@link StorableStore} for interacting with the
