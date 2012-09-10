@@ -69,24 +69,6 @@ public abstract class StoreBackend
     /* API Impl, insert/update
     /**********************************************************************
      */
-
-    public StorableCreationResult putEntry(StorableKey key,
-            StorableCreationMetadata stdMetadata, Storable storable,
-            boolean allowOverwrite)
-        throws IOException, StoreException
-    {
-        if (allowOverwrite) { // "upsert"
-            Storable old = putEntry(key, stdMetadata, storable);
-            return new StorableCreationResult(key, true, old);
-        }
-        // strict "insert"
-        Storable old = putEntry(key, stdMetadata, storable);
-        if (old == null) { // ok, succeeded
-            return new StorableCreationResult(key, true, null);
-        }
-        // fail: caller may need to clean up the underlying file
-        return new StorableCreationResult(key, false, old);
-    }
     
     /**
      * Method that tries to create specified entry in the database,
@@ -95,7 +77,7 @@ public abstract class StoreBackend
      * 
      * @return Null if creation succeeded; or existing entry if not
      */
-    protected abstract Storable createEntry(StorableKey key,
+    public abstract Storable createEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, Storable storable)
         throws IOException, StoreException;
 
@@ -105,7 +87,7 @@ public abstract class StoreBackend
      * 
      * @return Existing entry, if any
      */
-    protected abstract Storable putEntry(StorableKey key,
+    public abstract Storable putEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, Storable storable)
         throws IOException, StoreException;
 
@@ -114,5 +96,18 @@ public abstract class StoreBackend
     /* API Impl, delete
     /**********************************************************************
      */
-    
+
+    /**
+     * Method called to physically delete entry for given key, if one
+     * exists.
+     * 
+     * @return False if deletion was not done because no such entry was found;
+     *    true if deletion succeeeded
+     * 
+     * @throws StoreException If deletion failed to due to backend-specific problem
+     * @throws IOExcetion If deletion failed due to underlying I/O problem, exposed by
+     *   store (not all stores expose them)
+     */
+    public abstract boolean deleteEntry(StorableKey key)
+        throws IOException, StoreException;
 }

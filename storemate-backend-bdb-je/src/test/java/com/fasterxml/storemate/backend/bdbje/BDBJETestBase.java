@@ -16,6 +16,7 @@ import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileManagerConfig;
+import com.fasterxml.storemate.store.impl.StorableStoreImpl;
 
 import com.fasterxml.storemate.shared.SharedTestBase;
 
@@ -59,7 +60,7 @@ public abstract class BDBJETestBase extends SharedTestBase
         BDBJEConfig bdbConfig = new BDBJEConfig();
         BDBJEBuilder b = new BDBJEBuilder(storeConfig, bdbConfig);
         BDBJEStoreBackend physicalStore = b.buildCreateAndInit();
-        return new StorableStore(storeConfig, physicalStore,
+        return new StorableStoreImpl(storeConfig, physicalStore,
                 timeMaster, new FileManager(fmConfig, timeMaster));
     }
 

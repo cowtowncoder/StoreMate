@@ -77,6 +77,7 @@ public class StorableCreationMetadata
         this.compressedContentHash = compressedContentHash; 
     }
 
+    @Override
     public StorableCreationMetadata clone() {
         try {
             return (StorableCreationMetadata) super.clone();

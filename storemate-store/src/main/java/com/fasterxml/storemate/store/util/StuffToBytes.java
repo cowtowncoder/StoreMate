@@ -116,6 +116,7 @@ public abstract class StuffToBytes
             _end = maxLen;
         }
         
+        @Override
         public <T> T withResult(WithBytesCallback<T> cb) {
             return cb.withBytes(_buffer,  0, _ptr);
         }
@@ -278,6 +279,7 @@ public abstract class StuffToBytes
     {
         protected Estimator() { }
 
+        @Override
         public <T> T withResult(WithBytesCallback<T> cb) {
             throw new UnsupportedOperationException();
         }

@@ -81,14 +81,12 @@ public class BDBJEStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
+    @Override
     public long getEntryCount() {
         return _entries.count();
     }
 
-    /**
-     * Accessor for getting approximate count of entries accessible
-     * via last-modifed index.
-     */
+    @Override
     public long getIndexedCount() {
         return _entries.count();
     }
@@ -182,7 +180,7 @@ public class BDBJEStoreBackend extends StoreBackend
         // if not, create
         status = _entries.put(null, dbKey, dbValue(storable));
         if (status != OperationStatus.SUCCESS) {
-            throw new StoreException(key, "Failed to PUT entry, response status: "+status);
+            throw new StoreException(key, "Failed to put entry, OperationStatus="+status);
         }
         if (result == null) {
             return null;
@@ -196,6 +194,21 @@ public class BDBJEStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
+    @Override
+    public boolean deleteEntry(StorableKey key)
+        throws IOException, StoreException
+    {
+        OperationStatus status = _entries.delete(null, dbKey(key));
+        switch (status) {
+        case SUCCESS:
+            return true;
+        case NOTFOUND:
+            return false;
+        }
+        // should not be getting other choices so:
+        throw new StoreException(key, "Internal error, failed to delete entry, OperationStatus="+status);
+    }
+    
     /*
     /**********************************************************************
     /* Internal methods

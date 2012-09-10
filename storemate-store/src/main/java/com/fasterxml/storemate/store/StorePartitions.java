@@ -26,6 +26,12 @@ public class StorePartitions
      */
     protected final Semaphore[] _semaphores;
 
+    /*
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
+     */
+    
     /**
      * 
      * @param n Minimum number of partitions (rounded up to next power of 2)
@@ -54,9 +60,46 @@ public class StorePartitions
         return m;
     }
 
-    public StorableCreationResult put(StorableKey key, StorableCreationMetadata stdMetadata,
-            Storable storable, boolean allowOverwrite)
+    /*
+    /**********************************************************************
+    /* Public API
+    /**********************************************************************
+     */
+
+    /**
+     * Method to call to perform arbitrary multi-part atomic operations, guarded
+     * by partitioned lock.
+     * Note that since this method is essentially synchronized on N-way partitioned
+     * mutex, it is essential that execution time is minimized to the critical
+     * section.
+     * 
+     * @param key Entry being operated on
+     * @param cb Callback to call from locked context
+     * @param arg Optional argument
+     */
+    public <IN,OUT> OUT withLockedPartition(StorableKey key, StoreOperationCallback<IN,OUT> cb, IN arg)
         throws IOException, StoreException
+    {
+        final Semaphore semaphore = _semaphores[_partitionFor(key)];
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) { // could this ever occur?
+            throw new StoreException(key, e);
+        }
+        try {
+            return cb.perform(key, _store, arg);
+        } finally {
+            semaphore.release();
+        }
+    }
+    
+    /*
+    /**********************************************************************
+    /* Internal methods
+    /**********************************************************************
+     */
+    
+    private final int _partitionFor(StorableKey key)
     {
         /* NOTE: must shuffle key a bit, because lowest bits may also
          * be used for routing (that is, store may not handle keys with certain
@@ -65,18 +108,6 @@ public class StorePartitions
         int hash = key.hashCode();
         hash ^= (int) (hash >>> 15);
         hash += (int) (hash >>> 7);
-        
-        final int partition = hash & _modulo;
-        final Semaphore semaphore = _semaphores[partition];
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) { // could this ever occur?
-            throw new StoreException(key, e);
-        }
-        try {
-            return _store.putEntry(key, stdMetadata, storable, allowOverwrite);
-        } finally {
-            semaphore.release();
-        }
+        return hash & _modulo;
     }
 }

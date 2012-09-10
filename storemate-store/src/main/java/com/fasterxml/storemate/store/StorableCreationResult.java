@@ -2,6 +2,10 @@ package com.fasterxml.storemate.store;
 
 import com.fasterxml.storemate.shared.StorableKey;
 
+/**
+ * Value class returned from "PUT" (insert, upsert) operations,
+ * to indicate actions taken.
+ */
 public class StorableCreationResult
 {
     protected final boolean _succeeded;
