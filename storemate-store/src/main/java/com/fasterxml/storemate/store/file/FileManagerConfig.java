@@ -66,7 +66,7 @@ public class FileManagerConfig
     public FilenameConverter createFilenameConverter()
     {
         if (filenameConverter == null || filenameConverter == FilenameConverter.class) {
-            return new FilenameConverter();
+            return new FilenameConverter.Default();
         }
         try {
             return (FilenameConverter) filenameConverter.newInstance();
