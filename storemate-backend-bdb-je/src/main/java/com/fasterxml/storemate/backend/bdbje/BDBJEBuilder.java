@@ -47,8 +47,13 @@ public class BDBJEBuilder
     {
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
+
+        String dirStr = _storeConfig.dataRootForMetadata;
+        if (dirStr == null) {
+            if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig.dataRootForMetadata");
+        }
         
-        File dbRoot = new File(_storeConfig.dataRootPath);
+        File dbRoot = new File(dirStr);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
             if (!canCreate) {
                 throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' does not exist, not allowed to (try to) create");

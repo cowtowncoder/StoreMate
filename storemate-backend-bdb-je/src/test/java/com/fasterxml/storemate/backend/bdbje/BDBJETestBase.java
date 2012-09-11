@@ -54,9 +54,11 @@ public abstract class BDBJETestBase extends SharedTestBase
     protected StorableStore createStore(String nameSuffix, TimeMaster timeMaster) throws IOException
     {
         File testRoot = getTestScratchDir("bdb-empty-1", true);
-        FileManagerConfig fmConfig = new FileManagerConfig(new File(testRoot, "files"));
         StoreConfig storeConfig = new StoreConfig();
-        storeConfig.dataRootPath = new File(testRoot, "bdb").getCanonicalPath();
+        File fileDir = new File(testRoot, "files");
+        storeConfig.dataRootForFiles = fileDir.getCanonicalPath();
+        storeConfig.dataRootForMetadata = new File(testRoot, "bdb").getCanonicalPath();
+        FileManagerConfig fmConfig = new FileManagerConfig(fileDir);
         BDBJEConfig bdbConfig = new BDBJEConfig();
         BDBJEBuilder b = new BDBJEBuilder(storeConfig, bdbConfig);
         BDBJEStoreBackend physicalStore = b.buildCreateAndInit();

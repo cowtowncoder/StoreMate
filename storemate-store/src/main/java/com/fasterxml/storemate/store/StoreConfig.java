@@ -1,6 +1,5 @@
 package com.fasterxml.storemate.store;
 
-import com.fasterxml.storemate.store.file.FilenameConverter;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
@@ -42,10 +41,20 @@ public class StoreConfig
         
     /**
      * Name of root directory (using relative or absolute path) under which
-     * actual data directories will be created.
+     * data files will be located (possibly with additional dir hierarchy).
+     *<p>
+     * Should not be same as {@link #dataRootForMetadata}
      */
-    public String dataRootPath;
+    public String dataRootForFiles;
 
+    /**
+     * Name of root directory (using relative or absolute path) in which
+     * metadata database will be created.
+     *<p>
+     * Should not be same as {@link #dataRootForFiles}
+     */
+    public String dataRootForMetadata;
+    
     /*
     /**********************************************************************
     /* Simple config properties, size thresholds
@@ -92,7 +101,7 @@ public class StoreConfig
      */
     
     /**
-     * {@link FilenameConverter} implementation to use, if any
+     * {@link StorableConverter} implementation to use, if any
      */
     public Class<? extends StorableConverter> storableConverter = StorableConverter.class;
         
