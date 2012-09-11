@@ -2,7 +2,7 @@ package com.fasterxml.storemate.shared;
 
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
-public final class StorableKey
+public class StorableKey
 {
     protected final byte[] _buffer;
     protected final int _offset, _length;
@@ -23,9 +23,9 @@ public final class StorableKey
         _length = len;
     }
 
-    public int length() { return _length; }
+    public final int length() { return _length; }
 
-    public <T> T with(WithBytesCallback<T> cb) {
+    public final <T> T with(WithBytesCallback<T> cb) {
         return cb.withBytes(_buffer, _offset, _length);
     }
 	
