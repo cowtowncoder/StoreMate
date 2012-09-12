@@ -11,8 +11,8 @@ public class FileManagerConfig
     // for deserializers
     protected FileManagerConfig() { }
     
-    public FileManagerConfig(File dataDir) {
-        dataRootPath = dataDir.getAbsolutePath();
+    public FileManagerConfig(File dataRoot) {
+        this.dataRoot = dataRoot;
     }
     
     /*
@@ -44,7 +44,7 @@ public class FileManagerConfig
      * Name of root directory (using relative or absolute path) under which
      * actual data directories will be created.
      */
-    public String dataRootPath;
+    public File dataRoot;
 
     /*
     /**********************************************************************

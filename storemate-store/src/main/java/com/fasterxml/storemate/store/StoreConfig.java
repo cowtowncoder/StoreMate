@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.store;
 
+import java.io.File;
+
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
@@ -45,7 +47,7 @@ public class StoreConfig
      *<p>
      * Should not be same as {@link #dataRootForMetadata}
      */
-    public String dataRootForFiles;
+    public File dataRootForFiles;
 
     /**
      * Name of root directory (using relative or absolute path) in which
@@ -53,7 +55,7 @@ public class StoreConfig
      *<p>
      * Should not be same as {@link #dataRootForFiles}
      */
-    public String dataRootForMetadata;
+    public File dataRootForMetadata;
     
     /*
     /**********************************************************************

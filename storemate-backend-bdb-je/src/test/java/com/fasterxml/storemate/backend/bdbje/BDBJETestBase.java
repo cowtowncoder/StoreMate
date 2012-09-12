@@ -56,8 +56,8 @@ public abstract class BDBJETestBase extends SharedTestBase
         File testRoot = getTestScratchDir("bdb-empty-1", true);
         StoreConfig storeConfig = new StoreConfig();
         File fileDir = new File(testRoot, "files");
-        storeConfig.dataRootForFiles = fileDir.getCanonicalPath();
-        storeConfig.dataRootForMetadata = new File(testRoot, "bdb").getCanonicalPath();
+        storeConfig.dataRootForFiles = fileDir;
+        storeConfig.dataRootForMetadata = new File(testRoot, "bdb");
         FileManagerConfig fmConfig = new FileManagerConfig(fileDir);
         BDBJEConfig bdbConfig = new BDBJEConfig();
         BDBJEBuilder b = new BDBJEBuilder(storeConfig, bdbConfig);

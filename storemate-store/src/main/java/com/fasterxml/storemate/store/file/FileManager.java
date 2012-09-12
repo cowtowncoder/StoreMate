@@ -135,7 +135,7 @@ public class FileManager
         _timeMaster = timeMaster;
         _filenameConverter = config.createFilenameConverter();
         final long now = timeMaster.currentTimeMillis();
-        File dataRoot = new File(config.dataRootPath);
+        File dataRoot = config.dataRoot;
         if (!dataRoot.exists()) { // create?
             if (!dataRoot.mkdirs()) {
                 throw new IllegalStateException("Data directory '"+dataRoot.getAbsolutePath()+"' did not exist, failed to create");
