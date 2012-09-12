@@ -3,6 +3,7 @@ package com.fasterxml.storemate.store;
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.backend.StoreBackend;
 
 /**
  * Interface that defines callback used for allowing atomic operations

@@ -1,9 +1,11 @@
 package com.fasterxml.storemate.backend.bdbje;
 
+import com.fasterxml.storemate.store.backend.StoreBackendConfig;
+
 /**
  * Simple configuration class for BDB-JE - based backend.
  */
-public class BDBJEConfig
+public class BDBJEConfig extends StoreBackendConfig
 {
     /*
     /**********************************************************************

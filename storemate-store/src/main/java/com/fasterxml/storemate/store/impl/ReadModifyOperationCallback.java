@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.Storable;
-import com.fasterxml.storemate.store.StoreBackend;
 import com.fasterxml.storemate.store.StoreException;
 import com.fasterxml.storemate.store.StoreOperationCallback;
+import com.fasterxml.storemate.store.backend.StoreBackend;
 
 /**
  * Helper class used for operations that do "GET, modify, PUT" style operation

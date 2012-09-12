@@ -8,24 +8,27 @@ import com.sleepycat.je.*;
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
+import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
  * Helper object used for configuring and instantiating
  * {@link StorableStore} instances.
  */
-public class BDBJEBuilder
+public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
 {
     protected StoreConfig _storeConfig;
     protected BDBJEConfig _bdbConfig;
 
-    protected BDBJEBuilder() { }
+    protected BDBJEBuilder() { this(null, null); }
+
     public BDBJEBuilder(StoreConfig storeConfig, BDBJEConfig bdbConfig)
     {
+        super(BDBJEConfig.class);
         _storeConfig = storeConfig;
         _bdbConfig = bdbConfig;
     }
-
+    
     /**
      * Method that will open an existing BDB database if one exists, or create
      * one if not, and create a store with that BDB. Underlying data storage
@@ -84,11 +87,13 @@ public class BDBJEBuilder
     /**********************************************************************
      */
     
+    @Override
     public BDBJEBuilder with(StoreConfig config) {
         _storeConfig = config;
         return this;
     }
 
+    @Override
     public BDBJEBuilder with(BDBJEConfig config) {
         _bdbConfig = config;
         return this;

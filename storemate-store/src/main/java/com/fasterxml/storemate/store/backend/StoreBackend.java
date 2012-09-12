@@ -1,8 +1,11 @@
-package com.fasterxml.storemate.store;
+package com.fasterxml.storemate.store.backend;
 
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.Storable;
+import com.fasterxml.storemate.store.StorableStore;
+import com.fasterxml.storemate.store.StoreException;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**

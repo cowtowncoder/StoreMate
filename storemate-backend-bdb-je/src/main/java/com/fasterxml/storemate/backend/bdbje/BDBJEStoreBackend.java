@@ -9,6 +9,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
