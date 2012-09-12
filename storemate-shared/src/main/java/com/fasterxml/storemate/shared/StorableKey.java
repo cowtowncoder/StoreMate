@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.shared;
 
+import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 public class StorableKey
@@ -28,11 +29,31 @@ public class StorableKey
     public final <T> T with(WithBytesCallback<T> cb) {
         return cb.withBytes(_buffer, _offset, _length);
     }
-	
+
+    public final <T> T withRange(WithBytesCallback<T> cb, int offset, int length) {
+        if (offset < 0 || length < 0 || (offset+length) > _length) {
+            throw new IllegalArgumentException("Invalid range (offset "+offset+", length "+length
+                    +"), for key with length of "+_length+" bytes");
+        }
+        return cb.withBytes(_buffer, _offset+offset, length);
+    }
+
+    public int hashCode(BlockHasher32 hasher) {
+        return hasher.hash(_buffer, _offset, _length);
+    }
+    
+    public int hashCode(BlockHasher32 hasher, int offset, int length) {
+        if (offset < 0 || length < 0 || (offset+length) > _length) {
+            throw new IllegalArgumentException("Invalid range (offset "+offset+", length "+length
+                    +"), for key with length of "+_length+" bytes");
+        }
+        return hasher.hash(_buffer, _offset+offset, length);
+    }
+    
     @Override public int hashCode() {
         int h = _hashCode;
         if (h == 0) {
-            h = BlockMurmur3Hasher.hash(0, _buffer, _offset, _length);
+            h = BlockMurmur3Hasher.instance.hash(0, _buffer, _offset, _length);
             if (h == 0) { // need to mask 0 not to mean "not calculated"
                 h = 1;
             }
@@ -55,9 +76,9 @@ public class StorableKey
     	final byte[] thisB = _buffer;
     	final byte[] thatB = other._buffer;
     	for (int i1 = _offset, i2 = other._offset; i1 < end; ) {
-    		if (thisB[i1++] != thatB[i2++]) {
-    			return false;
-    		}
+    	    if (thisB[i1++] != thatB[i2++]) {
+    	        return false;
+    	    }
     	}
     	return true;
     }

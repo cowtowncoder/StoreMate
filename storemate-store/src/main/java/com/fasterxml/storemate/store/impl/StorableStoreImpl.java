@@ -704,7 +704,7 @@ public class StorableStoreImpl extends StorableStore
             
     protected int _calcChecksum(byte[] buffer, int offset, int length)
     {
-        return BlockMurmur3Hasher.hash(HASH_SEED, buffer, offset, length);
+        return BlockMurmur3Hasher.instance.hash(HASH_SEED, buffer, offset, length);
     }
     
     /**

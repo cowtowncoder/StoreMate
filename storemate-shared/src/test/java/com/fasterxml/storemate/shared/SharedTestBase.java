@@ -25,7 +25,7 @@ public abstract class SharedTestBase extends TestCase
     }
 
     protected int calcChecksum32(byte[] data, int offset, int len ) {
-        return BlockMurmur3Hasher.hash(0, data, offset, len);
+        return BlockMurmur3Hasher.instance.hash(0, data, offset, len);
     }
 	
     /*
