@@ -3,7 +3,7 @@ package com.fasterxml.storemate.shared;
 import java.io.*;
 import java.lang.ref.SoftReference;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
+import java.util.*;
 
 /**
  * Helper class used for efficient encoding of JSON String values (including
@@ -36,9 +36,9 @@ public final class UTF8Encoder
     protected byte[] _encodingBuffer;
     
     /*
-    /**********************************************************
+    /**********************************************************************
     /* Construction, instance access
-    /**********************************************************
+    /**********************************************************************
      */
     
     public UTF8Encoder() {
@@ -46,9 +46,9 @@ public final class UTF8Encoder
     }
 
     /*
-    /**********************************************************
+    /**********************************************************************
     /* Public API
-    /**********************************************************
+    /**********************************************************************
      */
     
     /**
@@ -86,6 +86,29 @@ public final class UTF8Encoder
         return enc._encodeAsUTF8(prefix, text);
     }
 
+    /**
+     * Will encode given String as UTF-8, after allocation of a fixed
+     * length of empty space (left as null bytes), and also add optional
+     * suffix empty space;
+     * and return resulting byte array.
+     * 
+     * @param fillWithNulls If true, will ensure that prefix and suffix sections
+     *    are initialized to null bytes; if false, may contain any data
+     */
+    public static byte[] encodeAsUTF8(String text, int prefixLength, int suffixLength,
+            boolean fillWithNulls)
+    {
+        SoftReference<UTF8Encoder> ref = _threadEncoder.get();
+        UTF8Encoder enc = (ref == null) ? null : ref.get();
+
+        if (enc == null) {
+            enc = new UTF8Encoder();
+            _threadEncoder.set(new SoftReference<UTF8Encoder>(enc));
+        }
+        // shoud
+        return enc._encodeAsUTF8(text, prefixLength, suffixLength, fillWithNulls);
+    }
+    
     public static OutputStream encodeAsUTF8(String text, OutputStream out)
         throws IOException
     {
@@ -216,15 +239,12 @@ public final class UTF8Encoder
     {
         int inputPtr = 0;
         int inputEnd = text.length();
-        int outputPtr;
-        outputPtr = prefix.length;
+        int outputPtr = prefix.length;
 
-        {
-            if (outputPtr > _encodingBuffer.length) {
-                _encodingBuffer = new byte[outputPtr];
-            }
-            System.arraycopy(prefix, 0, _encodingBuffer, 0, outputPtr);
+        if (outputPtr > _encodingBuffer.length) {
+            _encodingBuffer = new byte[outputPtr];
         }
+        System.arraycopy(prefix, 0, _encodingBuffer, 0, outputPtr);
         
         final ByteArrayBuilder byteBuilder = new ByteArrayBuilder(_encodingBuffer);
         byte[] outputBuffer = byteBuilder.getCurrentSegment();
@@ -305,7 +325,98 @@ public final class UTF8Encoder
         _encodingBuffer = byteBuilder.getCurrentSegment();
         return byteBuilder.complete(outputPtr);
     }
-    
+
+    private byte[] _encodeAsUTF8(String text, int prefixLen, int suffixLen,
+            boolean clearPrefix)
+    {
+        int inputPtr = 0;
+        int inputEnd = text.length();
+        int outputPtr = prefixLen;
+
+        if (outputPtr >= _encodingBuffer.length) {
+            _encodingBuffer = new byte[outputPtr + Math.min(128, inputEnd << 1)];
+        } else if (clearPrefix) {
+            Arrays.fill(_encodingBuffer, 0, outputPtr, (byte) 0);
+        }
+        
+        final ByteArrayBuilder byteBuilder = new ByteArrayBuilder(_encodingBuffer);
+        byte[] outputBuffer = byteBuilder.getCurrentSegment();
+        int outputEnd = outputBuffer.length;
+        
+        main_loop:
+        while (inputPtr < inputEnd) {
+            int c = text.charAt(inputPtr++);
+
+            // first tight loop for ascii
+            while (c <= 0x7F) {
+                if (outputPtr >= outputEnd) {
+                    outputBuffer = byteBuilder.finishCurrentSegment();
+                    outputEnd = outputBuffer.length;
+                    outputPtr = 0;
+                }
+                outputBuffer[outputPtr++] = (byte) c;
+                if (inputPtr >= inputEnd) {
+                    break main_loop;
+                }
+                c = text.charAt(inputPtr++);
+            }
+
+            // then multi-byte...
+            if (outputPtr >= outputEnd) {
+                outputBuffer = byteBuilder.finishCurrentSegment();
+                outputEnd = outputBuffer.length;
+                outputPtr = 0;
+            }
+            if (c < 0x800) { // 2-byte
+                outputBuffer[outputPtr++] = (byte) (0xc0 | (c >> 6));
+            } else { // 3 or 4 bytes
+                // Surrogates?
+                if (c < SURR1_FIRST || c > SURR2_LAST) { // nope
+                    outputBuffer[outputPtr++] = (byte) (0xe0 | (c >> 12));
+                    if (outputPtr >= outputEnd) {
+                        outputBuffer = byteBuilder.finishCurrentSegment();
+                        outputEnd = outputBuffer.length;
+                        outputPtr = 0;
+                    }
+                    outputBuffer[outputPtr++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+                } else { // yes, surrogate pair
+                    if (c > SURR1_LAST) { // must be from first range
+                        _throwIllegalSurrogate(c);
+                    }
+                    // and if so, followed by another from next range
+                    if (inputPtr >= inputEnd) {
+                        _throwIllegalSurrogate(c);
+                    }
+                    c = _convertSurrogate(c, text.charAt(inputPtr++));
+                    if (c > 0x10FFFF) { // illegal, as per RFC 4627
+                        _throwIllegalSurrogate(c);
+                    }
+                    outputBuffer[outputPtr++] = (byte) (0xf0 | (c >> 18));
+                    if (outputPtr >= outputEnd) {
+                        outputBuffer = byteBuilder.finishCurrentSegment();
+                        outputEnd = outputBuffer.length;
+                        outputPtr = 0;
+                    }
+                    outputBuffer[outputPtr++] = (byte) (0x80 | ((c >> 12) & 0x3f));
+                    if (outputPtr >= outputEnd) {
+                        outputBuffer = byteBuilder.finishCurrentSegment();
+                        outputEnd = outputBuffer.length;
+                        outputPtr = 0;
+                    }
+                    outputBuffer[outputPtr++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+                }
+            }
+            if (outputPtr >= outputEnd) {
+                outputBuffer = byteBuilder.finishCurrentSegment();
+                outputEnd = outputBuffer.length;
+                outputPtr = 0;
+            }
+            outputBuffer[outputPtr++] = (byte) (0x80 | (c & 0x3f));
+        }
+        // let's ensure we are reusing the largest chunk:
+        _encodingBuffer = byteBuilder.getCurrentSegment();
+        return byteBuilder.complete(outputPtr, suffixLen);
+    }    
     /*
     /**********************************************************
     /* Internal helper methods
@@ -371,8 +482,6 @@ public final class UTF8Encoder
         private int _pastLen;
 
         private byte[] _currBlock;
-
-        private int _currBlockPtr;
         
         public ByteArrayBuilder(byte[] firstBlock) {
             _currBlock = firstBlock;
@@ -384,8 +493,7 @@ public final class UTF8Encoder
          */
         public byte[] complete(int lastBlockLength)
         {
-            _currBlockPtr = lastBlockLength;
-            int totalLen = _pastLen + _currBlockPtr;
+            int totalLen = _pastLen + lastBlockLength;
 
             if (totalLen == 0) { // quick check: nothing aggregated?
                 return NO_BYTES;
@@ -400,14 +508,51 @@ public final class UTF8Encoder
                     offset += len;
                 }
             }
-            System.arraycopy(_currBlock, 0, result, offset, _currBlockPtr);
-            offset += _currBlockPtr;
+            if (lastBlockLength > 0) {
+                System.arraycopy(_currBlock, 0, result, offset, lastBlockLength);
+                offset += lastBlockLength;
+            }
             if (offset != totalLen) { // just a sanity check
                 throw new RuntimeException("Internal error: total len assumed to be "+totalLen+", copied "+offset+" bytes");
             }
             return result;
         }
 
+        /**
+         * Alternative completion method that will add specific amount of 'fluff'
+         * (null bytes) after encoding result.
+         * 
+         * @param fluffToAppend Number of null bytes to append after buffered
+         *    content
+         */
+        public byte[] complete(int lastBlockLength, int fluffToAppend)
+        {
+            int totalLen = _pastLen + lastBlockLength + fluffToAppend;
+
+            if (totalLen == 0) { // quick check: nothing aggregated?
+                return NO_BYTES;
+            }
+            byte[] result = new byte[totalLen];
+            int offset = 0;
+
+            if (_pastBlocks != null) {
+                for (byte[] block : _pastBlocks) {
+                    int len = block.length;
+                    System.arraycopy(block, 0, result, offset, len);
+                    offset += len;
+                }
+            }
+            if (lastBlockLength > 0) {
+                System.arraycopy(_currBlock, 0, result, offset, lastBlockLength);
+                offset += lastBlockLength;
+            }
+            offset += fluffToAppend;
+            if (offset != totalLen) { // just a sanity check
+                throw new RuntimeException("Internal error: total len assumed to be "+totalLen+", copied "+offset+" bytes");
+            }
+            return result;
+        }
+        
         public byte[] getCurrentSegment() {
             return _currBlock;
         }
@@ -437,9 +582,6 @@ public final class UTF8Encoder
             }
             _pastBlocks.add(_currBlock);
             _currBlock = new byte[newSize];
-            _currBlockPtr = 0;
         }
-
     }
-
 }
