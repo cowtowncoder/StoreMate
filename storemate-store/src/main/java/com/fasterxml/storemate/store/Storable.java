@@ -4,6 +4,7 @@ import java.io.File;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.IOUtil;
+import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.file.FileManager;
@@ -13,8 +14,13 @@ import com.fasterxml.storemate.store.file.FileManager;
  */
 public class Storable
 {
-    protected final ByteContainer _rawEntry;
+   /**
+    * Primary key of this instance, when stored in the data store
+    */
+	protected final StorableKey _key;
 
+    protected final ByteContainer _rawEntry;
+    
     /*
     /**********************************************************************
     /* Status metadata
@@ -70,13 +76,14 @@ public class Storable
     /**********************************************************************
      */
     
-    public Storable(ByteContainer bytes,
+    public Storable(StorableKey key, ByteContainer bytes,
             long lastMod,
             boolean isDeleted, Compression comp, int externalPathLength,
             int contentHash, int compressedHash, long originalLength,
             int metadataOffset, int metadataLength,
             int payloadOffset, long storageLength)
     {
+    	_key = key;
         _rawEntry = bytes;
 
         _lastModified = lastMod;
@@ -104,7 +111,7 @@ public class Storable
     public Storable softDeletedCopy(ByteContainer bytes, boolean removeData)
     {
         
-        return new Storable(bytes,
+        return new Storable(_key, bytes,
                 _lastModified,
                 true, _compression,
                 removeData ? 0 : _externalPathLength,
@@ -121,6 +128,8 @@ public class Storable
     /**********************************************************************
      */
 
+    public StorableKey getKey() { return _key; }
+    
     public long getLastModified() { return _lastModified; }
     public Compression getCompression() { return _compression; }
 

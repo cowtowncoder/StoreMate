@@ -61,11 +61,12 @@ public class StorableConverter
     /**********************************************************************
      */
     
-    public Storable decode(final byte[] raw) {
-        return decode(raw, 0, raw.length);
+    public Storable decode(StorableKey key, final byte[] raw) {
+        return decode(key, raw, 0, raw.length);
     }
 
-    public Storable decode(final byte[] raw, final int offset, final int length)
+    public Storable decode(StorableKey key,
+    		final byte[] raw, final int offset, final int length)
     {
         // as per Javadocs, offset always 0, size same as arrays:
         BytesToStuff reader = new BytesToStuff(raw, offset, length);
@@ -116,7 +117,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             throw new IllegalArgumentException("Had "+left+" bytes left after decoding entry (out of "
                     +raw.length+")");
         }
-        return new Storable(ByteContainer.simple(raw, offset, length),
+        return new Storable(key, ByteContainer.simple(raw, offset, length),
                 lastmod,
                 deleted, compression, externalPathLength,
                 contentHash, compressedHash, originalLength,
@@ -136,14 +137,14 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             byte[] inlineData, int inlineOffset, int inlineLength)
     {
         StuffToBytes estimator = StuffToBytes.estimator();
-        _encodeInlined(estimator, false,
+        _encodeInlined(key, estimator, false,
                 modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
         StuffToBytes writer = StuffToBytes.writer(estimator.offset());
-        return _encodeInlined(writer, true,
+        return _encodeInlined(key, writer, true,
                 modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
     }
     
-    private Storable _encodeInlined(StuffToBytes writer, boolean createStorable,
+    private Storable _encodeInlined(StorableKey key, StuffToBytes writer, boolean createStorable,
             long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             byte[] inlineData, int inlineOffset, int inlineLength)
@@ -180,7 +181,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             return null;
             
         }
-        return new Storable(writer.bufferedBytes(), modtime,
+        return new Storable(key, writer.bufferedBytes(), modtime,
                 stdMetadata.deleted, stdMetadata.compression, 0,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,
@@ -193,14 +194,14 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             FileReference externalData)
     {
         StuffToBytes estimator = StuffToBytes.estimator();
-        _encodeOfflined(estimator, false,
+        _encodeOfflined(key, estimator, false,
                 modtime, stdMetadata, customMetadata, externalData);
         StuffToBytes writer = StuffToBytes.writer(estimator.offset());
-        return _encodeOfflined(writer, true,
+        return _encodeOfflined(key, writer, true,
                 modtime, stdMetadata, customMetadata, externalData);
     }
 
-    private Storable _encodeOfflined(StuffToBytes writer, boolean createStorable,
+    private Storable _encodeOfflined(StorableKey key, StuffToBytes writer, boolean createStorable,
             long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             FileReference externalData)
@@ -240,7 +241,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         if (!createStorable) {
             return null;
         }
-        return new Storable(writer.bufferedBytes(), modtime,
+        return new Storable(key, writer.bufferedBytes(), modtime,
                 stdMetadata.deleted, stdMetadata.compression, 0,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,

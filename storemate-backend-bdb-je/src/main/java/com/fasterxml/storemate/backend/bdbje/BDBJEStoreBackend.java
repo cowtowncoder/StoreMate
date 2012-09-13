@@ -123,7 +123,7 @@ public class BDBJEStoreBackend extends StoreBackend
         if (status != OperationStatus.SUCCESS) {
             return null;
         }
-        return _storableConverter.decode(result.getData());
+        return _storableConverter.decode(key, result.getData());
     }
     
     /*
@@ -151,7 +151,7 @@ public class BDBJEStoreBackend extends StoreBackend
         if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
             throw new StoreException(key, "Internal error, failed to access old value, status: "+status);
         }
-        return _storableConverter.decode(result.getData());
+        return _storableConverter.decode(key, result.getData());
     }
 
     @Override
@@ -173,7 +173,7 @@ public class BDBJEStoreBackend extends StoreBackend
         if (result == null) {
             return null;
         }
-        return _storableConverter.decode(result.getData());
+        return _storableConverter.decode(key, result.getData());
     }
 
     @Override
@@ -202,9 +202,10 @@ public class BDBJEStoreBackend extends StoreBackend
             return true;
         case NOTFOUND:
             return false;
+        default:
+        	// should not be getting other choices so:
+        	throw new StoreException(key, "Internal error, failed to delete entry, OperationStatus="+status);
         }
-        // should not be getting other choices so:
-        throw new StoreException(key, "Internal error, failed to delete entry, OperationStatus="+status);
     }
     
     /*

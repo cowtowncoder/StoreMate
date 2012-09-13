@@ -37,11 +37,12 @@ public class LargeEntryTest extends BDBJETestBase
         assertNull(store.findEntry(KEY1));
 
         // then try adding said entry
-        StorableCreationMetadata metadata = new StorableCreationMetadata(
+        StorableCreationMetadata metadata0 = new StorableCreationMetadata(
                 /*existing compression*/ null,
                 calcChecksum32(DATA), StoreConstants.NO_CHECKSUM);
+        
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(DATA),
-                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+                metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
         assertEquals(1L, store.getEntryCount());
@@ -80,10 +81,10 @@ public class LargeEntryTest extends BDBJETestBase
 
         assertArrayEquals(COMPRESSED_DATA, readFile(file));
 
-        /* Actually, let's also verify handling of dups...
-         */
+        // Actually, let's also verify handling of dups...
+
         StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(DATA),
-                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+                metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());
         assertEquals(1L, store.getEntryCount());
