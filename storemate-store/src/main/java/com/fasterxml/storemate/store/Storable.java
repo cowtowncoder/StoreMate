@@ -124,6 +124,9 @@ public class Storable
     public long getLastModified() { return _lastModified; }
     public Compression getCompression() { return _compression; }
 
+    public int getContentHash() { return _contentHash; }
+    public int getCompressedHash() { return _compressedHash; }
+    
     public long getStorageLength() { return _storageLength; }
     public long getOriginalLength() { return _originalLength; }
     public int getMetadataLength() { return _metadataLength; }
@@ -144,6 +147,16 @@ public class Storable
         return (_externalPathLength > 0L);
     }
 
+    /**
+     * Accessor for getting length of the content, uncompressed if necessary.
+     */
+    public long getActualUncompressedLength() {
+    	if (_compression != Compression.NONE) {
+    		return _originalLength;
+    	}
+    	return _storageLength;
+    }
+    
     /*
     /**********************************************************************
     /* API, accessors for data

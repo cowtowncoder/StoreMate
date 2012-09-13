@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.fasterxml.storemate.shared.ByteContainer;
+import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.ning.compress.lzf.LZFChunk;
 import com.ning.compress.lzf.LZFDecoder;
 import com.ning.compress.lzf.LZFEncoder;
@@ -112,7 +114,7 @@ public class Compressors
         return in;
     }
 
-    public static byte[] uncompress(byte[] data, Compression comp, int expSize)
+    public static ByteContainer uncompress(ByteContainer data, Compression comp, int expSize)
             throws IOException
     {
         if (comp != null) {
@@ -130,6 +132,12 @@ public class Compressors
         return data;
     }
 
+    public static ByteContainer gzipUncompress(ByteContainer compData, int expSize)
+        throws IOException
+    {
+    	return ByteContainer.simple(gzipUncompress(compData.asBytes(), expSize));
+    }
+    
     public static byte[] gzipUncompress(byte[] compData, int expSize)
             throws IOException
     {
@@ -159,7 +167,7 @@ public class Compressors
     }
 
     public static byte[] gzipUncompress(byte[] compData)
-            throws IOException
+        throws IOException
     {
         GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(compData));
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(16 + (compData.length << 1));
@@ -177,5 +185,21 @@ public class Compressors
     public static byte[] lzfUncompress(byte[] data) throws IOException
     {
         return LZFDecoder.decode(data);
+    }
+
+    public static ByteContainer lzfUncompress(ByteContainer data) throws IOException
+    {
+    	return data.withBytes(new WithBytesCallback<ByteContainer>() {
+			@Override
+			public ByteContainer withBytes(byte[] buffer, int offset, int length)
+				throws IllegalArgumentException
+			{
+				try {
+					return ByteContainer.simple(LZFDecoder.decode(buffer, offset, length));
+				} catch (IOException e) {
+					throw new IllegalArgumentException("Bad LZF data to uncompress ("+length+" bytes): "+e.getMessage(), e);
+				}
+			}
+    	});
     }
 }

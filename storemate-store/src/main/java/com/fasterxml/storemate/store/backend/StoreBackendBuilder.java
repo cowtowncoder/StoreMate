@@ -34,4 +34,10 @@ public abstract class StoreBackendBuilder<T extends StoreBackendConfig>
      * given configuration.
      */
     public abstract StoreBackendBuilder<T> with(T backendConfig);
+
+    /**
+     * Method called after all configuration has been passed, to create
+     * the store instance.
+     */
+    public abstract StoreBackend build();
 }

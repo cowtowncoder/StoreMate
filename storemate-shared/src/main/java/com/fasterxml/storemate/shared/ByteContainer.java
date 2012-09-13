@@ -72,6 +72,8 @@ public abstract class ByteContainer
 
     public abstract void writeBytes(OutputStream out) throws IOException;
 
+    public abstract void writeBytes(OutputStream out, int offset, int length) throws IOException;
+    
     private final static class NoBytesContainer extends ByteContainer
     {
         final static byte[] NO_BYTES = new byte[0];
@@ -94,11 +96,18 @@ public abstract class ByteContainer
 
         @Override public byte[] asBytes() { return NO_BYTES; }
 
-        @Override public void writeBytes(OutputStream out) throws IOException { }
+        @Override public void writeBytes(OutputStream out)  { }
+        @Override
+        public void writeBytes(OutputStream out, int offset, int length) {
+        	if (offset != 0 || length != 0) {
+                throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is 0");
+        	}
+        }
+
         @Override public <T> T withBytes(WithBytesCallback<T> cb) {
             return cb.withBytes(NO_BYTES, 0, 0);
         }
-
+        
         @Override public <T> T withBytes(WithBytesCallback<T> cb, int offset, int length) {
             if (offset == 0 && length == 0) {
                 return cb.withBytes(NO_BYTES, 0, 0);
@@ -154,6 +163,15 @@ public abstract class ByteContainer
             out.write(_data, _offset, _length);
         }
 
+        @Override
+        public void writeBytes(OutputStream out, int offset, int length) throws IOException
+        {
+        	if (offset < 0 || (offset+length) > _length) {
+                throw new IllegalArgumentException("Bad offset/length ("+offset+"/"+length+"); this length is "+_length);
+            }
+            out.write(_data, _offset + offset, length);
+        }
+        
         @Override public <T> T withBytes(WithBytesCallback<T> cb) {
             return cb.withBytes(_data, _offset, _length);
         }

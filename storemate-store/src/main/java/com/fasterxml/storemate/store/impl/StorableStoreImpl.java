@@ -254,16 +254,19 @@ public class StorableStoreImpl extends StorableStore
      * Method for putting an entry in the database; depending on arguments, either
      * overwriting existing entry (if overwrites allowed), or failing insertion.
      * 
+     * @param stdMetadata Standard metadata, which <b>may be modified</b> by this
+     *   method, to "fill in" optional or missing data.
      * @param input Input stream used for reading the content. NOTE: method never
      *   closes this stream
      */
     protected StorableCreationResult _putEntry(StorableKey key, InputStream input,
-            StorableCreationMetadata stdMetadata0, ByteContainer customMetadata,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean allowOverwrite)
         throws IOException, StoreException
     {
-        // First things first: we'll be modifying state, make a copy to play with
-        StorableCreationMetadata stdMetadata = stdMetadata0.clone();
+    	/* NOTE: we do NOT want to clone passed-in metadata, because we want
+    	 * to fill in some of optional values; specifically, 
+    	 */
         
         BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
         final byte[] readBuffer = bufferHolder.borrowBuffer(_minBytesToStream);
@@ -418,7 +421,8 @@ public class StorableStoreImpl extends StorableStore
         return _putPartitionedEntry(key, stdMetadata, storable, allowOverwrite);
     }
 
-    protected StorableCreationResult _putLargeEntry(StorableKey key,
+    @SuppressWarnings("resource")
+	protected StorableCreationResult _putLargeEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean allowOverwrite,
             byte[] readBuffer, int readByteCount,
@@ -447,7 +451,7 @@ public class StorableStoreImpl extends StorableStore
         final FileReference fileRef = _fileManager.createStorageFile(key, comp, fileCreationTime);
         File storedFile = fileRef.getFile();
         
-        OutputStream out;
+        OutputStream out = null;
         CountingOutputStream compressedOut;
 
         try {
@@ -461,6 +465,11 @@ public class StorableStoreImpl extends StorableStore
             }
             out.write(readBuffer, 0, readByteCount);
         } catch (IOException e) {
+        	try {
+        		if (out != null) {
+        			out.close();
+        		}
+        	} catch (IOException e2) { }
             throw new StoreException(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
         }
 
@@ -469,28 +478,31 @@ public class StorableStoreImpl extends StorableStore
         long copiedBytes = readByteCount;
         
         // and then need to proceed with copying the rest, compressing along the way
-        while (true) {
-            int count;
-            try {
-                count = input.read(readBuffer);
-            } catch (IOException e) { // probably will fail to write response too but...
-                throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
-            }
-            if (count < 0) {
-                break;
-            }
-            copiedBytes += count;
-            try {
-                out.write(readBuffer, 0, count);
-            } catch (IOException e) {
-                throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
-                        +") to file '"+storedFile.getAbsolutePath()+"'", e);
-            }
-            hasher.update(readBuffer, 0, count);
-        }
         try {
-            out.close();
-        } catch (IOException e) { }
+		    while (true) {
+		        int count;
+		        try {
+		            count = input.read(readBuffer);
+		        } catch (IOException e) { // probably will fail to write response too but...
+		            throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+		        }
+		        if (count < 0) {
+		            break;
+		        }
+		        copiedBytes += count;
+		        try {
+		            out.write(readBuffer, 0, count);
+		        } catch (IOException e) {
+		            throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
+		                    +") to file '"+storedFile.getAbsolutePath()+"'", e);
+		        }
+		        hasher.update(readBuffer, 0, count);
+		    }
+        } finally {
+        	try {
+        		out.close();
+        	} catch (IOException e) { }
+        }
         
         // Checksum calculation and storage details differ depending on whether compression is used
         if (skipCompression) {
@@ -564,15 +576,15 @@ public class StorableStoreImpl extends StorableStore
                     {
                         if (allowOverwrite) { // "upsert"
                             Storable old = backend.putEntry(key, storable);
-                            return new StorableCreationResult(key, true, old);
+                            return new StorableCreationResult(key, true, storable, old);
                         }
                         // strict "insert"
-                        Storable old = backend.putEntry(key, storable);
+                        Storable old = backend.createEntry(key, storable);
                         if (old == null) { // ok, succeeded
-                            return new StorableCreationResult(key, true, null);
+                            return new StorableCreationResult(key, true, storable, null);
                         }
                         // fail: caller may need to clean up the underlying file
-                        return new StorableCreationResult(key, false, old);
+                        return new StorableCreationResult(key, false, storable, old);
                     }
                 },
                 storable0);
