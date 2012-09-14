@@ -48,14 +48,6 @@ public class StoreConfig
      * Should not be same as {@link #dataRootForMetadata}
      */
     public File dataRootForFiles;
-
-    /**
-     * Name of root directory (using relative or absolute path) in which
-     * metadata database will be created.
-     *<p>
-     * Should not be same as {@link #dataRootForFiles}
-     */
-    public File dataRootForMetadata;
     
     /*
     /**********************************************************************

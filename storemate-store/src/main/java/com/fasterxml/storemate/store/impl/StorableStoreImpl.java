@@ -422,7 +422,7 @@ public class StorableStoreImpl extends StorableStore
     }
 
     @SuppressWarnings("resource")
-	protected StorableCreationResult _putLargeEntry(StorableKey key,
+    protected StorableCreationResult _putLargeEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean allowOverwrite,
             byte[] readBuffer, int readByteCount,
@@ -479,29 +479,29 @@ public class StorableStoreImpl extends StorableStore
         
         // and then need to proceed with copying the rest, compressing along the way
         try {
-		    while (true) {
-		        int count;
-		        try {
-		            count = input.read(readBuffer);
-		        } catch (IOException e) { // probably will fail to write response too but...
-		            throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
-		        }
-		        if (count < 0) {
-		            break;
-		        }
-		        copiedBytes += count;
-		        try {
-		            out.write(readBuffer, 0, count);
-		        } catch (IOException e) {
-		            throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
-		                    +") to file '"+storedFile.getAbsolutePath()+"'", e);
-		        }
-		        hasher.update(readBuffer, 0, count);
-		    }
+            while (true) {
+                int count;
+                try {
+                    count = input.read(readBuffer);
+                } catch (IOException e) { // probably will fail to write response too but...
+                    throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+                }
+                if (count < 0) {
+                    break;
+                }
+                copiedBytes += count;
+                try {
+                    out.write(readBuffer, 0, count);
+                } catch (IOException e) {
+                    throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                            +") to file '"+storedFile.getAbsolutePath()+"'", e);
+                }
+                hasher.update(readBuffer, 0, count);
+            }
         } finally {
-        	try {
-        		out.close();
-        	} catch (IOException e) { }
+            try {
+                out.close();
+            } catch (IOException e) { }
         }
         
         // Checksum calculation and storage details differ depending on whether compression is used

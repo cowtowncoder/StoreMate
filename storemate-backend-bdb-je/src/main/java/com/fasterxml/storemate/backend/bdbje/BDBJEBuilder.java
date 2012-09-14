@@ -8,7 +8,6 @@ import com.sleepycat.je.*;
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
-import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
@@ -30,11 +29,10 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         _bdbConfig = bdbConfig;
     }
 
-
-	@Override
-	public StoreBackend build() {
-		return buildCreateAndInit();
-	}
+    @Override
+    public BDBJEStoreBackend build() {
+        return buildCreateAndInit();
+    }
 
     /**
      * Method that will open an existing BDB database if one exists, or create
@@ -58,9 +56,9 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
 
-        File dbRoot = _storeConfig.dataRootForMetadata;
+        File dbRoot = _bdbConfig.dataRoot;
         if (dbRoot == null) {
-            if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig.dataRootForMetadata");
+            if (_storeConfig == null) throw new IllegalStateException("Missing BDBJEConfig.dataRoot");
         }
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
             if (!canCreate) {

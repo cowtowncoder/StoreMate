@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.backend.bdbje;
 
+import java.io.File;
+
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 
 /**
@@ -7,6 +9,20 @@ import com.fasterxml.storemate.store.backend.StoreBackendConfig;
  */
 public class BDBJEConfig extends StoreBackendConfig
 {
+    /*
+    /**********************************************************************
+    /* Simple config properties, paths
+    /**********************************************************************
+     */
+
+    /**
+     * Name of root directory (using relative or absolute path) in which
+     * metadata database will be created.
+     *<p>
+     * Should not be same as the directory in which data files are stored.
+     */
+    public File dataRoot;
+    
     /*
     /**********************************************************************
     /* Simple config properties, size thresholds
@@ -26,4 +42,12 @@ public class BDBJEConfig extends StoreBackendConfig
      */
     public long cacheInBytes = 40 * 1024 * 1024;
 
+    /*
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
+     */
+
+    public BDBJEConfig() { }
+    public BDBJEConfig(File dataRoot) { this.dataRoot = dataRoot; }
 }
