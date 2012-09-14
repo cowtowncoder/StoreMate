@@ -135,7 +135,7 @@ public abstract class StoreBackend
      * may modify entries during iteration process.
      * 
      * @param cb Callback used for actual iteration
-     * @param firstKey (optional) Key for the first entry
+     * @param firstTimestamp (optional) Key for the first entry
      *   to include (inclusive); if null, starts from the very first entry
      *   
      * @return True if iteration completed successfully; false if it was terminated

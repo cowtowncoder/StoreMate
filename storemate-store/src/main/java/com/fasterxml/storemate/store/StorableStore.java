@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import com.fasterxml.storemate.shared.*;
 
+import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.file.FileManager;
 
 /**
@@ -145,4 +146,46 @@ public abstract class StorableStore
     public abstract StorableDeletionResult hardDelete(StorableKey key,
             final boolean removeExternalData)
         throws IOException, StoreException;
+
+    /*
+    /**********************************************************************
+    /* API, iteration
+    /**********************************************************************
+     */
+
+    /**
+     * Method for iterating over entries store has,
+     * in key order,
+     * starting with specified key (inclusive).
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * @param firstKey (optional) If not null, key for the first entry
+     *   to include (inclusive); if null, starts from the very first entry
+     *   
+     * @return True if iteration completed successfully; false if it was terminated
+     */
+    public abstract boolean iterateEntriesByKey(StorableIterationCallback cb,
+            StorableKey firstKey)
+        throws StoreException;
+
+    /**
+     * Method for iterating over entries store has,
+     * in key order,
+     * starting with specified key (inclusive).
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * @param firstTimestamp (optional) Last-modified timestamp of the first entry
+     *   to include (inclusive).
+     *   
+     * @return True if iteration completed successfully; false if it was terminated
+     */
+    public abstract boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+            long firstTimestamp)
+        throws StoreException;
 }

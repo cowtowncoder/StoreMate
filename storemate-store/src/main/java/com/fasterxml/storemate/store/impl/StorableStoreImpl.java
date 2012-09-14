@@ -658,7 +658,29 @@ public class StorableStoreImpl extends AdminStorableStore
 
     /*
     /**********************************************************************
-    /* API, admin methods (not 
+    /* API, public entry iteration methods
+    /**********************************************************************
+     */
+    
+    @Override
+    public boolean iterateEntriesByKey(StorableIterationCallback cb,
+            StorableKey firstKey)
+        throws StoreException
+    {
+        return _backend.iterateEntriesByKey(cb, firstKey);
+    }
+
+    @Override
+    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+            long firstTimestamp)
+        throws StoreException
+    {
+        return _backend.iterateEntriesByModifiedTime(cb, firstTimestamp);
+    }
+    
+    /*
+    /**********************************************************************
+    /* API, admin methods (from AdminStorableStore) 
     /**********************************************************************
      */
 
