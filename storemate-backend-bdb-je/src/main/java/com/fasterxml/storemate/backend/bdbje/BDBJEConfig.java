@@ -19,9 +19,10 @@ public class BDBJEConfig extends StoreBackendConfig
      * Name of root directory (using relative or absolute path) in which
      * metadata database will be created.
      *<p>
-     * Should not be same as the directory in which data files are stored.
+     * Should not be same as the directory in which data files are stored
+     * (nor the main deployment directory)
      */
-    public File dataRoot;
+    public String dataRoot;
     
     /*
     /**********************************************************************
@@ -49,5 +50,7 @@ public class BDBJEConfig extends StoreBackendConfig
      */
 
     public BDBJEConfig() { }
-    public BDBJEConfig(File dataRoot) { this.dataRoot = dataRoot; }
+    public BDBJEConfig(File dataRoot) {
+        this.dataRoot = dataRoot.getAbsolutePath();
+    }
 }
