@@ -10,7 +10,9 @@ import com.fasterxml.storemate.shared.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;
+import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
+import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
@@ -217,7 +219,7 @@ public class BDBJEStoreBackend extends StoreBackend
      */
 
     @Override
-    public boolean scanEntries(StorableIterationCallback cb)
+    public IterationResult scanEntries(StorableIterationCallback cb)
         throws StoreException
     {
         DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
@@ -236,21 +238,21 @@ public class BDBJEStoreBackend extends StoreBackend
                 case PROCESS_ENTRY: // bind, process
                     break;
                 case TERMINATE_ITERATION: // all done?
-                    return false;
+                    return IterationResult.TERMINATED_FOR_KEY;
                 }
                 Storable entry = _storableConverter.decode(key, data.getData());
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return false;
+                    return IterationResult.TERMINATED_FOR_ENTRY;
                 }
             }
-            return true;
+            return IterationResult.FULLY_ITERATED;
         } finally {
             crsr.close();
         }
     }
 
     @Override
-    public boolean iterateEntriesByKey(StorableIterationCallback cb,
+    public IterationResult iterateEntriesByKey(StorableIterationCallback cb,
             StorableKey firstKey)
         throws StoreException
     {
@@ -278,22 +280,22 @@ public class BDBJEStoreBackend extends StoreBackend
                 case PROCESS_ENTRY: // bind, process
                     break;
                 case TERMINATE_ITERATION: // all done?
-                    return false;
+                    return IterationResult.TERMINATED_FOR_KEY;
                 }
                 Storable entry = _storableConverter.decode(key, data.getData());
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return false;
+                    return IterationResult.TERMINATED_FOR_ENTRY;
                 }
                 status = crsr.getNext(keyEntry, data, LockMode.DEFAULT);
             }
-            return true;
+            return IterationResult.FULLY_ITERATED;
         } finally {
             crsr.close();
         }
     }
 
     @Override
-    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+    public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)
         throws StoreException
     {
@@ -315,6 +317,17 @@ public class BDBJEStoreBackend extends StoreBackend
         try {
             main_loop:
             while (status == OperationStatus.SUCCESS) {
+                // First things first: timestamp check
+                long timestamp = _getLongBE(keyEntry.getData(), 0);
+                switch (cb.verifyTimestamp(timestamp)) {
+                case SKIP_ENTRY:
+                    continue main_loop;
+                case PROCESS_ENTRY:
+                    break;
+                case TERMINATE_ITERATION: // all done?
+                    return IterationResult.TERMINATED_FOR_TIMESTAMP;
+                }
+                
                 StorableKey key = storableKey(primaryKeyEntry);
                 switch (cb.verifyKey(key)) {
                 case SKIP_ENTRY: // nothing to do
@@ -322,15 +335,15 @@ public class BDBJEStoreBackend extends StoreBackend
                 case PROCESS_ENTRY: // bind, process
                     break;
                 case TERMINATE_ITERATION: // all done?
-                    return false;
+                    return IterationResult.TERMINATED_FOR_KEY;
                 }
                 Storable entry = _storableConverter.decode(key, data.getData());
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return false;
+                    return IterationResult.TERMINATED_FOR_ENTRY;
                 }
                 status = crsr.getNext(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
             }
-            return true;
+            return IterationResult.FULLY_ITERATED;
         } finally {
             crsr.close();
         }
@@ -370,6 +383,22 @@ public class BDBJEStoreBackend extends StoreBackend
         buffer[++offset] = (byte) offset;
     }
 
+    private final static long _getLongBE(byte[] buffer, int offset)
+    {
+        long l1 = _getIntBE(buffer, offset);
+        long l2 = _getIntBE(buffer, offset+4);
+        return (l1 << 32) | ((l2 << 32) >>> 32);
+    }
+    
+    private final static int _getIntBE(byte[] buffer, int offset)
+    {
+        return (buffer[offset] << 24)
+            | ((buffer[++offset] & 0xFF) << 16)
+            | ((buffer[++offset] & 0xFF) << 8)
+            | (buffer[++offset] & 0xFF)
+            ;
+    }
+    
     /*
     /**********************************************************************
     /* Helper classes

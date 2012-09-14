@@ -15,7 +15,9 @@ import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;
+import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
+import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
@@ -663,7 +665,7 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     
     @Override
-    public boolean iterateEntriesByKey(StorableIterationCallback cb,
+    public IterationResult iterateEntriesByKey(StorableIterationCallback cb,
             StorableKey firstKey)
         throws StoreException
     {
@@ -671,7 +673,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+    public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)
         throws StoreException
     {
@@ -693,7 +695,7 @@ public class StorableStoreImpl extends AdminStorableStore
         final long maxEndTime = startTime + Math.min(maxMax, maxRuntimeMsecs);
 
         TombstoneCounter counter = new TombstoneCounter(_timeMaster, maxEndTime);
-        if (_backend.scanEntries(counter)) {
+        if (_backend.scanEntries(counter) != IterationResult.FULLY_ITERATED) {
             return counter.tombstones;
         }
         throw new IllegalStateException("getTombstoneCount() run too long (max "+maxRuntimeMsecs
@@ -735,9 +737,16 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         final ArrayList<Storable> result = new ArrayList<Storable>();
         if (maxCount > 0) {
-            _backend.iterateEntriesByModifiedTime(new StorableIterationCallback() {
+            _backend.iterateEntriesByModifiedTime(new StorableLastModIterationCallback() {
+                // we are fine with all timestamps
+                @Override
+                public IterationAction verifyTimestamp(long timestamp) {
+                    return IterationAction.PROCESS_ENTRY;
+                }
                 // all keys are fine
-                @Override public IterationAction verifyKey(StorableKey key) { return IterationAction.PROCESS_ENTRY; }
+                @Override public IterationAction verifyKey(StorableKey key) {
+                    return IterationAction.PROCESS_ENTRY;
+                }
                 @Override
                 public IterationAction processEntry(Storable entry) {
                     if (includeDeleted || !entry.isDeleted()) {

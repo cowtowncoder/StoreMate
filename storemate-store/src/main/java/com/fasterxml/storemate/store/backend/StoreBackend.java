@@ -84,7 +84,7 @@ public abstract class StoreBackend
      *   
      * @return True if iteration completed succesfully; false if it was terminated
      */
-    public abstract boolean scanEntries(StorableIterationCallback cb)
+    public abstract IterationResult scanEntries(StorableIterationCallback cb)
         throws StoreException;
 
     /**
@@ -98,7 +98,7 @@ public abstract class StoreBackend
      * 
      * @return True if iteration completed successfully; false if it was terminated
      */
-    public boolean iterateEntriesByKey(StorableIterationCallback cb)
+    public IterationResult iterateEntriesByKey(StorableIterationCallback cb)
         throws StoreException
     {
         return iterateEntriesByKey(cb, null);
@@ -117,11 +117,11 @@ public abstract class StoreBackend
      *   
      * @return True if iteration completed successfully; false if it was terminated
      */
-    public abstract boolean iterateEntriesByKey(StorableIterationCallback cb,
+    public abstract IterationResult iterateEntriesByKey(StorableIterationCallback cb,
             StorableKey firstKey)
         throws StoreException;
 
-    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb)
+    public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb)
         throws StoreException
     {
         return iterateEntriesByModifiedTime(cb, 0L);
@@ -140,7 +140,7 @@ public abstract class StoreBackend
      *   
      * @return True if iteration completed successfully; false if it was terminated
      */
-    public abstract boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+    public abstract IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)
         throws StoreException;
     

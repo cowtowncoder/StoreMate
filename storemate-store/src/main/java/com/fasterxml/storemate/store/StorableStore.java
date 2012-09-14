@@ -5,7 +5,9 @@ import java.io.InputStream;
 
 import com.fasterxml.storemate.shared.*;
 
+import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
+import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.file.FileManager;
 
 /**
@@ -164,10 +166,10 @@ public abstract class StorableStore
      * @param cb Callback used for actual iteration
      * @param firstKey (optional) If not null, key for the first entry
      *   to include (inclusive); if null, starts from the very first entry
-     *   
-     * @return True if iteration completed successfully; false if it was terminated
+     *
+     * @return Value that indicates how iteration ended
      */
-    public abstract boolean iterateEntriesByKey(StorableIterationCallback cb,
+    public abstract IterationResult iterateEntriesByKey(StorableIterationCallback cb,
             StorableKey firstKey)
         throws StoreException;
 
@@ -185,7 +187,7 @@ public abstract class StorableStore
      *   
      * @return True if iteration completed successfully; false if it was terminated
      */
-    public abstract boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+    public abstract IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)
         throws StoreException;
 }
