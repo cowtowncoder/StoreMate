@@ -1,10 +1,8 @@
 package com.fasterxml.storemate.store.impl;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -16,15 +14,17 @@ import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.store.backend.IterationAction;
+import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
 
 /**
- * Full store frontend implementation.
+ * Full store front-end implementation.
  */
-public class StorableStoreImpl extends StorableStore
+public class StorableStoreImpl extends AdminStorableStore
 {
     /**
      * No real seed used for Murmur3/32.
@@ -656,6 +656,123 @@ public class StorableStoreImpl extends StorableStore
         return new StorableDeletionResult(key, entry);
     }
 
+    /*
+    /**********************************************************************
+    /* API, admin methods (not 
+    /**********************************************************************
+     */
+
+    @Override
+    public long getTombstoneCount(long maxRuntimeMsecs)
+        throws StoreException
+    {
+        final long startTime = _timeMaster.currentTimeMillis();
+        final long maxMax = Long.MAX_VALUE - startTime;
+        final long maxEndTime = startTime + Math.min(maxMax, maxRuntimeMsecs);
+
+        TombstoneCounter counter = new TombstoneCounter(_timeMaster, maxEndTime);
+        if (_backend.scanEntries(counter)) {
+            return counter.tombstones;
+        }
+        throw new IllegalStateException("getTombstoneCount() run too long (max "+maxRuntimeMsecs
+                +"); failed after "+counter.tombstones+"/"+counter.total+" records");
+    }
+
+    @Override
+    public List<Storable> dumpEntries(final int maxCount, final boolean includeDeleted)
+        throws StoreException
+    {
+        final ArrayList<Storable> result = new ArrayList<Storable>();
+        if (maxCount > 0) {
+            _backend.iterateEntriesByKey(new StorableIterationCallback() {
+                // all keys are fine
+                @Override public IterationAction verifyKey(StorableKey key) { return IterationAction.PROCESS_ENTRY; }
+                @Override
+                public IterationAction processEntry(Storable entry) {
+                    if (includeDeleted || !entry.isDeleted()) {
+                        result.add(entry);
+                        if (result.size() >= maxCount) {
+                            return IterationAction.TERMINATE_ITERATION;
+                        }
+                    }
+                    return IterationAction.PROCESS_ENTRY;
+                }
+            });
+        }
+        return result;
+    }
+
+    /**
+     * Method for iterating over entries in creation-time order,
+     * from the oldest to newest entries.
+     */
+    /*
+    public List<EntryMetadata> dumpOldestEntries(int maxCount)
+    {
+        ArrayList<EntryMetadata> result = new ArrayList<EntryMetadata>();
+        EntryMetadata entry;
+        EntityCursor<EntryMetadata> cursor = _insertionIndex.entities();
+        while (result.size() < maxCount && (entry = cursor.next()) != null) {
+            result.add(entry);
+        }
+        cursor.close();
+        return result;
+    }
+    */
+
+    /**
+     * Method for physically deleting specified number of entries, in
+     * whatever order entries are stored in the database (not necessarily
+     * insertion order)
+     * 
+     * @return Number of entries deleted
+     */
+    /*
+    public int deleteFirst(int maxCount)
+    {
+        EntityCursor<String> crsr = _primary.keys();
+        int count = 0;
+        String key = crsr.first();
+
+        while ((key != null) && count < maxCount) {
+            crsr.delete();
+            ++count;
+            key = crsr.next();
+        }
+        crsr.close();
+        return count;
+    }
+    */
+
+    /**
+     * Helper method only to be called by tests; normal operation should
+     * rely on background tombstone cleaning process.
+     * 
+     * @param maxToDelete Max number of tombstones to delete
+     */
+    /*
+    public int removeTombstones(int maxToDelete)
+    {
+        int count = 0;
+        if (maxToDelete > 0) {
+            EntityCursor<EntryMetadata> crsr = _primary.entities();
+            try {
+                for (EntryMetadata entry = crsr.first(); entry != null; entry = crsr.next()) {
+                    if (entry.isDeleted()) {
+                        crsr.delete();
+                        if (++count >= maxToDelete) {
+                            break;
+                        }                    
+                    }
+                }
+            } finally {
+                crsr.close();
+            }
+        }
+        return count;
+    }
+    */
+    
     /*
     /**********************************************************************
     /* Internal methods for entry deletion

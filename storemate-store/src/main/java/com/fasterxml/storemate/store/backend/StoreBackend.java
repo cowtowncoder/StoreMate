@@ -70,6 +70,82 @@ public abstract class StoreBackend
 
     /*
     /**********************************************************************
+    /* API Impl, iteration
+    /**********************************************************************
+     */
+
+    /**
+     * Method for scanning potentially all the entries in the store,
+     * in the fastest iteration order (usually derived from physical
+     * storage ordering).
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     *   
+     * @return True if iteration completed succesfully; false if it was terminated
+     */
+    public abstract boolean scanEntries(StorableIterationCallback cb)
+        throws StoreException;
+
+    /**
+     * Method for scanning potentially all the entries in the store,
+     * ordered by the primary key.
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * 
+     * @return True if iteration completed successfully; false if it was terminated
+     */
+    public boolean iterateEntriesByKey(StorableIterationCallback cb)
+        throws StoreException
+    {
+        return iterateEntriesByKey(cb, null);
+    }
+    
+    /**
+     * Method for scanning potentially all the entries in the store,
+     * ordered by the primary key.
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * @param firstKey (optional) If not null, key for the first entry
+     *   to include (inclusive); if null, starts from the very first entry
+     *   
+     * @return True if iteration completed successfully; false if it was terminated
+     */
+    public abstract boolean iterateEntriesByKey(StorableIterationCallback cb,
+            StorableKey firstKey)
+        throws StoreException;
+
+    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb)
+        throws StoreException
+    {
+        return iterateEntriesByModifiedTime(cb, 0L);
+    }
+    
+    /**
+     * Method for scanning potentially all the entries in the store,
+     * ordered by the last-modified order (from oldest to newest)
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * @param firstKey (optional) Key for the first entry
+     *   to include (inclusive); if null, starts from the very first entry
+     *   
+     * @return True if iteration completed successfully; false if it was terminated
+     */
+    public abstract boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+            long firstTimestamp)
+        throws StoreException;
+    
+    /*
+    /**********************************************************************
     /* API Impl, insert/update
     /**********************************************************************
      */

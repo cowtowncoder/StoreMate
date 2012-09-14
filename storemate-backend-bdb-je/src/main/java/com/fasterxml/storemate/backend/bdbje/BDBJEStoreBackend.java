@@ -9,6 +9,8 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.store.backend.IterationAction;
+import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
@@ -207,22 +209,172 @@ public class BDBJEStoreBackend extends StoreBackend
         	throw new StoreException(key, "Internal error, failed to delete entry, OperationStatus="+status);
         }
     }
-    
+
+    /*
+    /**********************************************************************
+    /* API Impl, iteration
+    /**********************************************************************
+     */
+
+    @Override
+    public boolean scanEntries(StorableIterationCallback cb)
+        throws StoreException
+    {
+        DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
+        DiskOrderedCursor crsr = _entries.openCursor(config);
+
+        final DatabaseEntry keyEntry = new DatabaseEntry();
+        final DatabaseEntry data = new DatabaseEntry();
+        
+        try {
+            main_loop:
+            while (crsr.getNext(keyEntry, data, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                StorableKey key = storableKey(keyEntry);
+                switch (cb.verifyKey(key)) {
+                case SKIP_ENTRY: // nothing to do
+                    continue main_loop;
+                case PROCESS_ENTRY: // bind, process
+                    break;
+                case TERMINATE_ITERATION: // all done?
+                    return false;
+                }
+                Storable entry = _storableConverter.decode(key, data.getData());
+                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                    return false;
+                }
+            }
+            return true;
+        } finally {
+            crsr.close();
+        }
+    }
+
+    @Override
+    public boolean iterateEntriesByKey(StorableIterationCallback cb,
+            StorableKey firstKey)
+        throws StoreException
+    {
+        CursorConfig config = new CursorConfig();
+        Cursor crsr = _entries.openCursor(null, config);
+        final DatabaseEntry keyEntry;
+        final DatabaseEntry data = new DatabaseEntry();
+
+        OperationStatus status;
+        if (firstKey == null) { // from beginning (i.e. no ranges)
+            keyEntry = new DatabaseEntry();
+            status = crsr.getFirst(keyEntry, data, LockMode.DEFAULT);
+        } else {
+            keyEntry = dbKey(firstKey);
+            status = crsr.getSearchKeyRange(keyEntry, data, LockMode.DEFAULT);
+        }
+
+        try {
+            main_loop:
+            while (status == OperationStatus.SUCCESS) {
+                StorableKey key = storableKey(keyEntry);
+                switch (cb.verifyKey(key)) {
+                case SKIP_ENTRY: // nothing to do
+                    continue main_loop;
+                case PROCESS_ENTRY: // bind, process
+                    break;
+                case TERMINATE_ITERATION: // all done?
+                    return false;
+                }
+                Storable entry = _storableConverter.decode(key, data.getData());
+                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                    return false;
+                }
+                status = crsr.getNext(keyEntry, data, LockMode.DEFAULT);
+            }
+            return true;
+        } finally {
+            crsr.close();
+        }
+    }
+
+    @Override
+    public boolean iterateEntriesByModifiedTime(StorableIterationCallback cb,
+            long firstTimestamp)
+        throws StoreException
+    {
+        CursorConfig config = new CursorConfig();
+        SecondaryCursor crsr = _index.openCursor(null, config);
+        final DatabaseEntry keyEntry;
+        final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
+        final DatabaseEntry data = new DatabaseEntry();
+
+        OperationStatus status;
+        if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
+            keyEntry = new DatabaseEntry();
+            status = crsr.getFirst(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+        } else {
+            keyEntry = timestampKey(firstTimestamp);
+            status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+        }
+
+        try {
+            main_loop:
+            while (status == OperationStatus.SUCCESS) {
+                StorableKey key = storableKey(primaryKeyEntry);
+                switch (cb.verifyKey(key)) {
+                case SKIP_ENTRY: // nothing to do
+                    continue main_loop;
+                case PROCESS_ENTRY: // bind, process
+                    break;
+                case TERMINATE_ITERATION: // all done?
+                    return false;
+                }
+                Storable entry = _storableConverter.decode(key, data.getData());
+                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                    return false;
+                }
+                status = crsr.getNext(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+            }
+            return true;
+        } finally {
+            crsr.close();
+        }
+    }
+   
     /*
     /**********************************************************************
     /* Internal methods
     /**********************************************************************
      */
     
-    protected DatabaseEntry dbKey(StorableKey key)
-    {
+    protected DatabaseEntry dbKey(StorableKey key) {
         return key.with(BDB_CONV);
     }
 
-    protected DatabaseEntry dbValue(Storable storable)
-    {
+    protected DatabaseEntry dbValue(Storable storable) {
         return storable.withRaw(BDB_CONV);
     }
+    
+    protected StorableKey storableKey(DatabaseEntry entry) {
+        return new StorableKey(entry.getData());
+    }
+
+    protected DatabaseEntry timestampKey(long timestamp)
+    {
+        byte[] raw = new byte[8];
+        _putIntBE(raw, 0, (int) (timestamp >> 32));
+        _putIntBE(raw, 4, (int) timestamp);
+        return new DatabaseEntry(raw);
+    }
+
+    private final static void _putIntBE(byte[] buffer, int offset, int value)
+    {
+        buffer[offset] = (byte) (offset >> 24);
+        buffer[++offset] = (byte) (offset >> 16);
+        buffer[++offset] = (byte) (offset >> 8);
+        buffer[++offset] = (byte) offset;
+    }
+
+    /*
+    /**********************************************************************
+    /* Helper classes
+    /**********************************************************************
+     */
     
     private final static class BDBConverter implements WithBytesCallback<DatabaseEntry>
     {
