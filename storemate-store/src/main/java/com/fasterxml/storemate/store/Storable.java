@@ -17,7 +17,7 @@ public class Storable
    /**
     * Primary key of this instance, when stored in the data store
     */
-	protected final StorableKey _key;
+    protected final StorableKey _key;
 
     protected final ByteContainer _rawEntry;
     

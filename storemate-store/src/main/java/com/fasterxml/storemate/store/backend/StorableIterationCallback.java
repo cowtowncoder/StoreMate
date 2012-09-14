@@ -25,5 +25,6 @@ public abstract class StorableIterationCallback
      * @return Action to take; specifically, whether to continue processing
      *   or not (semantics for other values depend on context)
      */
-    public abstract IterationAction processEntry(Storable entry);
+    public abstract IterationAction processEntry(Storable entry)
+        throws StoreException;
 }

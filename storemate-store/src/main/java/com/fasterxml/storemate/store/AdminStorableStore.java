@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.store;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -29,4 +30,23 @@ public abstract class AdminStorableStore extends StorableStore
      */
     public abstract List<Storable> dumpEntries(int maxCount, boolean includeDeleted)
         throws StoreException;
+
+    /**
+     * Method that can be used to access first {@link maxCount} entries
+     * (in 'last-modified' order, from oldest to newest) from the store
+     * 
+     * @param maxCount Maximum number of entries to include.
+     * @param fromTime Oldest timestamp to include (inclusive); since timestamps
+     *    are positive, use 0l for "all"
+     * @param includeDeleted Whether to include soft-deleted entries or not
+     */
+    public abstract List<Storable> dumpOldestEntries(int maxCount, long fromTime,
+            boolean includeDeleted)
+        throws StoreException;
+
+    public abstract int removeTombstones(int maxToRemove)
+        throws IOException, StoreException;
+
+    public abstract int removeEntries(final int maxToRemove)
+        throws IOException, StoreException;
 }

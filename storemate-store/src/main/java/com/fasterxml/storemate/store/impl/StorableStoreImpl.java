@@ -706,19 +706,30 @@ public class StorableStoreImpl extends AdminStorableStore
      * Method for iterating over entries in creation-time order,
      * from the oldest to newest entries.
      */
-    /*
-    public List<EntryMetadata> dumpOldestEntries(int maxCount)
+    @Override
+    public List<Storable> dumpOldestEntries(final int maxCount,
+            final long fromTime, final boolean includeDeleted)
+        throws StoreException
     {
-        ArrayList<EntryMetadata> result = new ArrayList<EntryMetadata>();
-        EntryMetadata entry;
-        EntityCursor<EntryMetadata> cursor = _insertionIndex.entities();
-        while (result.size() < maxCount && (entry = cursor.next()) != null) {
-            result.add(entry);
+        final ArrayList<Storable> result = new ArrayList<Storable>();
+        if (maxCount > 0) {
+            _backend.iterateEntriesByModifiedTime(new StorableIterationCallback() {
+                // all keys are fine
+                @Override public IterationAction verifyKey(StorableKey key) { return IterationAction.PROCESS_ENTRY; }
+                @Override
+                public IterationAction processEntry(Storable entry) {
+                    if (includeDeleted || !entry.isDeleted()) {
+                        result.add(entry);
+                        if (result.size() >= maxCount) {
+                            return IterationAction.TERMINATE_ITERATION;
+                        }
+                    }
+                    return IterationAction.PROCESS_ENTRY;
+                }
+            }, fromTime);
         }
-        cursor.close();
         return result;
     }
-    */
 
     /**
      * Method for physically deleting specified number of entries, in
@@ -727,51 +738,53 @@ public class StorableStoreImpl extends AdminStorableStore
      * 
      * @return Number of entries deleted
      */
-    /*
-    public int deleteFirst(int maxCount)
+    @Override
+    public int removeEntries(final int maxToRemove)
+        throws IOException, StoreException
     {
-        EntityCursor<String> crsr = _primary.keys();
-        int count = 0;
-        String key = crsr.first();
-
-        while ((key != null) && count < maxCount) {
-            crsr.delete();
-            ++count;
-            key = crsr.next();
+        int removed = 0;
+        if (maxToRemove > 0) {
+            StorableCollector collector = new StorableCollector(maxToRemove) {
+                @Override
+                public boolean includeEntry(Storable entry) { // any and all entries
+                    return true;
+                }
+            };
+            for (StorableKey key : collector.getCollected()) {
+                hardDelete(key, true);
+                ++removed;
+            }
         }
-        crsr.close();
-        return count;
+        return removed;
     }
-    */
 
     /**
      * Helper method only to be called by tests; normal operation should
      * rely on background tombstone cleaning process.
      * 
-     * @param maxToDelete Max number of tombstones to delete
+     * @param maxToRemove Max number of tombstones to delete
+     * 
+     * @return Number of tombstones actually deleted
      */
-    /*
-    public int removeTombstones(int maxToDelete)
+    @Override
+    public int removeTombstones(final int maxToRemove)
+        throws IOException, StoreException
     {
-        int count = 0;
-        if (maxToDelete > 0) {
-            EntityCursor<EntryMetadata> crsr = _primary.entities();
-            try {
-                for (EntryMetadata entry = crsr.first(); entry != null; entry = crsr.next()) {
-                    if (entry.isDeleted()) {
-                        crsr.delete();
-                        if (++count >= maxToDelete) {
-                            break;
-                        }                    
-                    }
+        int removed = 0;
+        if (maxToRemove > 0) {
+            StorableCollector collector = new StorableCollector(maxToRemove) {
+                @Override
+                public boolean includeEntry(Storable entry) {
+                    return entry.isDeleted();
                 }
-            } finally {
-                crsr.close();
+            };
+            for (StorableKey key : collector.getCollected()) {
+                hardDelete(key, true);
+                ++removed;
             }
         }
-        return count;
+        return removed;
     }
-    */
     
     /*
     /**********************************************************************
