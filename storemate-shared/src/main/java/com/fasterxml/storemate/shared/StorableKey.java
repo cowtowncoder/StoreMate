@@ -7,7 +7,7 @@ public class StorableKey
 {
     protected final byte[] _buffer;
     protected final int _offset, _length;
-	
+
     /**
      * Hash code is calculated on-demand
      */
@@ -39,7 +39,7 @@ public class StorableKey
     }
 
     public int hashCode(BlockHasher32 hasher) {
-        return hasher.hash(_buffer, _offset, _length);
+        return hasher.hash(BlockHasher32.DEFAULT_SEED, _buffer, _offset, _length);
     }
     
     public int hashCode(BlockHasher32 hasher, int offset, int length) {
@@ -47,7 +47,7 @@ public class StorableKey
             throw new IllegalArgumentException("Invalid range (offset "+offset+", length "+length
                     +"), for key with length of "+_length+" bytes");
         }
-        return hasher.hash(_buffer, _offset+offset, length);
+        return hasher.hash(BlockHasher32.DEFAULT_SEED, _buffer, _offset+offset, length);
     }
     
     @Override public int hashCode() {

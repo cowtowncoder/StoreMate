@@ -10,17 +10,21 @@ public final class BlockMurmur3Hasher extends BlockHasher32
     public final static BlockMurmur3Hasher instance = new BlockMurmur3Hasher();
 
     public final static int DEFAULT_SEED = 0;
-    
-    @Override
+
     public int hash(byte[] data) {
         return hash(DEFAULT_SEED, data, 0, data.length);
     }
-
-    @Override
+    
     public int hash(byte[] data, int offset, int length) {
         return hash(DEFAULT_SEED, data, offset, length);
     }
+
+    @Override
+    public int hash(int seed, byte[] data) {
+        return hash(DEFAULT_SEED, data, 0, data.length);
+    }
     
+    @Override
     public int hash(final int seed, byte[] data, int offset, int len)
     {
         int h1 = seed;
