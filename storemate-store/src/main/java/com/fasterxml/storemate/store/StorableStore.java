@@ -94,6 +94,12 @@ public abstract class StorableStore
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException;
 
+    /**
+     * Method for inserting entry, <b>if and only if</b> no entry exists for
+     * given key.
+     * 
+     * @param input Input data to store (usually inlined)
+     */
     public abstract StorableCreationResult insert(StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException;
@@ -113,6 +119,15 @@ public abstract class StorableStore
             boolean removeOldDataFile)
         throws IOException, StoreException;
 
+    /**
+     * Method for inserting entry, if no entry exists for the key, or updating
+     * entry if one does. In case of update, results will contain information
+     * about overwritten entry.
+     * 
+     * @param input Payload to store with entry
+     * @param removeOldDataFile Whether method should delete backing data file for
+     *   the existing entry (if one was found) or not.
+     */
     public abstract StorableCreationResult upsert(StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
