@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.shared;
 
+import java.util.Arrays;
+
 import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
@@ -26,6 +28,16 @@ public class StorableKey
 
     public final int length() { return _length; }
 
+    public final byte[] asBytes() {
+        if (_offset == 0) {
+            if (_length == _buffer.length) {
+                return _buffer;
+            }
+            return Arrays.copyOf(_buffer, _length);
+        }
+        return Arrays.copyOfRange(_buffer, _offset, _offset+_length);
+    }
+    
     public final <T> T with(WithBytesCallback<T> cb) {
         return cb.withBytes(_buffer, _offset, _length);
     }

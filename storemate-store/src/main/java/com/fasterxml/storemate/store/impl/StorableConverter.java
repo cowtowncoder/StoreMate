@@ -134,20 +134,20 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
 
     public Storable encodeInlined(StorableKey key, long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            byte[] inlineData, int inlineOffset, int inlineLength)
+            ByteContainer inlineData)
     {
         StuffToBytes estimator = StuffToBytes.estimator();
         _encodeInlined(key, estimator, false,
-                modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
+                modtime, stdMetadata, customMetadata, inlineData);
         StuffToBytes writer = StuffToBytes.writer(estimator.offset());
         return _encodeInlined(key, writer, true,
-                modtime, stdMetadata, customMetadata, inlineData, inlineOffset, inlineLength);
+                modtime, stdMetadata, customMetadata, inlineData);
     }
     
     private Storable _encodeInlined(StorableKey key, StuffToBytes writer, boolean createStorable,
             long modtime,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            byte[] inlineData, int inlineOffset, int inlineLength)
+            ByteContainer inlineData)
     {
         writer.appendLong(modtime)
             .appendByte(VERSION_1) // version
@@ -174,8 +174,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             metadataLength = customMetadata.byteLength();
         }
         final int payloadOffset = writer.offset();
-        writer.appendVLong(inlineLength);
-        writer.appendBytes(inlineData, inlineOffset, inlineLength);
+        writer.appendLengthAndBytes(inlineData);
 
         if (!createStorable) {
             return null;

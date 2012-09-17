@@ -226,7 +226,7 @@ public abstract class StuffToBytes
             _ptr += length;
             return this;
         }
-
+        
         @Override
         public StuffToBytes appendLengthAndBytes(ByteContainer bytes)
         {
@@ -349,7 +349,7 @@ public abstract class StuffToBytes
             _ptr += length;
             return this;
         }
-
+        
         @Override
         public StuffToBytes appendLengthAndBytes(ByteContainer bytes)
         {

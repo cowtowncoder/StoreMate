@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import com.fasterxml.storemate.shared.hash.BlockHasher32;
+
 /**
  * Simple read-only wrapper around basic in-heap byte array, used for buffering.
  */
@@ -70,6 +72,8 @@ public abstract class ByteContainer
     
     public abstract byte[] asBytes();
 
+    public abstract int hash(BlockHasher32 hasher, int seed);
+    
     public abstract void writeBytes(OutputStream out) throws IOException;
 
     public abstract void writeBytes(OutputStream out, int offset, int length) throws IOException;
@@ -96,6 +100,10 @@ public abstract class ByteContainer
 
         @Override public byte[] asBytes() { return NO_BYTES; }
 
+        @Override public int hash(BlockHasher32 hasher, int seed) {
+            return hasher.hash(seed, NO_BYTES);
+        }
+        
         @Override public void writeBytes(OutputStream out)  { }
         @Override
         public void writeBytes(OutputStream out, int offset, int length) {
@@ -157,6 +165,10 @@ public abstract class ByteContainer
                 return Arrays.copyOf(_data, _length);
             }
             return Arrays.copyOfRange(_data, _offset, _offset + _length);
+        }
+        
+        @Override public int hash(BlockHasher32 hasher, int seed) {
+            return hasher.hash(seed, _data, _offset, _length);
         }
         
         @Override public void writeBytes(OutputStream out) throws IOException {

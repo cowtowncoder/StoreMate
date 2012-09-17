@@ -94,6 +94,10 @@ public abstract class StorableStore
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException;
 
+    public abstract StorableCreationResult insert(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
+        throws IOException, StoreException;
+
     /**
      * Method for inserting entry, if no entry exists for the key, or updating
      * entry if one does. In case of update, results will contain information
@@ -105,6 +109,11 @@ public abstract class StorableStore
      *   the existing entry (if one was found) or not.
      */
     public abstract StorableCreationResult upsert(StorableKey key, InputStream input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile)
+        throws IOException, StoreException;
+
+    public abstract StorableCreationResult upsert(StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException;

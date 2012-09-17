@@ -230,6 +230,15 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
+    public StorableCreationResult insert(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
+        throws IOException, StoreException
+    {
+        _checkClosed();
+        return _putEntry(key, input, stdMetadata, customMetadata, false);
+    }
+    
+    @Override
     public StorableCreationResult upsert(StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
@@ -246,9 +255,26 @@ public class StorableStoreImpl extends AdminStorableStore
         return result;
     }
 
+    @Override
+    public StorableCreationResult upsert(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile)
+        throws IOException, StoreException
+    {
+        _checkClosed();
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, false);
+        if (removeOldDataFile) {
+            Storable old = result.getPreviousEntry();
+            if (old != null) {
+                _deleteBackingFile(key, old.getExternalFile(_fileManager));
+            }
+        }
+        return result;
+    }
+    
     /*
     /**********************************************************************
-    /* Internal methods for entry creation
+    /* Internal methods for entry creation, first level
     /**********************************************************************
      */
     
@@ -267,9 +293,8 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
     	/* NOTE: we do NOT want to clone passed-in metadata, because we want
-    	 * to fill in some of optional values; specifically, 
+    	 * to fill in some of optional values, and override others (compression)
     	 */
-        
         BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
         final byte[] readBuffer = bufferHolder.borrowBuffer(_minBytesToStream);
         int len = 0;
@@ -290,10 +315,10 @@ public class StorableStoreImpl extends AdminStorableStore
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
                     return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
-                            allowOverwrite, readBuffer, len);
+                            allowOverwrite, ByteContainer.simple(readBuffer, 0, len));
                 }
                 return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
-                        allowOverwrite, readBuffer, len);
+                        allowOverwrite, ByteContainer.simple(readBuffer, 0, len));
             }
             // partial read in buffer, rest from input stream:
             return _putLargeEntry(key, stdMetadata, customMetadata,
@@ -302,17 +327,41 @@ public class StorableStoreImpl extends AdminStorableStore
             bufferHolder.returnBuffer(readBuffer);
         }
     }
+
+    protected StorableCreationResult _putEntry(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean allowOverwrite)
+        throws IOException, StoreException
+    {
+        // First things first: verify that compression is what it claims to be:
+        final Compression originalCompression = stdMetadata.compression;
+        String error = IOUtil.verifyCompression(originalCompression, input);
+        if (error != null) {
+            throw new StoreException(key, error);
+        }
+        if (originalCompression == null) { // client did not compress, we may try to
+            return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
+                    allowOverwrite, input);
+        }
+        return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
+                allowOverwrite, input);
+    }
+    
+    /*
+    /**********************************************************************
+    /* Internal methods for entry creation, second level
+    /**********************************************************************
+     */
     
     protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            boolean allowOverwrite,
-            byte[] readBuffer, int readByteCount)
+            boolean allowOverwrite, ByteContainer data)
         throws IOException, StoreException
     {
-        final int origLength = readByteCount;
+        final int origLength = data.byteLength();
         // must verify checksum unless we got compressed payload
         // do we insist on checksum? Not if client has not yet compressed it:
-        int actualChecksum = _calcChecksum(readBuffer, 0, readByteCount);
+        int actualChecksum = _calcChecksum(data);
         final int origChecksum = metadata.contentHash;
         if (origChecksum == StoreConstants.NO_CHECKSUM) {
             metadata.contentHash = actualChecksum;
@@ -322,16 +371,16 @@ public class StorableStoreImpl extends AdminStorableStore
                         +"), calculated to be 0x"+Integer.toHexString(actualChecksum));
             }
         }
-        if (_shouldTryToCompress(metadata, readBuffer, 0, origLength)) {
+        if (_shouldTryToCompress(metadata, data)) {
             byte[] compBytes;
             Compression compression = null;
             try {
                 if (origLength <= _maxGZIPCompressibleSize) {
                     compression = Compression.GZIP;
-                    compBytes = Compressors.gzipCompress(readBuffer, 0, origLength);
+                    compBytes = Compressors.gzipCompress(data);
                 } else {
                     compression = Compression.LZF;
-                    compBytes = Compressors.lzfCompress(readBuffer, 0, origLength);
+                    compBytes = Compressors.lzfCompress(data);
                 }
             } catch (IOException e) {
                 throw new StoreException(key, "Problem with compression ("+compression+"): "+e.getMessage(), e);
@@ -339,26 +388,21 @@ public class StorableStoreImpl extends AdminStorableStore
             // if compression would not, like, compress, don't bother:
             if (compBytes.length >= origLength) {
                 compression = null;
-                metadata.storageSize = readByteCount;
             } else {
-                readBuffer = compBytes;
-                readByteCount = compBytes.length;
+                data = ByteContainer.simple(compBytes);
                 metadata.compression = compression;
                 metadata.uncompressedSize = origLength;
                 metadata.storageSize = compBytes.length;
-                metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
+                metadata.compressedContentHash = _calcChecksum(data);
             }
-        } else {
-            metadata.storageSize = readByteCount;
         }
-        return _putSmallEntry(key, metadata, customMetadata,
-                allowOverwrite, readBuffer, readByteCount);
+        metadata.storageSize = data.byteLength();
+        return _putSmallEntry(key, metadata, customMetadata, allowOverwrite, data);
     }
 
     protected StorableCreationResult _putSmallPreCompressedEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            boolean allowOverwrite,
-            byte[] readBuffer, int readByteCount)
+            boolean allowOverwrite, ByteContainer data)
         throws IOException, StoreException
     {
         /* !!! TODO: what to do with checksum? Should we require checksum
@@ -381,39 +425,37 @@ public class StorableStoreImpl extends AdminStorableStore
         // may get checksum for compressed data, or might not; if not, calculate:
         if (metadata.compression != Compression.NONE) {
             if (metadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
-                metadata.compressedContentHash = _calcChecksum(readBuffer, 0, readByteCount);
+                metadata.compressedContentHash = _calcChecksum(data);
             }
         }
-        return _putSmallEntry(key, metadata, customMetadata,
-                allowOverwrite, readBuffer, readByteCount);
+        return _putSmallEntry(key, metadata, customMetadata, allowOverwrite, data);
     }
 
     protected StorableCreationResult _putSmallEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            boolean allowOverwrite,
-            byte[] readBuffer, int readByteCount)
+            boolean allowOverwrite, ByteContainer data)
         throws IOException, StoreException
     {
         Storable storable;
         final long now;
 
         // inline? Yes if small enough
-        if (readByteCount <= _maxInlinedStorageSize) {
+        if (data.byteLength() <= _maxInlinedStorageSize) {
             now = _timeMaster.currentTimeMillis();
             storable = _storableConverter.encodeInlined(key, now,
-                    stdMetadata, customMetadata, readBuffer, 0, readByteCount);
+                    stdMetadata, customMetadata, data);
         } else {
             // otherwise, need to create file and all that fun...
             long fileCreationTime = _timeMaster.currentTimeMillis();
             FileReference fileRef = _fileManager.createStorageFile(key,
                     stdMetadata.compression, fileCreationTime);
             try {
-                IOUtil.writeFile(fileRef.getFile(), readBuffer, 0, readByteCount);
+                IOUtil.writeFile(fileRef.getFile(), data);
             } catch (IOException e) {
                 // better remove the file, if one exists...
                 fileRef.getFile().delete();
                 throw new StoreException(key,
-                        "Failed to write storage file of "+readByteCount+" bytes: "+e.getMessage(), e);
+                        "Failed to write storage file of "+data.byteLength()+" bytes: "+e.getMessage(), e);
             }
             // but modtime better be taken only now, as above may have taken some time (I/O bound)
             now = _timeMaster.currentTimeMillis();
@@ -876,9 +918,9 @@ public class StorableStoreImpl extends AdminStorableStore
         }
     }    
             
-    protected int _calcChecksum(byte[] buffer, int offset, int length)
+    protected int _calcChecksum(ByteContainer data)
     {
-        return BlockMurmur3Hasher.instance.hash(HASH_SEED, buffer, offset, length);
+        return data.hash(BlockMurmur3Hasher.instance, HASH_SEED);
     }
     
     /**
@@ -894,12 +936,12 @@ public class StorableStoreImpl extends AdminStorableStore
      *</ul>
      */
     protected boolean _shouldTryToCompress(StorableCreationMetadata metadata,
-            byte[] buffer, int offset, int length)
+            ByteContainer data)
     {
         return _compressionEnabled
             && (metadata.compression == null)
-            && (length >= _minCompressibleSize)
-            && !Compressors.isCompressed(buffer, offset, length);
+            && (data.byteLength() >= _minCompressibleSize)
+            && !Compressors.isCompressed(data);
     }
     
     protected void _checkClosed()

@@ -24,6 +24,10 @@ public class Compressors
         return findCompression(data, offset, len) != null;
     }
 
+    public static boolean isCompressed(ByteContainer data) {
+        return findCompression(data) != null;
+    }
+    
     public static Compression findCompression(byte[] data, int offset, int len)
     {
         if (len < 3) {
@@ -44,6 +48,27 @@ public class Compressors
         }
         return null;
     }
+
+    public static Compression findCompression(ByteContainer data)
+    {
+        if (data.byteLength() < 3) {
+            return null;
+        }
+        byte b = data.get(0);
+        if (b == LZFChunk.BYTE_Z) { // LZF: // starts with 'ZV' == 0x5A, 0x56
+            if (data.get(1) == LZFChunk.BYTE_V) {
+                byte third = data.get(2);
+                if (third == LZFChunk.BLOCK_TYPE_COMPRESSED || third == LZFChunk.BLOCK_TYPE_NON_COMPRESSED) {
+                    return Compression.LZF;
+                }
+            }
+        } else if (b == 0x1F) { // GZIP: // starts with 0x1F, 0x8B (0x8B1F, little-endian)
+            if ((data.get(1) & 0xFF) == 0x8B) {
+                return Compression.GZIP;
+            }
+        }
+        return null;
+    }
     
     /*
     /**********************************************************************
@@ -58,13 +83,23 @@ public class Compressors
     public static byte[] gzipCompress(byte[] data, int offset, int len) throws IOException
     {
         // assume 50% compression rate
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream(len);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(len>>1);
         GZIPOutputStream out = new GZIPOutputStream(bytes);
         out.write(data, offset, len);
         out.close();
         return bytes.toByteArray();
     }
 
+    public static byte[] gzipCompress(ByteContainer data) throws IOException
+    {
+        // assume 50% compression rate
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(data.byteLength()>>1);
+        GZIPOutputStream out = new GZIPOutputStream(bytes);
+        data.writeBytes(out);
+        out.close();
+        return bytes.toByteArray();
+    }
+    
     public static byte[] lzfCompress(byte[] data) throws IOException {
         return lzfCompress(data, 0, data.length);
     }
@@ -73,6 +108,19 @@ public class Compressors
         return LZFEncoder.encode(data, offset, len);
     }
 
+    public static byte[] lzfCompress(ByteContainer data) throws IOException {
+        return data.withBytes(new WithBytesCallback<byte[]>() {
+            @Override
+            public byte[] withBytes(byte[] buffer, int offset, int length) {
+                try {
+                    return LZFEncoder.encode(buffer, offset, length);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        });
+    }
+    
     public static OutputStream compressingStream(OutputStream out, Compression comp) throws IOException
     {
         if (comp != null) {

@@ -60,7 +60,15 @@ public class IOUtil
         out.close();
     }
 
-	/*
+    public static void writeFile(File file, ByteContainer data)
+        throws IOException
+    {
+        FileOutputStream out = new FileOutputStream(file);
+        data.writeBytes(out);
+        out.close();
+    }
+    
+    /*
     /**********************************************************************
     /* Helpers for compression handling
     /**********************************************************************
@@ -86,6 +94,26 @@ public class IOUtil
         return null;
     }
 
+    public static String verifyCompression(Compression alleged, ByteContainer input)
+    {
+        if (alleged != null && alleged != Compression.NONE) {
+            Compression actual = Compressors.findCompression(input);
+            if (actual != alleged) {
+                if (input.byteLength() < 3L) { // LZF minimum is 3 bytes for empty file...
+                    return "Invalid compression '"+alleged+"': payload length only "
+                    +input.byteLength()+" bytes; can not be compressed data";
+                }
+                return "Invalid compression '"+alleged
+                        +"': does not start with expected bytes; first three bytes are:"
+                        +" "+Integer.toHexString(input.get(0) & 0xFF)
+                        +" "+Integer.toHexString(input.get(1) & 0xFF)
+                        +" "+Integer.toHexString(input.get(2) & 0xFF)
+                        ;
+            }
+        }
+        return null;
+    }
+    
     /*
     /**********************************************************************
     /* Helper methods for error handling
