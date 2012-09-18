@@ -49,6 +49,29 @@ public abstract class StoreException extends IOException
      */
 
     /**
+     * Enumeration of types of Input problems that are exposed
+     * to clients.
+     */
+    public enum InputProblem
+    {
+        /**
+         * Error caused when client claims that content uses specific
+         * Compression, but where content does not have expected
+         * signature (i.e. client-provided information is wrong, or
+         * data corrupt)
+         */
+        BAD_COMPRESSION,
+        
+        /**
+         * Error caused by client sending checksum (hash) over content
+         * that does not match with checksum that server calculates.
+         */
+        BAD_CHECKSUM,
+        ;
+    }
+    
+    
+    /**
      * Specific {@link StoreException} subtype used when the problem is
      * with input data passed to an operation. This will typically
      * result in a different kind of external error being reported.
@@ -57,20 +80,17 @@ public abstract class StoreException extends IOException
     {
         private static final long serialVersionUID = 1L;
 
-        public Input(StorableKey key, String msg) {
+        protected final InputProblem _problem;
+        
+        public Input(StorableKey key, InputProblem prob, String msg) {
             super(key, msg);
-        }
-
-        public Input(StorableKey key, Throwable t) {
-            super(key, t);
-        }
-
-        public Input(StorableKey key, String msg, Throwable t) {
-            super(key, msg, t);
+            _problem = prob;
         }
 
         @Override public boolean isInputError() { return true; }
         @Override public boolean isServerError() { return false; }
+
+        public InputProblem getProblem() { return _problem; }
     }
     
     /**

@@ -310,7 +310,7 @@ public class StorableStoreImpl extends AdminStorableStore
             final Compression originalCompression = stdMetadata.compression;
             String error = IOUtil.verifyCompression(originalCompression, readBuffer, len);
             if (error != null) {
-                throw new StoreException.Input(key, error);
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_COMPRESSION, error);
             }
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
@@ -337,7 +337,7 @@ public class StorableStoreImpl extends AdminStorableStore
         final Compression originalCompression = stdMetadata.compression;
         String error = IOUtil.verifyCompression(originalCompression, input);
         if (error != null) {
-            throw new StoreException.Input(key, error);
+            throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM, error);
         }
         if (originalCompression == null) { // client did not compress, we may try to
             return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
@@ -367,7 +367,8 @@ public class StorableStoreImpl extends AdminStorableStore
             metadata.contentHash = actualChecksum;
         } else {
             if (origChecksum != actualChecksum) {
-                throw new StoreException.Input(key, "Incorrect checksum (0x"+Integer.toHexString(origChecksum)
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                        "Incorrect checksum (0x"+Integer.toHexString(origChecksum)
                         +"), calculated to be 0x"+Integer.toHexString(actualChecksum));
             }
         }
@@ -383,7 +384,8 @@ public class StorableStoreImpl extends AdminStorableStore
                     compBytes = Compressors.lzfCompress(data);
                 }
             } catch (IOException e) {
-                throw new StoreException.Input(key, "Problem with compression ("+compression+"): "+e.getMessage(), e);
+                throw new StoreException.IO(key,
+                        "Problem when compressing content as "+compression+": "+e.getMessage(), e);
             }
             // if compression would not, like, compress, don't bother:
             if (compBytes.length >= origLength) {
@@ -412,7 +414,7 @@ public class StorableStoreImpl extends AdminStorableStore
         final int origChecksum = metadata.contentHash;
         if (origChecksum == StoreConstants.NO_CHECKSUM) {
             if (_requireChecksumForPreCompressed) {
-                throw new StoreException.Input(key,
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
                         "No checksum for non-compressed data provided for pre-compressed entry");
             }
         }
@@ -556,7 +558,8 @@ public class StorableStoreImpl extends AdminStorableStore
                 if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
                     stdMetadata.contentHash = actualHash;
                 } else if (stdMetadata.contentHash != actualHash) {
-                    throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                            "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                     +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
                                     +Integer.toHexString(actualHash));
                 }
@@ -566,7 +569,8 @@ public class StorableStoreImpl extends AdminStorableStore
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
                     if (stdMetadata.compressedContentHash != actualHash) {
-                        throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                        throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                                "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                         +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
                                         +Integer.toHexString(actualHash));
                     }
@@ -585,7 +589,8 @@ public class StorableStoreImpl extends AdminStorableStore
                 stdMetadata.contentHash = contentHash;
             } else {
                 if (stdMetadata.contentHash != contentHash) {
-                    throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                            "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                     +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
                                     +Integer.toHexString(contentHash));
                 }
@@ -594,7 +599,8 @@ public class StorableStoreImpl extends AdminStorableStore
                 stdMetadata.compressedContentHash = compressedHash;
             } else {
                 if (stdMetadata.compressedContentHash != compressedHash) {
-                    throw new StoreException.Input(key, "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
+                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                            "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
                                 +" bytes): got 0x"
                                 +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
                                 +Integer.toHexString(compressedHash));
