@@ -136,6 +136,9 @@ public class FileManager
         _filenameConverter = config.createFilenameConverter();
         final long now = timeMaster.currentTimeMillis();
         File dataRoot = config.dataRoot;
+        if (dataRoot == null) {
+            throw new IllegalArgumentException("Missing 'dataRoot' configuration value for FileManager");
+        }
         if (!dataRoot.exists()) { // create?
             if (!dataRoot.mkdirs()) {
                 throw new IllegalStateException("Data directory '"+dataRoot.getAbsolutePath()+"' did not exist, failed to create");
