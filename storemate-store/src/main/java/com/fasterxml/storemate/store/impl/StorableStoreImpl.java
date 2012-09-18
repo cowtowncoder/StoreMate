@@ -747,10 +747,10 @@ public class StorableStoreImpl extends AdminStorableStore
 
         TombstoneCounter counter = new TombstoneCounter(_timeMaster, maxEndTime);
         if (_backend.scanEntries(counter) != IterationResult.FULLY_ITERATED) {
-            return counter.tombstones;
+            throw new IllegalStateException("getTombstoneCount() run too long (max "+maxRuntimeMsecs
+                    +"); failed after "+counter.tombstones+"/"+counter.total+" records");
         }
-        throw new IllegalStateException("getTombstoneCount() run too long (max "+maxRuntimeMsecs
-                +"); failed after "+counter.tombstones+"/"+counter.total+" records");
+        return counter.tombstones;
     }
 
     @Override

@@ -106,8 +106,7 @@ public class BDBJEStoreBackend extends StoreBackend
     @Override
     public boolean hasEntry(StorableKey key)
     {
-        OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(),
-                LockMode.READ_COMMITTED);
+        OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(), null);
         switch (status) {
         case SUCCESS:
         case KEYEXIST:
@@ -123,7 +122,7 @@ public class BDBJEStoreBackend extends StoreBackend
     public Storable findEntry(StorableKey key) throws StoreException
     {
         DatabaseEntry result = new DatabaseEntry();
-        OperationStatus status = _entries.get(null, dbKey(key), result, LockMode.READ_COMMITTED);
+        OperationStatus status = _entries.get(null, dbKey(key), result, null);
         if (status != OperationStatus.SUCCESS) {
             return null;
         }
@@ -151,7 +150,7 @@ public class BDBJEStoreBackend extends StoreBackend
         }
         // otherwise, ought to find existing entry, return it
         DatabaseEntry result = new DatabaseEntry();
-        status = _entries.get(null, dbKey, result, LockMode.READ_COMMITTED);
+        status = _entries.get(null, dbKey, result, null);
         if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
             throw new StoreException.Internal(key, "Internal error, failed to access old value, status: "+status);
         }
@@ -165,7 +164,7 @@ public class BDBJEStoreBackend extends StoreBackend
         DatabaseEntry dbKey = dbKey(key);
         DatabaseEntry result = new DatabaseEntry();
         // First: do we have an entry? If so, read to be returned
-        OperationStatus status = _entries.get(null, dbKey, result, LockMode.READ_COMMITTED);
+        OperationStatus status = _entries.get(null, dbKey, result, null);
         if (status != OperationStatus.SUCCESS) {
             result = null;
         }
@@ -230,7 +229,7 @@ public class BDBJEStoreBackend extends StoreBackend
         
         try {
             main_loop:
-            while (crsr.getNext(keyEntry, data, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+            while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
                 StorableKey key = storableKey(keyEntry);
                 switch (cb.verifyKey(key)) {
                 case SKIP_ENTRY: // nothing to do
@@ -264,10 +263,10 @@ public class BDBJEStoreBackend extends StoreBackend
         OperationStatus status;
         if (firstKey == null) { // from beginning (i.e. no ranges)
             keyEntry = new DatabaseEntry();
-            status = crsr.getFirst(keyEntry, data, LockMode.DEFAULT);
+            status = crsr.getFirst(keyEntry, data, null);
         } else {
             keyEntry = dbKey(firstKey);
-            status = crsr.getSearchKeyRange(keyEntry, data, LockMode.DEFAULT);
+            status = crsr.getSearchKeyRange(keyEntry, data, null);
         }
 
         try {
@@ -286,7 +285,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                     return IterationResult.TERMINATED_FOR_ENTRY;
                 }
-                status = crsr.getNext(keyEntry, data, LockMode.DEFAULT);
+                status = crsr.getNext(keyEntry, data, null);
             }
             return IterationResult.FULLY_ITERATED;
         } finally {
@@ -308,10 +307,10 @@ public class BDBJEStoreBackend extends StoreBackend
         OperationStatus status;
         if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
             keyEntry = new DatabaseEntry();
-            status = crsr.getFirst(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+            status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
         } else {
             keyEntry = timestampKey(firstTimestamp);
-            status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+            status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, null);
         }
 
         try {
@@ -341,7 +340,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                     return IterationResult.TERMINATED_FOR_ENTRY;
                 }
-                status = crsr.getNext(keyEntry, primaryKeyEntry, data, LockMode.DEFAULT);
+                status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
             }
             return IterationResult.FULLY_ITERATED;
         } finally {
