@@ -22,7 +22,7 @@ public class BDBJEConfig extends StoreBackendConfig
      * Should not be same as the directory in which data files are stored
      * (nor the main deployment directory)
      */
-    public String dataRoot;
+    public File dataRoot;
     
     /*
     /**********************************************************************
@@ -35,7 +35,7 @@ public class BDBJEConfig extends StoreBackendConfig
      * to be kept in memory, but not necessarily the whole DB.
      *<p>
      * NOTE: most developers think "bigger is better", when it comes to cache
-     * sizing. That is patently wrong idea here -- too big cache can kill
+     * sizing. That is patently wrong idea -- too big a cache can kill
      * JVM via GC overhead. So a few megs goes a long way; the most important
      * cache is probably OS block cache for the file system.
      *<p>
@@ -51,6 +51,6 @@ public class BDBJEConfig extends StoreBackendConfig
 
     public BDBJEConfig() { }
     public BDBJEConfig(File dataRoot) {
-        this.dataRoot = dataRoot.getAbsolutePath();
+        this.dataRoot = dataRoot;
     }
 }

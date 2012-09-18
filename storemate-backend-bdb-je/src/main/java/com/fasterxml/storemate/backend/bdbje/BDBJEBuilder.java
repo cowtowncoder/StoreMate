@@ -56,11 +56,10 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
 
-        String dbRootStr = _bdbConfig.dataRoot;
-        if (dbRootStr == null) {
+        File dbRoot = _bdbConfig.dataRoot;
+        if (dbRoot == null) {
             throw new IllegalStateException("Missing BDBJEConfig.dataRoot");
         }
-        File dbRoot = new File(dbRootStr);
         if (!dbRoot.exists() || !dbRoot.isDirectory()) {
             if (!canCreate) {
                 throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
