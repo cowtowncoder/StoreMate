@@ -181,6 +181,18 @@ public class Storable
         return mgr.derefenceFile(IOUtil.getAsciiString(extRef));
     }
 
+    /**
+     * Accessor for getting relative path to external data File, if one exists;
+     * or null if no external data used.
+     */
+    public String getExternalFilePath()
+    {
+        if (_externalPathLength <= 0) {
+            return null;
+        }
+        return IOUtil.getAsciiString(_rawEntry.view(_payloadOffset, _externalPathLength));
+    }
+    
     public ByteContainer getMetadata() {
         if (_metadataLength <= 0) {
             return ByteContainer.emptyContainer();
