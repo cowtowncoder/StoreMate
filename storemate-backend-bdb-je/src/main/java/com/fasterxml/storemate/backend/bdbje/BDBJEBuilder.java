@@ -9,6 +9,7 @@ import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
+import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
@@ -20,7 +21,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     protected StoreConfig _storeConfig;
     protected BDBJEConfig _bdbConfig;
 
-    protected BDBJEBuilder() { this(null, null); }
+    public BDBJEBuilder() { this(null, null); }
 
     public BDBJEBuilder(StoreConfig storeConfig, BDBJEConfig bdbConfig)
     {
@@ -99,8 +100,13 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     }
 
     @Override
-    public BDBJEBuilder with(BDBJEConfig config) {
-        _bdbConfig = config;
+    public BDBJEBuilder with(StoreBackendConfig config) {
+        if (!(config instanceof BDBJEConfig)) {
+            String desc = (config == null) ? "NULL" : config.getClass().getName();
+            throw new IllegalArgumentException("BDB-JE must be configured with a BDBJEConfig instance, not "
+                    +desc);
+        }
+        _bdbConfig = (BDBJEConfig) config;
         return this;
     }
     

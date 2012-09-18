@@ -27,13 +27,13 @@ public abstract class StoreBackendBuilder<T extends StoreBackendConfig>
      * Fluent factory method used for (re)configuring builder with
      * given generic Store configuration.
      */
-    public abstract StoreBackendBuilder<T> with(StoreConfig genericConfig);
+    public abstract StoreBackendBuilder<?> with(StoreConfig genericConfig);
 
     /**
      * Fluent factory method used for (re)configuring builder with
      * given configuration.
      */
-    public abstract StoreBackendBuilder<T> with(T backendConfig);
+    public abstract StoreBackendBuilder<?> with(StoreBackendConfig backendConfig);
 
     /**
      * Method called after all configuration has been passed, to create
