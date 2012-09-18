@@ -50,10 +50,10 @@ public abstract class BDBJETestBase extends SharedTestBase
     protected StorableStore createStore(String nameSuffix, long startTime) throws IOException {
     	return createStore(nameSuffix, new TimeMasterForSimpleTesting(startTime));
     }
-    
+
     protected StorableStore createStore(String nameSuffix, TimeMaster timeMaster) throws IOException
     {
-        File testRoot = getTestScratchDir("bdb-empty-1", true);
+        File testRoot = getTestScratchDir(nameSuffix, true);
         File fileDir = new File(testRoot, "files");
         StoreConfig storeConfig = new StoreConfig();
         BDBJEConfig bdbConfig = new BDBJEConfig(new File(testRoot, "bdb"));
