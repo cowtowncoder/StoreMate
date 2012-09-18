@@ -92,7 +92,12 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         // and now get to variable parts
         if (compression != Compression.NONE) {
             compressedHash = reader.nextInt();
-            originalLength = reader.nextVLong();
+            long l = reader.nextVLong();
+            // one work-around: can't use negative values so '0' means N/A
+            if (l == 0L) {
+                l = -1L;
+            }
+            originalLength = l;
         } else {
             compressedHash = 0;
             originalLength = -1;
@@ -241,7 +246,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             return null;
         }
         return new Storable(key, writer.bufferedBytes(), modtime,
-                stdMetadata.deleted, stdMetadata.compression, 0,
+                stdMetadata.deleted, stdMetadata.compression, rawRef.length,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,
                 payloadOffset, stdMetadata.storageSize);

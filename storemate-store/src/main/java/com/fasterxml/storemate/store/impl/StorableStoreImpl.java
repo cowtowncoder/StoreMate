@@ -438,7 +438,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         Storable storable;
         final long now;
-
+        
         // inline? Yes if small enough
         if (data.byteLength() <= _maxInlinedStorageSize) {
             now = _timeMaster.currentTimeMillis();
@@ -475,7 +475,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         boolean skipCompression;
         Compression comp = stdMetadata.compression;
-
+        
         if (comp != null) { // pre-compressed, or blocked
             skipCompression = true;
             comp = stdMetadata.compression;
@@ -572,6 +572,8 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                 }
             }
+            // we don't really know the original size, either way:
+            stdMetadata.uncompressedSize = 0L;
         } else {
             final int contentHash = hasher.calculateHash();
             final int compressedHash = compressedOut.calculateHash();

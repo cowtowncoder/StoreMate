@@ -196,7 +196,9 @@ public abstract class StuffToBytes
         @Override
         public StuffToBytes appendVLong(long value)
         {
-            if (value < 0L) throw new IllegalArgumentException();
+            if (value < 0L) {
+                throw new IllegalArgumentException("Can not encode negative values, got: "+value);
+            }
             if (value < Integer.MAX_VALUE) {
                 return appendVInt((int) value);
             }

@@ -33,6 +33,15 @@ public class Storable
     
     protected final boolean _isDeleted;
 
+    @Override
+    public String toString()
+    {
+        return "Storable: key="+_key+", rawLength="+_rawEntry.byteLength()
+                +", compression="+_compression+", deleted="+_isDeleted
+                +", extPathLen="+_externalPathLength
+                ;
+    }
+    
     /*
     /**********************************************************************
     /* Metadata
@@ -110,7 +119,6 @@ public class Storable
      */
     public Storable softDeletedCopy(ByteContainer bytes, boolean removeData)
     {
-        
         return new Storable(_key, bytes,
                 _lastModified,
                 true, _compression,
@@ -119,7 +127,6 @@ public class Storable
                 _metadataOffset, _metadataLength,
                 _payloadOffset,
                 removeData ? 0 : _storageLength);
-                
     }
     
     /*
