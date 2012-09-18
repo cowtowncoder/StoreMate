@@ -271,7 +271,7 @@ public class StorableStoreImpl extends AdminStorableStore
         }
         return result;
     }
-    
+
     /*
     /**********************************************************************
     /* Internal methods for entry creation, first level
@@ -303,14 +303,14 @@ public class StorableStoreImpl extends AdminStorableStore
             try {
                 len = IOUtil.readFully(input, readBuffer);
             } catch (IOException e) {
-                throw new StoreException(key, "Failed to read payload for key "+key+": "+e.getMessage(), e);
+                throw new StoreException.IO(key, "Failed to read payload for key "+key+": "+e.getMessage(), e);
             }
     
             // First things first: verify that compression is what it claims to be:
             final Compression originalCompression = stdMetadata.compression;
             String error = IOUtil.verifyCompression(originalCompression, readBuffer, len);
             if (error != null) {
-                throw new StoreException(key, error);
+                throw new StoreException.Input(key, error);
             }
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
@@ -337,7 +337,7 @@ public class StorableStoreImpl extends AdminStorableStore
         final Compression originalCompression = stdMetadata.compression;
         String error = IOUtil.verifyCompression(originalCompression, input);
         if (error != null) {
-            throw new StoreException(key, error);
+            throw new StoreException.Input(key, error);
         }
         if (originalCompression == null) { // client did not compress, we may try to
             return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
@@ -367,7 +367,7 @@ public class StorableStoreImpl extends AdminStorableStore
             metadata.contentHash = actualChecksum;
         } else {
             if (origChecksum != actualChecksum) {
-                throw new StoreException(key, "Incorrect checksum (0x"+Integer.toHexString(origChecksum)
+                throw new StoreException.Input(key, "Incorrect checksum (0x"+Integer.toHexString(origChecksum)
                         +"), calculated to be 0x"+Integer.toHexString(actualChecksum));
             }
         }
@@ -383,7 +383,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     compBytes = Compressors.lzfCompress(data);
                 }
             } catch (IOException e) {
-                throw new StoreException(key, "Problem with compression ("+compression+"): "+e.getMessage(), e);
+                throw new StoreException.Input(key, "Problem with compression ("+compression+"): "+e.getMessage(), e);
             }
             // if compression would not, like, compress, don't bother:
             if (compBytes.length >= origLength) {
@@ -412,7 +412,7 @@ public class StorableStoreImpl extends AdminStorableStore
         final int origChecksum = metadata.contentHash;
         if (origChecksum == StoreConstants.NO_CHECKSUM) {
             if (_requireChecksumForPreCompressed) {
-                throw new StoreException(key,
+                throw new StoreException.Input(key,
                         "No checksum for non-compressed data provided for pre-compressed entry");
             }
         }
@@ -454,7 +454,7 @@ public class StorableStoreImpl extends AdminStorableStore
             } catch (IOException e) {
                 // better remove the file, if one exists...
                 fileRef.getFile().delete();
-                throw new StoreException(key,
+                throw new StoreException.IO(key,
                         "Failed to write storage file of "+data.byteLength()+" bytes: "+e.getMessage(), e);
             }
             // but modtime better be taken only now, as above may have taken some time (I/O bound)
@@ -509,12 +509,12 @@ public class StorableStoreImpl extends AdminStorableStore
             }
             out.write(readBuffer, 0, readByteCount);
         } catch (IOException e) {
-        	try {
-        		if (out != null) {
-        			out.close();
-        		}
-        	} catch (IOException e2) { }
-            throw new StoreException(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e2) { }
+            throw new StoreException.IO(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
         }
 
         IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
@@ -528,7 +528,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 try {
                     count = input.read(readBuffer);
                 } catch (IOException e) { // probably will fail to write response too but...
-                    throw new StoreException(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+                    throw new StoreException.IO(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
                 }
                 if (count < 0) {
                     break;
@@ -537,7 +537,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 try {
                     out.write(readBuffer, 0, count);
                 } catch (IOException e) {
-                    throw new StoreException(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                    throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
                             +") to file '"+storedFile.getAbsolutePath()+"'", e);
                 }
                 hasher.update(readBuffer, 0, count);
@@ -556,7 +556,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
                     stdMetadata.contentHash = actualHash;
                 } else if (stdMetadata.contentHash != actualHash) {
-                    throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                    throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                     +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
                                     +Integer.toHexString(actualHash));
                 }
@@ -566,7 +566,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
                     if (stdMetadata.compressedContentHash != actualHash) {
-                        throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                        throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                         +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
                                         +Integer.toHexString(actualHash));
                     }
@@ -583,7 +583,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 stdMetadata.contentHash = contentHash;
             } else {
                 if (stdMetadata.contentHash != contentHash) {
-                    throw new StoreException(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                    throw new StoreException.Input(key, "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
                                     +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
                                     +Integer.toHexString(contentHash));
                 }
@@ -592,7 +592,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 stdMetadata.compressedContentHash = compressedHash;
             } else {
                 if (stdMetadata.compressedContentHash != compressedHash) {
-                    throw new StoreException(key, "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
+                    throw new StoreException.Input(key, "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
                                 +" bytes): got 0x"
                                 +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
                                 +Integer.toHexString(compressedHash));
@@ -659,6 +659,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
+        final long currentTime = _timeMaster.currentTimeMillis();
         Storable entry = _partitions.withLockedPartition(key,
             new ReadModifyOperationCallback<Object,Storable>() {
                 @Override
@@ -670,7 +671,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     if (entry == null) {
                         return null;
                     }
-                    return _softDelete(key, entry, removeInlinedData, removeExternalData);
+                    return _softDelete(key, entry, currentTime, removeInlinedData, removeExternalData);
                 }
         }, null);
         return new StorableDeletionResult(key, entry);
@@ -865,7 +866,7 @@ public class StorableStoreImpl extends AdminStorableStore
     /**********************************************************************
      */
     
-    protected Storable _softDelete(StorableKey key, Storable entry,
+    protected Storable _softDelete(StorableKey key, Storable entry, final long currentTime,
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -874,7 +875,7 @@ public class StorableStoreImpl extends AdminStorableStore
         if (!entry.isDeleted() || hasExternalToDelete
                 || (removeInlinedData && entry.hasInlineData())) {
             File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
-            Storable modEntry = _storableConverter.softDeletedCopy(key, entry,
+            Storable modEntry = _storableConverter.softDeletedCopy(key, entry, currentTime,
                     removeInlinedData, removeExternalData);
             _backend.ovewriteEntry(key, modEntry);
             if (extFile != null) {

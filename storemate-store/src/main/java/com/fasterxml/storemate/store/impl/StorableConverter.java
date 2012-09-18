@@ -253,7 +253,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
     /**********************************************************************
      */
 
-    public Storable softDeletedCopy(StorableKey key, Storable orig,
+    public Storable softDeletedCopy(StorableKey key, Storable orig, long deletionTime,
             boolean deleteInlined, boolean deleteExternal)
     {
         final boolean removeExternal = deleteExternal && orig.hasExternalData();
@@ -265,6 +265,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         if (!(removeInlined || removeExternal)) {
             byte[] raw = orig.withRaw(WithBytesAsArray.instance);
             raw[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
+            _ovewriteTimestamp(raw, 0, deletionTime);
             return orig.softDeletedCopy(ByteContainer.simple(raw), false);
         }
         /* otherwise we can still make use of first part of data, up to and
@@ -286,6 +287,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             // note: single byte, not variable length, hence plain zero
             base[OFFSET_EXT_PATH_LENGTH] = 0;
         }
+        _ovewriteTimestamp(base, 0, deletionTime);
         Storable mod = orig.softDeletedCopy(ByteContainer.simple(base), true);
         return mod;
     }
@@ -316,6 +318,21 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         throw new IllegalArgumentException("Unrecognized status value of "+(b & 0xFF));
     }
 
+    protected void _ovewriteTimestamp(byte[] buffer, int offset, long time)
+    {
+        offset += OFFSET_LASTMOD;
+        _putIntBE(buffer, offset, (int) (time >> 32));
+        _putIntBE(buffer, offset+4, (int) time);
+    }
+
+    private void _putIntBE(byte[] buffer, int offset, int value)
+    {
+        buffer[offset++] = (byte) (value >> 24);
+        buffer[offset++] = (byte) (value >> 16);
+        buffer[offset++] = (byte) (value >> 8);
+        buffer[offset++] = (byte) value;
+    }
+    
     protected Compression _decodeCompression(byte b) throws IllegalArgumentException {
         return Compression.forIndex((int) b, true);
     }

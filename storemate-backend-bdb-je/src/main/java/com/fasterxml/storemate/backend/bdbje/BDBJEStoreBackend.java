@@ -147,13 +147,13 @@ public class BDBJEStoreBackend extends StoreBackend
             return null;
         }
         if (status != OperationStatus.KEYEXIST) { // what?
-            throw new StoreException(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
+            throw new StoreException.Internal(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
         }
         // otherwise, ought to find existing entry, return it
         DatabaseEntry result = new DatabaseEntry();
         status = _entries.get(null, dbKey, result, LockMode.READ_COMMITTED);
         if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
-            throw new StoreException(key, "Internal error, failed to access old value, status: "+status);
+            throw new StoreException.Internal(key, "Internal error, failed to access old value, status: "+status);
         }
         return _storableConverter.decode(key, result.getData());
     }
@@ -172,7 +172,7 @@ public class BDBJEStoreBackend extends StoreBackend
         // if not, create
         status = _entries.put(null, dbKey, dbValue(storable));
         if (status != OperationStatus.SUCCESS) {
-            throw new StoreException(key, "Failed to put entry, OperationStatus="+status);
+            throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
         }
         if (result == null) {
             return null;
@@ -186,7 +186,7 @@ public class BDBJEStoreBackend extends StoreBackend
     {
         OperationStatus status = _entries.put(null, dbKey(key), dbValue(storable));
         if (status != OperationStatus.SUCCESS) {
-            throw new StoreException(key, "Failed to overwrite entry, OperationStatus="+status);
+            throw new StoreException.Internal(key, "Failed to overwrite entry, OperationStatus="+status);
         }
     }
     
@@ -207,8 +207,8 @@ public class BDBJEStoreBackend extends StoreBackend
         case NOTFOUND:
             return false;
         default:
-        	// should not be getting other choices so:
-        	throw new StoreException(key, "Internal error, failed to delete entry, OperationStatus="+status);
+            // should not be getting other choices so:
+            throw new StoreException.Internal(key, "Internal error, failed to delete entry, OperationStatus="+status);
         }
     }
 

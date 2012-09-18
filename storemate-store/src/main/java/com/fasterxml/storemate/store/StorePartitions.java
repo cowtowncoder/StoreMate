@@ -85,7 +85,7 @@ public class StorePartitions
         try {
             semaphore.acquire();
         } catch (InterruptedException e) { // could this ever occur?
-            throw new StoreException(key, e);
+            throw new StoreException.Internal(key, e);
         }
         try {
             return cb.perform(key, _store, arg);
