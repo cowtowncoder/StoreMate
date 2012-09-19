@@ -98,7 +98,7 @@ public class LastModTest extends BDBJETestBase
             public IterationAction processEntry(Storable entry) {
                 return IterationAction.PROCESS_ENTRY;
             }
-        }, 1L);
+        }, 0L);
         assertEquals(2, timestamps.size());
         assertEquals(Long.valueOf(time2), timestamps.get(0));
         assertEquals(Long.valueOf(startTime), timestamps.get(1));

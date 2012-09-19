@@ -298,6 +298,10 @@ public class BDBJEStoreBackend extends StoreBackend
             long firstTimestamp)
         throws StoreException
     {
+        if (cb == null) {
+            throw new IllegalArgumentException("Can not pass null 'cb' argument");
+        }
+        
         CursorConfig config = new CursorConfig();
         SecondaryCursor crsr = _index.openCursor(null, config);
         final DatabaseEntry keyEntry;

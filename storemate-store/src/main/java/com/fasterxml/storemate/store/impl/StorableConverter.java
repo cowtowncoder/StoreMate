@@ -163,8 +163,12 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             ;
 
         if (stdMetadata.usesCompression()) {
+            long uncompLen = stdMetadata.uncompressedSize;
+            if (uncompLen == -1L) { // VInts/VLongs not used for negative here, mask
+                uncompLen = 0;
+            }
             writer.appendInt(stdMetadata.compressedContentHash) // comp hash
-                .appendVLong(stdMetadata.uncompressedSize); // orig length
+                .appendVLong(uncompLen); // orig length
         }
         
         final int metadataOffset = writer.offset();
