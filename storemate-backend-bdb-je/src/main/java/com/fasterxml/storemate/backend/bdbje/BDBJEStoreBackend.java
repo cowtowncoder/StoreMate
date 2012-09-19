@@ -303,7 +303,7 @@ public class BDBJEStoreBackend extends StoreBackend
         final DatabaseEntry keyEntry;
         final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
         final DatabaseEntry data = new DatabaseEntry();
-
+        
         OperationStatus status;
         if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
             keyEntry = new DatabaseEntry();
@@ -312,7 +312,7 @@ public class BDBJEStoreBackend extends StoreBackend
             keyEntry = timestampKey(firstTimestamp);
             status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, null);
         }
-
+        
         try {
             main_loop:
             while (status == OperationStatus.SUCCESS) {
@@ -376,10 +376,10 @@ public class BDBJEStoreBackend extends StoreBackend
 
     private final static void _putIntBE(byte[] buffer, int offset, int value)
     {
-        buffer[offset] = (byte) (offset >> 24);
-        buffer[++offset] = (byte) (offset >> 16);
-        buffer[++offset] = (byte) (offset >> 8);
-        buffer[++offset] = (byte) offset;
+        buffer[offset] = (byte) (value >> 24);
+        buffer[++offset] = (byte) (value >> 16);
+        buffer[++offset] = (byte) (value >> 8);
+        buffer[++offset] = (byte) value;
     }
 
     private final static long _getLongBE(byte[] buffer, int offset)

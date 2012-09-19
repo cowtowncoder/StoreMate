@@ -111,7 +111,7 @@ public class TimeMasterForSimpleTesting extends TimeMaster
      * 
      * @param time Time to set: MUST not be less than current time
      */
-    public void setCurrentTimeMillis(long time)
+    public TimeMasterForSimpleTesting setCurrentTimeMillis(long time)
     {
         synchronized (_blocked) {
             long old = _currentTime.getAndSet(time);
@@ -120,8 +120,22 @@ public class TimeMasterForSimpleTesting extends TimeMaster
             }
             _blocked.notifyAll();
         }
+        return this;
     }
 
+    /**
+     * Alternative method that allows "moving time back", for test purposes.
+     * @param time
+     */
+    public TimeMasterForSimpleTesting forceCurrentTimeMillis(long time)
+    {
+        synchronized (_blocked) {
+            _currentTime.getAndSet(time);
+            _blocked.notifyAll();
+        }
+        return this;
+    }
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Internal methods
