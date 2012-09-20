@@ -861,6 +861,10 @@ public class StorableStoreImpl extends AdminStorableStore
                     return entry.isDeleted();
                 }
             };
+            /* no time limit on tombstone removal. But should we scan (unordered)
+             * or iterate?
+             */
+            _backend.iterateEntriesByKey(collector);
             for (StorableKey key : collector.getCollected()) {
                 hardDelete(key, true);
                 ++removed;
