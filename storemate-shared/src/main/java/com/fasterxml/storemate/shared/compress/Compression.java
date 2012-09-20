@@ -35,9 +35,6 @@ public enum Compression
     public char asChar() { return _char; }
     public int asIndex() { return _index; }
 
-    // TODO: remove, shouldn't be needed
-    public byte asByte() { return (byte) _char; }
-
     public String asContentEncoding()
     {
         // for NONE we could also use "identity" but...

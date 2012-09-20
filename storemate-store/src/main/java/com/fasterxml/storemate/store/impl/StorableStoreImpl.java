@@ -591,9 +591,10 @@ public class StorableStoreImpl extends AdminStorableStore
             } else {
                 if (stdMetadata.contentHash != contentHash) {
                     throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
-                                    +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
-                                    +Integer.toHexString(contentHash));
+                            "Incorrect checksum for entry ("+copiedBytes+" bytes, compression: "
+                            		+stdMetadata.compression+"; comp checksum 0x"+stdMetadata.compressedContentHash
+                            		+"): got 0x"+Integer.toHexString(stdMetadata.contentHash)
+                            		+", calculated to be 0x"+Integer.toHexString(contentHash));
                 }
             }
             if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
