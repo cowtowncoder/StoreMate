@@ -1,15 +1,18 @@
 # Overview
 
-This project is a building block that implements a simple single-node store system, exposing a basic REST interface as `Servlet`.
-Store uses [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB) to store entry metadata (and smallest of content entries), and file system for storing larger entries.
+This project is a building block that implements a simple single-node store system to use as a building block for distributed storage systems.
 
-Implementation will offer various hooks for customizing things like:
+Check out [Project Wiki](/StoreMate/wiki) for complete description; here are some of the highlights:
 
-* Entry metadata stored
-* Logging/metrics aspects
-* Pre- and post-method (PUT/POST, GET, DELETE) hooks
+* Key/Value storage with optional opaque metadata (stored along with std metadata), where values can range from tiny to huge: smallest entries inlined in local database, larger offlined to disk
+* Last-modified index for building Change List - based synchronization between stores
+* Automatic, configurable auto-negotiated on-the-fly compression, decompression (GZIP, LZF, depending on payload size)
+* Pluggable DB storage backends: current basic implementation based on [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB)
 
 # Status
 
-Experimental
+Working as part of a bigger system -- high-level system to be open sources -- but both implementation and API still likely to change before 1.0.
+
+Documentation sorely needed.
+
 
