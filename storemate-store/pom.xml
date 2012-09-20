@@ -36,11 +36,16 @@
         <version>1.0.6</version>
     </dependency>
 
-    <!-- Joda for basic date/time stuff -->
+    <!-- Joda for basic date/time stuff; config-magic for config values -->
     <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
       <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
+      <version>0.14</version>
     </dependency>
 
     <!--  and we need base test stuff -->

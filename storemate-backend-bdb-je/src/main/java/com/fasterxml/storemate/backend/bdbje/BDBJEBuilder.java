@@ -3,6 +3,8 @@ package com.fasterxml.storemate.backend.bdbje;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.skife.config.DataAmount;
+
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
@@ -76,8 +78,9 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
+        DataAmount cacheSize = _bdbConfig.cacheSize;
         BDBJEStoreBackend physicalStore = new BDBJEStoreBackend(storableConv,
-                dbRoot, entryDB, index, _bdbConfig.cacheInBytes);
+                dbRoot, entryDB, index, cacheSize.getNumberOfBytes());
 
         try {
         	physicalStore.start();
@@ -122,7 +125,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         config.setAllowCreate(allowCreate);
         config.setReadOnly(!writeAccess);
         config.setSharedCache(false);
-        config.setCacheSize(_bdbConfig.cacheInBytes);
+        config.setCacheSize(_bdbConfig.cacheSize.getNumberOfBytes());
         /* Default of 500 msec way too low, let's see if 5 seconds works
          * better.
          */

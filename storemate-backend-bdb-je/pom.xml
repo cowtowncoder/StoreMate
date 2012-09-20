@@ -23,7 +23,13 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- Backend stores should need direct logging... -->
+    <!-- for config, use config-magic for convenience (units) -->
+    <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
+      <version>${version.config-magic}</version>
+    </dependency>
+    <!-- Backend stores should not need direct logging... -->
 <!--    
     <dependency>
       <groupId>org.slf4j</groupId>

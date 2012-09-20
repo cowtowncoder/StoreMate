@@ -4,6 +4,8 @@ import java.io.File;
 
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 
+import org.skife.config.DataAmount;
+
 /**
  * Simple configuration class for BDB-JE - based backend.
  */
@@ -41,7 +43,7 @@ public class BDBJEConfig extends StoreBackendConfig
      *<p>
      * Default value is 40 megs.
      */
-    public long cacheInBytes = 40 * 1024 * 1024;
+    public DataAmount cacheSize = new DataAmount("40MB");
 
     /*
     /**********************************************************************
