@@ -271,7 +271,7 @@ public class BDBJEStoreBackend extends StoreBackend
 
         try {
             main_loop:
-            while (status == OperationStatus.SUCCESS) {
+            for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
                 StorableKey key = storableKey(keyEntry);
                 switch (cb.verifyKey(key)) {
                 case SKIP_ENTRY: // nothing to do
@@ -285,7 +285,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                     return IterationResult.TERMINATED_FOR_ENTRY;
                 }
-                status = crsr.getNext(keyEntry, data, null);
+                
             }
             return IterationResult.FULLY_ITERATED;
         } finally {
@@ -319,7 +319,7 @@ public class BDBJEStoreBackend extends StoreBackend
         
         try {
             main_loop:
-            while (status == OperationStatus.SUCCESS) {
+            for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
                 // First things first: timestamp check
                 long timestamp = _getLongBE(keyEntry.getData(), 0);
                 switch (cb.verifyTimestamp(timestamp)) {
@@ -344,7 +344,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                     return IterationResult.TERMINATED_FOR_ENTRY;
                 }
-                status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
+                
             }
             return IterationResult.FULLY_ITERATED;
         } finally {

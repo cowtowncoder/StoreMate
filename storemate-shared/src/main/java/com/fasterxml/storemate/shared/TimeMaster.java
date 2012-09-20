@@ -41,6 +41,15 @@ public abstract class TimeMaster
      */
     public abstract void sleep(long waitTime) throws InterruptedException;
 
+    /**
+     * Method that by-passes work-arounds and returns actual system time;
+     * should be rarely needed, mostly for things that guard against
+     * excessive resource usage.
+     */
+    public final long realSystemTimeMillis() {
+        return System.currentTimeMillis();
+    }
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Shared helper methods
