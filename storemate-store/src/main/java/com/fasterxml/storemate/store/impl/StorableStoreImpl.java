@@ -34,10 +34,11 @@ public class StorableStoreImpl extends AdminStorableStore
     private final static int HASH_SEED = 0;
 
     /**
-     * We will partition key space in 256 slices for locking purposes;
-     * needs to be high enough to make lock contention very unlikely.
+     * We will partition key space in 64 slices for locking purposes;
+     * needs to be high enough to make lock contention unlikely, but
+     * shouldn't be too high to waste resources on locks themselves.
      */
-    private final static int LOCK_PARTITIONS = 256;
+    private final static int LOCK_PARTITIONS = 64;
     
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 

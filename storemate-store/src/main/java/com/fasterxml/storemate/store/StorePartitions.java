@@ -81,10 +81,12 @@ public class StorePartitions
     public <IN,OUT> OUT withLockedPartition(StorableKey key, StoreOperationCallback<IN,OUT> cb, IN arg)
         throws IOException, StoreException
     {
-        final Semaphore semaphore = _semaphores[_partitionFor(key)];
+        final int partition = _partitionFor(key);
+        final Semaphore semaphore = _semaphores[partition];
         try {
             semaphore.acquire();
         } catch (InterruptedException e) { // could this ever occur?
+            semaphore.release();
             throw new StoreException.Internal(key, e);
         }
         try {
