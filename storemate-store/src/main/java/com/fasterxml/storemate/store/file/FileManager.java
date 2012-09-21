@@ -244,6 +244,9 @@ public class FileManager
     protected final String buildFilename(StorableKey key, int index,
             Compression comp)
     {
+        if (comp == null) {
+            comp = Compression.NONE;
+        }
     	// We will try to create name like "ORIG-NAME-MANGLED.[seqNr][comprType]"
     	
     	int keyLen = key.length();
