@@ -41,7 +41,7 @@ public class BoundedInputStream extends InputStream
     }
     
     public final boolean isCompletelyRead() {
-        return _currReads < _maxReads;
+        return _currReads == _maxReads;
     }
 
     /*
