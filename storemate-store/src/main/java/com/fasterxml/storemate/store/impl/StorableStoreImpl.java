@@ -195,6 +195,11 @@ public class StorableStoreImpl extends AdminStorableStore
         _checkClosed();
         return _backend.getIndexedCount();
     }
+
+    @Override
+    public long getOldestInFlightTimestamp() {
+        return _partitions.getOldestInFlightTimestamp();
+    }
     
     /*
     /**********************************************************************
@@ -441,12 +446,12 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         Storable storable;
-        final long now;
+        final long creationTime;
         
         // inline? Yes if small enough
         if (data.byteLength() <= _maxInlinedStorageSize) {
-            now = _timeMaster.currentTimeMillis();
-            storable = _storableConverter.encodeInlined(key, now,
+            creationTime = _timeMaster.currentTimeMillis();
+            storable = _storableConverter.encodeInlined(key, creationTime,
                     stdMetadata, customMetadata, data);
         } else {
             // otherwise, need to create file and all that fun...
@@ -462,11 +467,11 @@ public class StorableStoreImpl extends AdminStorableStore
                         "Failed to write storage file of "+data.byteLength()+" bytes: "+e.getMessage(), e);
             }
             // but modtime better be taken only now, as above may have taken some time (I/O bound)
-            now = _timeMaster.currentTimeMillis();
-            storable = _storableConverter.encodeOfflined(key, now,
+            creationTime = _timeMaster.currentTimeMillis();
+            storable = _storableConverter.encodeOfflined(key, creationTime,
                     stdMetadata, customMetadata, fileRef);
         }
-        return _putPartitionedEntry(key, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrite);
     }
 
     @SuppressWarnings("resource")
@@ -577,25 +582,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
                     if (stdMetadata.compressedContentHash != actualHash) {
-/*
-System.err.println("Metadata; comp hash 0x"+Integer.toHexString(stdMetadata.compressedContentHash)
-		+", non-comp hash 0x"+Integer.toHexString(stdMetadata.contentHash)
-		+", orig length "+stdMetadata.uncompressedSize+", storage size "+stdMetadata.storageSize);
-//Let's reconstruct, if possible
-System.err.println("FILE '"+storedFile+"', size = "+storedFile.length());
-byte[] foo = new byte[(int) copiedBytes];
-InputStream fis = new BufferedInputStream(new FileInputStream(storedFile));
-int count = fis.read(foo);
-if (count < copiedBytes) {
-	System.err.println("BUMMER: read "+count+" bytes");
-} else {
-	IncrementalMurmur3Hasher h2 = new IncrementalMurmur3Hasher(HASH_SEED);        
-	h2.update(foo, 0, foo.length);
-	System.err.println("Hash on data: 0x"+Integer.toHexString(h2.calculateHash()));
-}
-*/
-
-					throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                        throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
                                 "Incorrect checksum for "+stdMetadata.compression+" pre-compressed entry ("+copiedBytes
                                 +" bytes): got 0x"
                                 +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
@@ -635,19 +622,24 @@ if (count < copiedBytes) {
                 }
             }
         }
-        long now = _timeMaster.currentTimeMillis();
-        Storable storable = _storableConverter.encodeOfflined(key, now,
+        long creationTime = _timeMaster.currentTimeMillis();
+        Storable storable = _storableConverter.encodeOfflined(key, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
-        return _putPartitionedEntry(key, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrite);
     }
 
+    /**
+     * @param operationTime Timestamp used as the "last-modified" timestamp in metadata;
+     *   important as it determines last-modified traversal order for synchronization
+     */
     protected StorableCreationResult _putPartitionedEntry(StorableKey key,
-                final StorableCreationMetadata stdMetadata, Storable storable0,
-                final boolean allowOverwrite)
+            final long operationTime,
+            final StorableCreationMetadata stdMetadata, Storable storable,
+            final boolean allowOverwrite)
         throws IOException, StoreException
     {
-        StorableCreationResult result = _partitions.withLockedPartition(key,
+        StorableCreationResult result = _partitions.withLockedPartition(key, operationTime,
                 new StoreOperationCallback<Storable,StorableCreationResult>() {
                     @Override
                     public StorableCreationResult perform(StorableKey key,
@@ -667,7 +659,7 @@ if (count < copiedBytes) {
                         return new StorableCreationResult(key, false, storable, old);
                     }
                 },
-                storable0);
+                storable);
 
         //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
@@ -696,7 +688,7 @@ if (count < copiedBytes) {
     {
         _checkClosed();
         final long currentTime = _timeMaster.currentTimeMillis();
-        Storable entry = _partitions.withLockedPartition(key,
+        Storable entry = _partitions.withLockedPartition(key, currentTime,
             new ReadModifyOperationCallback<Object,Storable>() {
                 @Override
                 protected Storable perform(StorableKey key,
@@ -719,7 +711,8 @@ if (count < copiedBytes) {
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.withLockedPartition(key,
+        final long currentTime = _timeMaster.currentTimeMillis();
+        Storable entry = _partitions.withLockedPartition(key, currentTime,
             new ReadModifyOperationCallback<Object,Storable>() {
 
                 @Override
@@ -765,6 +758,12 @@ if (count < copiedBytes) {
     /**********************************************************************
      */
 
+    @Override
+    public int getInFlightWritesCount()
+    {
+        return _partitions.getInFlightCount();
+    }
+    
     @Override
     public long getTombstoneCount(long maxRuntimeMsecs)
         throws StoreException

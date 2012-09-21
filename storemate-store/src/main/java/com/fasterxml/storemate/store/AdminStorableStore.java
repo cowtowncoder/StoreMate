@@ -10,6 +10,12 @@ import java.util.List;
 public abstract class AdminStorableStore extends StorableStore
 {
     /**
+     * Method for finding approximate number of currently in-flight (being processed)
+     * database write operations.
+     */
+    public abstract int getInFlightWritesCount();
+
+    /**
      * Method that can be used to scan over the <b>whole</b> store,
      * counting number of soft-deleted entries.
      * 

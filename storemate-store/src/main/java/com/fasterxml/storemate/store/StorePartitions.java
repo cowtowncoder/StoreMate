@@ -2,6 +2,7 @@ package com.fasterxml.storemate.store;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.backend.StoreBackend;
@@ -27,6 +28,12 @@ public class StorePartitions
      */
     protected final Semaphore[] _semaphores;
 
+    /**
+     * We also need to keep track of requests in-flight, to be able to calculate
+     * safe synchronization ranges.
+     */
+    protected final AtomicLongArray _inFlightStartTimes;
+    
     /*
     /**********************************************************************
     /* Construction
@@ -48,6 +55,7 @@ public class StorePartitions
         for (int i = 0; i < n; ++i) {
             _semaphores[i] = new Semaphore(1, true);
         }
+        _inFlightStartTimes = new AtomicLongArray(n);
     }
 
     private final static int powerOf2(int n)
@@ -75,10 +83,13 @@ public class StorePartitions
      * section.
      * 
      * @param key Entry being operated on
+     * @param startTime Timestamp operation may use as "last-modified" timestamp; must not
+     *    be greater than the current system time (virtual or real)
      * @param cb Callback to call from locked context
      * @param arg Optional argument
      */
-    public <IN,OUT> OUT withLockedPartition(StorableKey key, StoreOperationCallback<IN,OUT> cb, IN arg)
+    public <IN,OUT> OUT withLockedPartition(StorableKey key, long startTime,
+            StoreOperationCallback<IN,OUT> cb, IN arg)
         throws IOException, StoreException
     {
         final int partition = _partitionFor(key);
@@ -89,13 +100,56 @@ public class StorePartitions
             semaphore.release();
             throw new StoreException.Internal(key, e);
         }
+        _inFlightStartTimes.set(partition, startTime);
         try {
             return cb.perform(key, _store, arg);
         } finally {
+            _inFlightStartTimes.set(partition, 0L);
             semaphore.release();
         }
     }
-    
+
+    /**
+     * Method that can be called to find if there are operations in-flight,
+     * and if so, get the oldest timestamp from those operations.
+     * This can be used to calculate high-water marks for traversing last-modified
+     * index (to avoid accessing things modified after start of traversal).
+     * Note that this only establishes conservative lower bound: due to race condition,
+     * the oldest operation may finish before this method returns.
+     * 
+     * @return Timestamp of the "oldest" operation still being performed, if any,
+     *      or 0L if none
+     */
+    public long getOldestInFlightTimestamp()
+    {
+        long lowest = Long.MAX_VALUE;
+        for (int i = 0, last = _modulo; i <= last; ++i) {
+            long timestamp = _inFlightStartTimes.get(i);
+            if (timestamp != 0L) {
+                if (timestamp < lowest) {
+                    lowest = timestamp;
+                }
+            }
+        }
+        return (lowest == Long.MAX_VALUE) ? 0L : lowest;
+    }
+
+    /**
+     * Method that will count number of operations in-flight
+     * currently.
+     */
+    public int getInFlightCount()
+    {
+        int count = 0;
+        for (int i = 0, last = _modulo; i <= last; ++i) {
+            long timestamp = _inFlightStartTimes.get(i);
+            if (timestamp != 0L) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     /*
     /**********************************************************************
     /* Internal methods

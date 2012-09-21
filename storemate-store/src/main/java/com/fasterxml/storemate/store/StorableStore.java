@@ -41,7 +41,7 @@ public abstract class StorableStore
     
     /*
     /**********************************************************************
-    /* API, metadata access
+    /* API, store metadata access
     /**********************************************************************
      */
 
@@ -57,6 +57,20 @@ public abstract class StorableStore
      */
     public abstract long getIndexedCount();
 
+    /**
+     * Method that can be called to find if there are write operations in-flight,
+     * and if so, find the oldest associated timestamp (minimum of all timestamps
+     * to be used as last-modified values) and return it.
+     * This can be used to calculate high-water marks for traversing last-modified
+     * index (to avoid accessing things modified after start of traversal).
+     * Note that this only establishes conservative lower bound: due to race condition,
+     * the oldest operation may finish before this method returns.
+     * 
+     * @return Timestamp of the "oldest" write operation still being performed,
+     *    if any, or 0L if none
+     */
+    public abstract long getOldestInFlightTimestamp();
+    
     /*
     /**********************************************************************
     /* API, data reads
