@@ -53,7 +53,7 @@ public class BoundedInputStream extends InputStream
     @Override
     public int available() throws IOException
     {
-        int a = super.available();
+        int a = _source.available();
         long left = bytesLeft();
         if (a <= left) {
             return a;
@@ -102,7 +102,7 @@ public class BoundedInputStream extends InputStream
                 return -1;
             }
         }
-        int actual = super.read(b, off, len);
+        int actual = _source.read(b, off, len);
         if (actual > 0) {
             _currReads += actual;
         }
@@ -124,7 +124,7 @@ public class BoundedInputStream extends InputStream
                 return 0L;
             }
         }
-        long actual = super.skip(n);
+        long actual = _source.skip(n);
         if (actual > 0L) {
             _currReads += actual;
         }
