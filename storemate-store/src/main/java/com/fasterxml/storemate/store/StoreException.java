@@ -67,6 +67,13 @@ public abstract class StoreException extends IOException
          * that does not match with checksum that server calculates.
          */
         BAD_CHECKSUM,
+        
+        /**
+         * Error caused by client supplying incorrect length declaration
+         * (claiming content to have length of N bytes, but supplying M
+         * bytes where N <> M)
+         */
+        BAD_LENGTH
         ;
     }
     

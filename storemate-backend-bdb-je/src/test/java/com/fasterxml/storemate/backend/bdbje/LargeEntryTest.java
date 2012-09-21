@@ -10,6 +10,7 @@ import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 import com.fasterxml.storemate.store.*;
 
@@ -79,8 +80,15 @@ public class LargeEntryTest extends BDBJETestBase
         // but as importantly, check that file is there and contains data...
         assertTrue(file.exists());
 
-        assertArrayEquals(COMPRESSED_DATA, readFile(file));
+        byte[] fileData = readFile(file);
+        assertArrayEquals(COMPRESSED_DATA, fileData);
 
+        /* Let's also verify checksum handling: should have one for compressed
+         * data at least...
+         */
+        int hash = BlockMurmur3Hasher.instance.hash(fileData);
+        assertEquals(Integer.toHexString(hash), Integer.toHexString(entry.getCompressedHash()));
+        
         // Actually, let's also verify handling of dups...
 
         StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(DATA),

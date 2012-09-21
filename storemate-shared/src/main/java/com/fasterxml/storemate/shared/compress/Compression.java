@@ -48,7 +48,7 @@ public enum Compression
 
     @Override
     public String toString() {
-        return _contentEncoding;
+        return (this == NONE) ? "none" : _contentEncoding;
     }
     
     /**

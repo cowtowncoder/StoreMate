@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 import com.fasterxml.storemate.store.*;
@@ -31,7 +32,7 @@ public class StorableStoreImpl extends AdminStorableStore
     /**
      * No real seed used for Murmur3/32.
      */
-    private final static int HASH_SEED = 0;
+    private final static int HASH_SEED = BlockHasher32.DEFAULT_SEED;
 
     /**
      * We will partition key space in 64 slices for locking purposes;
@@ -519,7 +520,6 @@ public class StorableStoreImpl extends AdminStorableStore
             } catch (IOException e2) { }
             throw new StoreException.IO(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
         }
-
         IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
         hasher.update(readBuffer, 0, readByteCount);
         long copiedBytes = readByteCount;
@@ -553,14 +553,21 @@ public class StorableStoreImpl extends AdminStorableStore
         
         // Checksum calculation and storage details differ depending on whether compression is used
         if (skipCompression) {
-            final int actualHash = hasher.calculateHash();
+            // Storage sizes must match, first of all, if provided
+            if (stdMetadata.storageSize != copiedBytes && stdMetadata.storageSize >= 0) {
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
+                        "Incorrect length for entry; storageSize="+stdMetadata.storageSize
+                        +", bytes read: "+copiedBytes);
+            }
+
+        	final int actualHash = hasher.calculateHash();
             stdMetadata.storageSize = copiedBytes;
             if (stdMetadata.compression == Compression.NONE) {
                 if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
                     stdMetadata.contentHash = actualHash;
                 } else if (stdMetadata.contentHash != actualHash) {
                     throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
+                            "Incorrect checksum for not-compressed entry ("+copiedBytes+" bytes): got 0x"
                                     +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
                                     +Integer.toHexString(actualHash));
                 }
@@ -570,10 +577,29 @@ public class StorableStoreImpl extends AdminStorableStore
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
                     if (stdMetadata.compressedContentHash != actualHash) {
-                        throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                                "Incorrect checksum for entry ("+copiedBytes+" bytes): got 0x"
-                                        +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
-                                        +Integer.toHexString(actualHash));
+/*
+System.err.println("Metadata; comp hash 0x"+Integer.toHexString(stdMetadata.compressedContentHash)
+		+", non-comp hash 0x"+Integer.toHexString(stdMetadata.contentHash)
+		+", orig length "+stdMetadata.uncompressedSize+", storage size "+stdMetadata.storageSize);
+//Let's reconstruct, if possible
+System.err.println("FILE '"+storedFile+"', size = "+storedFile.length());
+byte[] foo = new byte[(int) copiedBytes];
+InputStream fis = new BufferedInputStream(new FileInputStream(storedFile));
+int count = fis.read(foo);
+if (count < copiedBytes) {
+	System.err.println("BUMMER: read "+count+" bytes");
+} else {
+	IncrementalMurmur3Hasher h2 = new IncrementalMurmur3Hasher(HASH_SEED);        
+	h2.update(foo, 0, foo.length);
+	System.err.println("Hash on data: 0x"+Integer.toHexString(h2.calculateHash()));
+}
+*/
+
+					throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                                "Incorrect checksum for "+stdMetadata.compression+" pre-compressed entry ("+copiedBytes
+                                +" bytes): got 0x"
+                                +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
+                                +Integer.toHexString(actualHash));
                     }
                 }
             }
@@ -602,8 +628,8 @@ public class StorableStoreImpl extends AdminStorableStore
             } else {
                 if (stdMetadata.compressedContentHash != compressedHash) {
                     throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for compressed entry ("+stdMetadata.storageSize+"/"+copiedBytes
-                                +" bytes): got 0x"
+                            "Incorrect checksum for "+stdMetadata.compression+" compressed entry ("
+                            		+stdMetadata.storageSize+"/"+copiedBytes+" bytes): got 0x"
                                 +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
                                 +Integer.toHexString(compressedHash));
                 }
