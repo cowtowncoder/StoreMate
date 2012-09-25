@@ -61,6 +61,7 @@ public class LargeEntryTest extends BDBJETestBase
         int expCompressedSize = COMPRESSED_DATA.length;
         assertEquals(expCompressedSize, entry.getStorageLength());
         assertEquals(DATA.length, entry.getOriginalLength());
+        _verifyHash(COMPRESSED_DATA, entry.getCompressedHash(), "Compressed LZF data");
 
         // we passed bit of custom metadata, verify:
         _verifyMetadata(entry, CUSTOM_METADATA_IN);
@@ -86,8 +87,7 @@ public class LargeEntryTest extends BDBJETestBase
         /* Let's also verify checksum handling: should have one for compressed
          * data at least...
          */
-        int hash = BlockMurmur3Hasher.instance.hash(fileData);
-        assertEquals(Integer.toHexString(hash), Integer.toHexString(entry.getCompressedHash()));
+        _verifyHash(fileData, entry.getCompressedHash(), "file checksum for large data");
         
         // Actually, let's also verify handling of dups...
 
