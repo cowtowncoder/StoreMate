@@ -19,6 +19,7 @@ import com.fasterxml.storemate.store.file.FileManagerConfig;
 import com.fasterxml.storemate.store.impl.StorableStoreImpl;
 
 import com.fasterxml.storemate.shared.SharedTestBase;
+import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 /**
  * Base class for unit tests of server sub-module
@@ -118,6 +119,14 @@ public abstract class BDBJETestBase extends SharedTestBase
         assertArrayEquals(inputMetadata, actualMetadata2);
     }
 
+    protected void _verifyHash(byte[] data, int exp, String msg)
+    {
+    	int act = BlockMurmur3Hasher.instance.hash(data);
+    	if (act != exp) {
+    		assertEquals(msg, Integer.toHexString(exp), Integer.toHexString(act));
+    	}
+    }
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Methods, other
