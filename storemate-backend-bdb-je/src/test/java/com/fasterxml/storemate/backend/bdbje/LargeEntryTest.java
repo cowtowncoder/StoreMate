@@ -2,15 +2,14 @@ package com.fasterxml.storemate.backend.bdbje;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.ThrottlingByteArrayInputStream;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
-import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 
 import com.fasterxml.storemate.store.*;
 
@@ -40,9 +39,11 @@ public class LargeEntryTest extends BDBJETestBase
         // then try adding said entry
         StorableCreationMetadata metadata0 = new StorableCreationMetadata(
                 /*existing compression*/ null,
-                calcChecksum32(DATA), StoreConstants.NO_CHECKSUM);
+                calcChecksum32(DATA),
+                StoreConstants.NO_CHECKSUM);
         
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(DATA),
+        // important: throttle input reading, to force chunking (and maybe tease out bugs)
+        StorableCreationResult resp = store.insert(KEY1, new ThrottlingByteArrayInputStream(DATA, 97),
                 metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
@@ -91,7 +92,7 @@ public class LargeEntryTest extends BDBJETestBase
         
         // Actually, let's also verify handling of dups...
 
-        StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(DATA),
+        StorableCreationResult resp2 = store.insert(KEY1, new ThrottlingByteArrayInputStream(DATA, 77),
                 metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());

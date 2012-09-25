@@ -595,7 +595,7 @@ public class StorableStoreImpl extends AdminStorableStore
         } else {
             final int contentHash = hasher.calculateHash();
             final int compressedHash = compressedOut.calculateHash();
-
+            
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
             // must verify checksum, if one was offered...
