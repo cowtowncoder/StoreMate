@@ -25,7 +25,7 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
     private int _currentHash;
 
     public IncrementalMurmur3Hasher() {
-        this(0);
+        this(BlockHasher32.DEFAULT_SEED);
     }
 
     public IncrementalMurmur3Hasher(int seed)

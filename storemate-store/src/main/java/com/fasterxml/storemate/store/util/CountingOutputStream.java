@@ -24,7 +24,7 @@ public class CountingOutputStream extends OutputStream
         this._out = out;
         _hasher = hasher;
     }
-    
+
     public long count() { return _count; }
     
     @Override
@@ -55,13 +55,11 @@ public class CountingOutputStream extends OutputStream
     
     @Override
     public void write(int b) throws IOException {
-        ++_count;
-        _out.write(b);
         if (TMP == null) {
             TMP = new byte[1];
         }
         TMP[0] = (byte) b;
-        _hasher.update(TMP, 0, 1);
+        write(TMP, 0, 1);
     }
 
     public int calculateHash() {
