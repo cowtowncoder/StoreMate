@@ -92,8 +92,8 @@ public final class KeySpace
     }
 
     /*
-    public KeyHash hash(VKey key, VKeyConverter h) {
-        int hash = h.routingHashFor(key);
+    public KeyHash hash(VKey key, VKeyConverter conv) {
+        int hash = conv.routingHashFor(key);
         return new KeyHash(hash, _length);
     }
     */

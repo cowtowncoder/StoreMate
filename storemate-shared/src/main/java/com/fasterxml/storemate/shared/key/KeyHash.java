@@ -13,7 +13,7 @@ public class KeyHash
 
     private final int _moduloHash;
 	
-    protected KeyHash(int fullHash, int modulo)
+    public KeyHash(int fullHash, int modulo)
     {
         _fullHash = fullHash;
         _moduloHash = calcModulo(fullHash, modulo);
