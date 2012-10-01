@@ -22,17 +22,25 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.0.6</version>
+      <version>${version.jackson}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.0.6</version>
+      <version>${version.jackson}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.0.6</version>
+      <version>${version.jackson}</version>
+    </dependency>
+    <!--  and we need base test stuff -->
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

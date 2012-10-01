@@ -12,8 +12,6 @@ import java.util.regex.Pattern;
  *<p>
  * Instances have natural ordering based on {@link #getStart()}, ascending.
  */
-//@org.codehaus.jackson.annotate.JsonPropertyOrder({ "start", "length"  })
-//@com.fasterxml.jackson.annotation.JsonPropertyOrder({ "start", "length"  })
 public class KeyRange implements Comparable<KeyRange>
 {
     // [0,+60]
@@ -35,7 +33,7 @@ public class KeyRange implements Comparable<KeyRange>
     protected final int _start;
 	
     protected final int _length;
-	
+
     /*
     ///////////////////////////////////////////////////////////////////////
     // Construction, factory methods
@@ -55,6 +53,15 @@ public class KeyRange implements Comparable<KeyRange>
         _length = length;
     }
 
+    // Constructor used by deserializer
+    protected KeyRange(External ext)
+    {
+        _keyspace = ext.keyspace;
+        _spaceEnd = _keyspace.getLength();
+        _start = ext.start;
+        _length = ext.length;
+    }
+    
     public static KeyRange valueOf(KeySpace space, String ref)
             throws IllegalArgumentException
     {
@@ -77,6 +84,12 @@ public class KeyRange implements Comparable<KeyRange>
         } catch (IllegalArgumentException e) { }
         throw new IllegalArgumentException("Invalid KeyRange reference '"+ref+"'");
     }
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // Fluent factories (mutant factories)
+    ///////////////////////////////////////////////////////////////////////
+     */
     
     /**
      * Fluent factory method for creating a range with same start
@@ -396,5 +409,22 @@ public class KeyRange implements Comparable<KeyRange>
 
     protected boolean _coversWholeKeyspace() {
         return _length == _spaceEnd;
+    }
+
+    /*
+    /**********************************************************************
+    /* Helper types for (de)serialization
+    /**********************************************************************
+     */
+    
+    /**
+     * Helper class used for deserialization, used as "delegating"
+     * class
+     */
+    public static class External
+    {
+        public KeySpace keyspace;
+        public int start;
+        public int length;
     }
 }

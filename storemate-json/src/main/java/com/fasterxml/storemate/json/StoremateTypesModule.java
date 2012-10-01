@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.json;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.Version;
 
 import com.fasterxml.jackson.databind.Module;
@@ -33,7 +34,7 @@ public class StoremateTypesModule extends Module
 
         desers.addDeserializer(IpAndPort.class, new IpAndPortDeserializer());
         sers.addSerializer(IpAndPort.class, new IpAndPortSerializer());
-//        desers.addDeserializer(KeyRange.class, new KeyRangeDeserializer());
+        // for KeyRange, only manual serializer; deserializer with mix-ins
         sers.addSerializer(KeyRange.class, new KeyRangeSerializer());
         desers.addDeserializer(KeySpace.class, new KeySpaceDeserializer());
         sers.addSerializer(KeySpace.class, new KeySpaceSerializer());
@@ -42,5 +43,25 @@ public class StoremateTypesModule extends Module
 
         context.addDeserializers(desers);
         context.addSerializers(sers);
+
+        // Plus mix-ins cover structured types:
+        context.setMixInAnnotations(KeyRange.class, KeyRangeMixins.class);
+    }
+
+    /*
+    /**********************************************************************
+    /* Helper types for mix-ins
+    /**********************************************************************
+     */
+
+    /**
+     * Instead of trying to write a manual deserializer for KeyRange, let's
+     * use mix-ins; this way no annotations are needed there, but things
+     * will work as if they were.
+     */
+    abstract static class KeyRangeMixins extends KeyRange
+    {
+        @JsonCreator
+        protected KeyRangeMixins(External ext) { super(ext); }
     }
 }

@@ -11,6 +11,10 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import com.fasterxml.storemate.shared.key.KeyRange;
 
+/**
+ * We don't absolutely need a serializer for this type, but it's
+ * simple enough to do so.
+ */
 public class KeyRangeSerializer extends StdSerializer<KeyRange>
 {
     public KeyRangeSerializer() { super(KeyRange.class); }
