@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.fasterxml.storemate</groupId>
     <artifactId>storemate-parent</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0-SNAPSHOT</version>
   </parent>
   <artifactId>storemate-backend-bdb-je</artifactId>
   <name>StoreMate-backend-BDB-JE</name>
