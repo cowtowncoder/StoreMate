@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.storemate.shared.IpAndPort;
 
+@SuppressWarnings("serial")
 public class IpAndPortDeserializer extends StdScalarDeserializer<IpAndPort>
 {
     public IpAndPortDeserializer() { super(IpAndPort.class); }
