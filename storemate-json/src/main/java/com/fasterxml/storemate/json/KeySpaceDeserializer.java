@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 
 import com.fasterxml.storemate.shared.key.KeySpace;
 
+@SuppressWarnings("serial")
 public class KeySpaceDeserializer extends StdScalarDeserializer<KeySpace>
 {
     public KeySpaceDeserializer() { super(KeySpace.class); }

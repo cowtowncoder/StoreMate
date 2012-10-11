@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.storemate.shared.StorableKey;
 
+@SuppressWarnings("serial")
 public class StorableKeyDeserializer extends StdScalarDeserializer<StorableKey>
 {
     public StorableKeyDeserializer() {
