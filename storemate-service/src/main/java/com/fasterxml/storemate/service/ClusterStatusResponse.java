@@ -3,7 +3,6 @@ package com.fasterxml.storemate.service;
 import java.util.Collection;
 import java.util.Collections;
 
-
 /**
  * POJO used as response for GET on cluster status.
  */

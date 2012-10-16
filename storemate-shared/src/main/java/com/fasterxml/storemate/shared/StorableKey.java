@@ -54,6 +54,16 @@ public class StorableKey
         }
         return Arrays.copyOfRange(_buffer, _offset, _offset+_length);
     }
+
+    public final byte[] rangeAsBytes(int offset, int length)
+    {
+        if (offset < 0 || length < 0 || (offset+length) > _length) {
+            throw new IllegalArgumentException("Invalid range (offset "+offset+", length "+length
+                    +"), for key with length of "+_length+" bytes");
+        }
+        int from = _offset+offset;
+        return Arrays.copyOfRange(_buffer, from, from + _length);
+    }
     
     public final <T> T with(WithBytesCallback<T> cb) {
         return cb.withBytes(_buffer, _offset, _length);
