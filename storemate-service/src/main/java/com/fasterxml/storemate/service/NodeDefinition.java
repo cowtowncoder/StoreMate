@@ -4,8 +4,8 @@ import com.fasterxml.storemate.shared.IpAndPort;
 import com.fasterxml.storemate.shared.key.KeyRange;
 
 /**
- * Basic definition of contact information needed to contact
- * a store node.
+ * Basic definition of a store node, needed to figure out which store
+ * instance(s) to contact for accessing specified entry or entries.
  */
 public class NodeDefinition
 {
