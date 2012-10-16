@@ -15,6 +15,12 @@ public class StorableKey
      */
     protected int _hashCode;
 
+    /**
+     * Lazily constructed and stored instance of "refined" key
+     * constructed from this raw key.
+     */
+    protected transient EntryKey _refinedKey;
+    
     public StorableKey(byte[] buf) {
         this(buf, 0, buf.length);
     }
@@ -28,6 +34,17 @@ public class StorableKey
 
     public final int length() { return _length; }
 
+    @SuppressWarnings("unchecked")
+    public <K extends EntryKey> K asEntryKey(EntryKeyConverter<K> conv)
+    {
+        EntryKey r = _refinedKey;
+        if (r == null) {
+            r = conv.rawToEntryKey(this);
+            _refinedKey = r;
+        }
+        return (K) r;
+    }
+    
     public final byte[] asBytes() {
         if (_offset == 0) {
             if (_length == _buffer.length) {
