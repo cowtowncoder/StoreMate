@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.module.SimpleDeserializers;
 import com.fasterxml.jackson.databind.module.SimpleSerializers;
 
+import com.fasterxml.storemate.shared.ClientId;
 import com.fasterxml.storemate.shared.IpAndPort;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.key.KeyRange;
@@ -14,7 +15,11 @@ import com.fasterxml.storemate.shared.key.KeySpace;
 
 public class StoremateTypesModule extends Module
 {
-    public StoremateTypesModule() { }
+    protected final boolean _cfgUseNumerics;
+
+    public StoremateTypesModule(boolean useNumerics) {
+    	_cfgUseNumerics = useNumerics;
+    }
 
     @Override
     public String getModuleName() {
@@ -40,6 +45,8 @@ public class StoremateTypesModule extends Module
         sers.addSerializer(KeySpace.class, new KeySpaceSerializer());
         desers.addDeserializer(StorableKey.class, new StorableKeyDeserializer());
         sers.addSerializer(StorableKey.class, new StorableKeySerializer());
+        desers.addDeserializer(ClientId.class, new ClientIdDeserializer());
+        sers.addSerializer(ClientId.class, new ClientIdSerializer(_cfgUseNumerics));
 
         context.addDeserializers(desers);
         context.addSerializers(sers);

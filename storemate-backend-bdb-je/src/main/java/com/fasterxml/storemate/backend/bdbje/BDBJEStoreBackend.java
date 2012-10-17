@@ -6,7 +6,7 @@ import java.io.IOException;
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;

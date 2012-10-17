@@ -3,10 +3,10 @@ package com.fasterxml.storemate.store;
 import java.io.File;
 
 import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.IOUtil;
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.WithBytesCallback;
 import com.fasterxml.storemate.shared.compress.Compression;
+import com.fasterxml.storemate.shared.util.IOUtil;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 import com.fasterxml.storemate.store.file.FileManager;
 
 /**

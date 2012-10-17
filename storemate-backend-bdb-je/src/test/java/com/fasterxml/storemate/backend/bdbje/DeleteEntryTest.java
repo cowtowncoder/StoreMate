@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.WithBytesAsArray;
+import com.fasterxml.storemate.shared.util.WithBytesAsArray;
 import com.fasterxml.storemate.store.*;
 
 public class DeleteEntryTest extends BDBJETestBase

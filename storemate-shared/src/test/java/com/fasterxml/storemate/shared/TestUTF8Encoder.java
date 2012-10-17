@@ -5,6 +5,8 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 
+import com.fasterxml.storemate.shared.util.UTF8Encoder;
+
 public class TestUTF8Encoder extends SharedTestBase
 {
     private final static String STRING1 = "Short and brutish";

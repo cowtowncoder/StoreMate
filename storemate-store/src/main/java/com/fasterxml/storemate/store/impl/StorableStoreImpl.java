@@ -14,6 +14,8 @@ import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
+import com.fasterxml.storemate.shared.util.BufferRecycler;
+import com.fasterxml.storemate.shared.util.IOUtil;
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;
 import com.fasterxml.storemate.store.backend.IterationResult;

@@ -1,11 +1,10 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.shared.util;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
-import com.fasterxml.storemate.shared.BufferRecycler;
 
 /**
  * Helper class that is similar to {@link java.io.ByteArrayOutputStream}

@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 public class StorableKey
 {

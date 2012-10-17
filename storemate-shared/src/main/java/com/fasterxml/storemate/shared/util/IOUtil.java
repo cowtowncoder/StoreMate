@@ -1,10 +1,11 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.shared.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 

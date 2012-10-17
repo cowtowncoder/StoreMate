@@ -5,7 +5,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 import com.ning.compress.lzf.LZFChunk;
 import com.ning.compress.lzf.LZFDecoder;
 import com.ning.compress.lzf.LZFEncoder;

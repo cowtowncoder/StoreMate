@@ -9,7 +9,7 @@ public class TestBasicTypes extends JsonTestBase
     
     public TestBasicTypes() {
         MAPPER = new ObjectMapper();
-        MAPPER.registerModule(new StoremateTypesModule());
+        MAPPER.registerModule(new StoremateTypesModule(false));
     }
 
     final static String KEYRANGE_STRING = "{\"keyspace\":1024,\"start\":256,\"length\":512}";

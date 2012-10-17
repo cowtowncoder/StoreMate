@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 public class StorableKeySerializer extends StdScalarSerializer<StorableKey>
 {

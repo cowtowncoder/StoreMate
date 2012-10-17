@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.shared.util;
 
 import java.util.Arrays;
 

@@ -1,7 +1,7 @@
 package com.fasterxml.storemate.store.util;
 
 import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 /**
  * Reverse of {@link BytesToStuff}, used for encoding data

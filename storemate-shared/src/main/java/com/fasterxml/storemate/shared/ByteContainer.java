@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.fasterxml.storemate.shared.hash.BlockHasher32;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 /**
  * Simple read-only wrapper around basic in-heap byte array, used for buffering.

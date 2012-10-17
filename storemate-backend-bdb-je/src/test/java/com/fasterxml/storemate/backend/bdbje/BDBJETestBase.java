@@ -20,6 +20,8 @@ import com.fasterxml.storemate.store.impl.StorableStoreImpl;
 
 import com.fasterxml.storemate.shared.SharedTestBase;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
+import com.fasterxml.storemate.shared.util.UTF8Encoder;
+import com.fasterxml.storemate.shared.util.WithBytesAsArray;
 
 /**
  * Base class for unit tests of server sub-module

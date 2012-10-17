@@ -1,4 +1,5 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.shared.util;
+
 
 /**
  * Simple {@link WithBytesCallback} implementation to use when

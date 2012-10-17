@@ -1,7 +1,7 @@
 package com.fasterxml.storemate.store.file;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.WithBytesCallback;
+import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 /**
  * Simple helper class we use for cleaning up external path names
