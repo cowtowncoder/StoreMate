@@ -65,6 +65,23 @@ public enum Compression
         return acceptableEncodings.indexOf(_contentEncoding) >= 0;
     }
 
+    public static Compression from(String str)
+    {
+    	if (str == null) return null;
+    	str = str.trim();
+    	if (GZIP._contentEncoding.equals(str)) {
+    		return GZIP;
+    	}
+    	if (LZF._contentEncoding.equals(str)) {
+    		return LZF;
+    	}
+    	if (NONE._contentEncoding.equals(str)) {
+    		return NONE;
+    	}
+    	return null;
+    }
+    
+    /*
     public static Compression valueOf(byte b, boolean errorForUnknown) {
         return valueOf((char) b, errorForUnknown);
     }
@@ -84,6 +101,7 @@ public enum Compression
         }
         return null;
     }
+    */
 
     public static Compression forIndex(int index, boolean errorForUnknown)
     {
