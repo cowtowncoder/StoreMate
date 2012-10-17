@@ -15,7 +15,6 @@ public class CallConfig
     // DELETEs somewhere in between
     public final static long DEFAULT_DELETE_CALL_TIMEOUT_MSECS = 2000L;
 
-    
     // // // Low-level single-call timeouts
     
     protected final long _connectTimeoutMsecs;
@@ -39,7 +38,7 @@ public class CallConfig
                 DEFAULT_DELETE_CALL_TIMEOUT_MSECS);
     }
 
-    protected CallConfig(long connect,
+    public CallConfig(long connect,
             long put, long get, long delete)
     {
         _connectTimeoutMsecs = connect;
