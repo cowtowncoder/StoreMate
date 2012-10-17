@@ -1,4 +1,4 @@
-package com.force.vagabond.client;
+package com.fasterxml.storemate.client;
 
 /**
  * Class that defines interface that physical requests to be sent

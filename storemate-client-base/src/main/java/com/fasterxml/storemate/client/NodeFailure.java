@@ -1,8 +1,6 @@
-package com.force.vagabond.client;
+package com.fasterxml.storemate.client;
 
 import java.util.*;
-
-import com.force.vagabond.client.ServerNodeState;
 
 /**
  * Class that contains information about failure of an operation as it

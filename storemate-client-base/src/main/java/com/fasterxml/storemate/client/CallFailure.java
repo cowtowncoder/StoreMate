@@ -1,7 +1,6 @@
-package com.force.vagabond.client;
+package com.fasterxml.storemate.client;
 
 import com.fasterxml.storemate.api.HTTPConstants;
-import com.force.vagabond.client.ServerNodeState;
 
 /**
  * Container for details of a single failed call to a server.

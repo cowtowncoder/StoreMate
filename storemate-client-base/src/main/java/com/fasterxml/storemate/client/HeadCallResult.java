@@ -1,4 +1,4 @@
-package com.force.vagabond.client;
+package com.fasterxml.storemate.client;
 
 
 public abstract class HeadCallResult
