@@ -1,4 +1,6 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.call;
+
+import com.fasterxml.storemate.client.CallFailure;
 
 
 public abstract class HeadCallResult
