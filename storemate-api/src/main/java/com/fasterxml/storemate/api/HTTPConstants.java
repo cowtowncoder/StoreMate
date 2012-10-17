@@ -48,7 +48,17 @@ public abstract class HTTPConstants
 
     /*
     ///////////////////////////////////////////////////////////////////////
-    // HTTP Response codes
+    // Query parameters, StoreMate-specific
+    ///////////////////////////////////////////////////////////////////////
+     */
+
+    public final static String HTTP_QUERY_PARAM_CLIENT_ID = "clientId";
+
+    public final static String HTTP_QUERY_PARAM_CHECKSUM = "checksum";
+    
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // HTTP Response codes, standard
     ///////////////////////////////////////////////////////////////////////
      */
 
@@ -57,6 +67,23 @@ public abstract class HTTPConstants
     public final static int HTTP_STATUS_OK_PARTIAL = 206;
 
     public final static int HTTP_STATUS_NOT_FOUND = 404;
+
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // HTTP Response codes, custom
+    ///////////////////////////////////////////////////////////////////////
+     */
+
+    /* Response code used when the request timed out; as per docs, while
+     * not a formally standardized code, is actually used. And is considered
+     * retriable (as 5xx code) which is why we choose it.
+     */
+    public final static int HTTP_STATUS_TIMEOUT_ON_READ = 598;
+
+    public final static int HTTP_STATUS_CUSTOM_FAIL_THROWABLE = -2;
+
+    public final static int HTTP_STATUS_CUSTOM_FAIL_MESSAGE = -3;
     
     /*
     ///////////////////////////////////////////////////////////////////////
