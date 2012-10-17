@@ -21,7 +21,7 @@
     </dependency>
     <dependency>
       <groupId>com.fasterxml.storemate</groupId>
-      <artifactId>storemate-service</artifactId>
+      <artifactId>storemate-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 

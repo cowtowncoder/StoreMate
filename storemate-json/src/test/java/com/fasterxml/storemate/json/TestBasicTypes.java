@@ -1,7 +1,8 @@
 package com.fasterxml.storemate.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.storemate.service.*;
+
+import com.fasterxml.storemate.api.*;
 
 public class TestBasicTypes extends JsonTestBase
 {

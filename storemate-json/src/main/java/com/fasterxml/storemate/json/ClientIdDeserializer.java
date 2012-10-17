@@ -5,8 +5,8 @@ import java.io.IOException;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
-import com.fasterxml.storemate.service.ClientId;
 
+import com.fasterxml.storemate.api.ClientId;
 
 @SuppressWarnings("serial")
 public class ClientIdDeserializer extends StdScalarDeserializer<ClientId>

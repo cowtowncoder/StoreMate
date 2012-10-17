@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 
-import com.fasterxml.storemate.service.KeySpace;
+import com.fasterxml.storemate.api.KeySpace;
 
 public class KeySpaceSerializer extends StdScalarSerializer<KeySpace>
 {
