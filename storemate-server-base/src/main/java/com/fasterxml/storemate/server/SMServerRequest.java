@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.server;
 
 import com.fasterxml.storemate.api.ByteRange;
 import com.fasterxml.storemate.api.HTTPConstants;

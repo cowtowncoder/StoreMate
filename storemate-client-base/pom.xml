@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion> 
+  <parent>
+    <groupId>com.fasterxml.storemate</groupId>
+    <artifactId>storemate-parent</artifactId>
+    <version>0.5.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>storemate-client-base</artifactId>
+  <name>StoreMate-client-base</name>
+  <packaging>jar</packaging>
+  <description>Building blocks for client libraries that access
+StoreMate-based service.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!--  and we may need base test stuff -->
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+</project>
