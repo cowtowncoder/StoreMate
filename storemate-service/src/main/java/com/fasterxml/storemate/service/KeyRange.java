@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.shared.key;
+package com.fasterxml.storemate.service;
 
 import java.util.BitSet;
 import java.util.regex.Matcher;

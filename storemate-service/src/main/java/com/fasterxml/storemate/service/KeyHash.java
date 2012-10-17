@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.shared.key;
+package com.fasterxml.storemate.service;
 
 /**
  * Simple value class that encapsulates a 32-bit int hash value

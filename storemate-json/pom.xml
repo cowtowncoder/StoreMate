@@ -13,12 +13,19 @@
   </description>
 
   <dependencies>
-    <dependency> <!-- We depend on core datatypes -->
+    <!-- We depend on core and service datatypes -->
+    <dependency>
       <groupId>com.fasterxml.storemate</groupId>
       <artifactId>storemate-shared</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-service</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
+    <!--  and on Jackson as well -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>

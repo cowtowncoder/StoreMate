@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import com.fasterxml.storemate.shared.key.KeyRange;
+import com.fasterxml.storemate.service.KeyRange;
 
 /**
  * We don't absolutely need a serializer for this type, but it's

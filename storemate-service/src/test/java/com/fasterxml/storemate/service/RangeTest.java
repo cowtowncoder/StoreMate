@@ -1,5 +1,7 @@
-package com.fasterxml.storemate.shared.key;
+package com.fasterxml.storemate.service;
 
+import com.fasterxml.storemate.service.KeyRange;
+import com.fasterxml.storemate.service.KeySpace;
 import com.fasterxml.storemate.shared.SharedTestBase;
 
 public class RangeTest extends SharedTestBase

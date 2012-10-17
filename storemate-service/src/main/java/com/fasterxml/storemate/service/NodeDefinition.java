@@ -1,7 +1,7 @@
 package com.fasterxml.storemate.service;
 
+import com.fasterxml.storemate.service.KeyRange;
 import com.fasterxml.storemate.shared.IpAndPort;
-import com.fasterxml.storemate.shared.key.KeyRange;
 
 /**
  * Basic definition of a store node, needed to figure out which store
