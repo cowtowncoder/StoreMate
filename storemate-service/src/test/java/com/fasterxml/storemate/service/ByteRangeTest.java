@@ -1,6 +1,9 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.service;
 
-public class TestRange extends SharedTestBase
+import com.fasterxml.storemate.service.ByteRange;
+import com.fasterxml.storemate.shared.SharedTestBase;
+
+public class ByteRangeTest extends SharedTestBase
 {
     public void testSimpleValid()
     {

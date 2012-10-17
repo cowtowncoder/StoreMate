@@ -1,6 +1,5 @@
 package com.fasterxml.storemate.service;
 
-import com.fasterxml.storemate.shared.ByteRange;
 
 /**
  * Interface class that defines abstraction implemented by classes that

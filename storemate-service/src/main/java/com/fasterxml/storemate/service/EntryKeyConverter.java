@@ -1,4 +1,6 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.service;
+
+import com.fasterxml.storemate.shared.StorableKey;
 
 /**
  * Abstract class that defines interface to use for converting

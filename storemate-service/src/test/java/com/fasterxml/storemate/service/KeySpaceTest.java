@@ -4,7 +4,7 @@ import com.fasterxml.storemate.service.KeyRange;
 import com.fasterxml.storemate.service.KeySpace;
 import com.fasterxml.storemate.shared.SharedTestBase;
 
-public class RangeTest extends SharedTestBase
+public class KeySpaceTest extends SharedTestBase
 {
     protected final KeySpace DEFAULT_SPACE = new KeySpace(360);
 	

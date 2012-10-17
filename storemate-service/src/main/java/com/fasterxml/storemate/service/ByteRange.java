@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.shared;
+package com.fasterxml.storemate.service;
 
 /**
  * Helper class used for dealing with HTTP "Range" and "Content-Range" headers.
