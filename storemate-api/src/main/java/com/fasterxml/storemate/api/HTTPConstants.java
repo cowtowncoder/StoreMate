@@ -48,6 +48,28 @@ public abstract class HTTPConstants
 
     /*
     ///////////////////////////////////////////////////////////////////////
+    // Custom HTTP Headers
+    ///////////////////////////////////////////////////////////////////////
+     */
+    
+    /**
+     * Name of custom HTTP header we use to indicate the latest
+     * available cluster state update from given server node.
+     *<p>
+     * Whether to use "X-" prefix or not seems in dispute; can change
+     * if need be.
+     */
+    public final static String CUSTOM_HTTP_HEADER_LAST_CLUSTER_UPDATE = "X-TempStore-ClusterUpdate";
+
+    /**
+     * In case of PUT that does not provide checksum as argument, server may
+     * return checksum upon successful call. This can be used for further
+     * calls by client.
+     */
+    public final static String CUSTOM_HTTP_HEADER_CHECKSUM = "X-TempStore-Checksum";
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
     // Query parameters, StoreMate-specific
     ///////////////////////////////////////////////////////////////////////
      */
@@ -55,6 +77,19 @@ public abstract class HTTPConstants
     public final static String HTTP_QUERY_PARAM_CLIENT_ID = "clientId";
 
     public final static String HTTP_QUERY_PARAM_CHECKSUM = "checksum";
+
+    public final static String HTTP_QUERY_PARAM_MIN_SINCE_ACCESS_TTL = "minSinceAccessTTL";
+    public final static String HTTP_QUERY_PARAM_MAX_TTL = "maxTTL";
+    
+    /**
+     * Query parameter used for defining timestamp after which (inclusive) entries are
+     * to be returned, as determine by their insertion time.
+     */
+    public final static String HTTP_QUERY_PARAM_SINCE = "since";
+    
+    public final static String HTTP_QUERY_PARAM_KEYRANGE_START = "keyRangeStart";
+
+    public final static String HTTP_QUERY_PARAM_KEYRANGE_LENGTH = "keyRangeLength";
     
     /*
     ///////////////////////////////////////////////////////////////////////
@@ -94,4 +129,25 @@ public abstract class HTTPConstants
     public final static String CONTENT_TYPE_JSON = "application/json";
     
     public final static String CONTENT_TYPE_SMILE = "application/x-jackson-smile";
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // HTTP Paths
+    ///////////////////////////////////////////////////////////////////////
+     */
+    
+    /**
+     * Path to Cluster status end point
+     */
+    public final static String PATH_CLUSTER_STATUS = "cluster/status";
+
+    /**
+     * Path to GET endpoint for getting latest inserts
+     */
+    public final static String PATH_SYNC_LIST = "sync/list";
+
+    /**
+     * Path to GET endpoint for actually pulling 'missing' entries.
+     */
+    public final static String PATH_SYNC_PULL = "sync/pull";
 }
