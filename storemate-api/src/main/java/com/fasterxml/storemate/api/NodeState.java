@@ -3,18 +3,29 @@ package com.fasterxml.storemate.api;
 import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.shared.IpAndPort;
 
-public abstract class NodeState
+public class NodeState
 {
+    protected IpAndPort _address;
+    protected long _lastUpdated;
+    protected KeyRange _rangeActive;
+    protected KeyRange _rangePassive;
+    protected KeyRange _rangeSync;
+    protected boolean _isDisabled;
+    protected long _lastSyncAttempt;
+    protected long _syncedUpTo;
+    
     /*
     ///////////////////////////////////////////////////////////////////////
-    // Serialized state
+    // Accessors
     ///////////////////////////////////////////////////////////////////////
      */
     
     /**
      * Public HTTP entry point (host, port) for the node.
      */
-    public abstract IpAndPort getAddress();
+    public IpAndPort getAddress() {
+        return _address;
+    }
 
     /**
      * Timestamp of last update by node itself to this
@@ -22,19 +33,71 @@ public abstract class NodeState
      * for determining most recent update. Always time from
      * node itself.
      */
-    public abstract long getLastUpdated();
+    public long getLastUpdated() {
+        return _lastUpdated;
+    }
     
-    public abstract KeyRange getRangeActive();
+    public KeyRange getRangeActive() {
+        return _rangeActive;
+    }
 
-    public abstract KeyRange getRangePassive();
+    public KeyRange getRangePassive() {
+        return _rangePassive;
+    }
 
-    public abstract KeyRange getRangeSync();
+    public KeyRange getRangeSync() {
+        return _rangeSync;
+    }
     
-    public abstract boolean isDisabled();
+    public boolean isDisabled() {
+        return _isDisabled;
+    }
 
-    public abstract long getLastSyncAttempt();
+    public long getLastSyncAttempt() {
+        return _lastSyncAttempt;
+    }
 
-    public abstract long getSyncedUpTo();
+    public long getSyncedUpTo() {
+        return _syncedUpTo;
+    }
+
+    /*
+    ///////////////////////////////////////////////////////////////////////
+    // Mutators (for deserialization only; ok to be protected)
+    ///////////////////////////////////////////////////////////////////////
+     */
+
+    public void setAddress(IpAndPort v) {
+        _address = v;
+    }
+
+    public void setLastUpdated(long v) {
+        _lastUpdated = v;
+    }
+    
+    public void setRangeActive(KeyRange v) {
+        _rangeActive = v;
+    }
+
+    public void setRangePassive(KeyRange v) {
+        _rangePassive = v;
+    }
+
+    public void setRangeSync(KeyRange v) {
+        _rangeSync = v;
+    }
+    
+    public void setDisabled(boolean v) {
+        _isDisabled = v;
+    }
+
+    public void setLastSyncAttempt(long v) {
+         _lastSyncAttempt = v;
+    }
+
+    public void setSyncedUpTo(long v) {
+        _syncedUpTo = v;
+    }
     
     /*
     ///////////////////////////////////////////////////////////////////////
@@ -42,7 +105,6 @@ public abstract class NodeState
     ///////////////////////////////////////////////////////////////////////
      */
 
-    
     public KeyRange totalRange() {
         KeyRange active = getRangeActive();
         KeyRange passive = getRangePassive();
