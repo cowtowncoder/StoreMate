@@ -5,11 +5,11 @@
     <artifactId>storemate-parent</artifactId>
     <version>0.5.1-SNAPSHOT</version>
   </parent>
-  <artifactId>storemate-service</artifactId>
-  <name>StoreMate-service</name>
+  <artifactId>storemate-api</artifactId>
+  <name>StoreMate-API</name>
   <packaging>jar</packaging>
-  <description>Logical service abstraction, used by both server and
-client components.
+  <description>Data types needed for service abstraction,
+used by both server and client components.
   </description>
 
   <dependencies>

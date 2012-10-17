@@ -18,7 +18,7 @@
     <module>storemate-json</module>
     <module>storemate-store</module>
     <module>storemate-backend-bdb-je</module>
-    <module>storemate-service</module>
+    <module>storemate-api</module>
   </modules>
 
   <url>https://github.com/cowtowncoder/StoreMate</url>
