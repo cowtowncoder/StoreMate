@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.fasterxml.storemate</groupId>
     <artifactId>storemate-parent</artifactId>
-    <version>0.5.1</version>
+    <version>0.5.2-SNAPSHOT</version>
   </parent>
   <artifactId>storemate-api</artifactId>
   <name>StoreMate-API</name>
