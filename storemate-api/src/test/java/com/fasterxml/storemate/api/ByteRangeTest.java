@@ -1,6 +1,6 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
-import com.fasterxml.storemate.service.ByteRange;
+import com.fasterxml.storemate.api.ByteRange;
 import com.fasterxml.storemate.shared.SharedTestBase;
 
 public class ByteRangeTest extends SharedTestBase

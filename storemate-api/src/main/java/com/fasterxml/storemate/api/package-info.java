@@ -5,4 +5,7 @@
  * {@link KeySpace} and {@link KeyRange}, as well as
  * basic node definitions and constants.
  */
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
+import com.fasterxml.storemate.api.KeyRange;
+import com.fasterxml.storemate.api.KeySpace;
+

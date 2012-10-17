@@ -1,4 +1,6 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
+
+import com.fasterxml.storemate.api.KeySpace;
 
 /**
  * Simple value class that encapsulates a 32-bit int hash value

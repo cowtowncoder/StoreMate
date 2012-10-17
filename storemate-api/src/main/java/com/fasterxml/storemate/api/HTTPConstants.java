@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
 /**
  * Set of standard HTTP constants that we tend to need in various

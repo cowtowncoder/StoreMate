@@ -1,6 +1,6 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
-import com.fasterxml.storemate.service.KeyRange;
+import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.shared.IpAndPort;
 
 public abstract class NodeState

@@ -1,6 +1,10 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
 import java.util.BitSet;
+
+import com.fasterxml.storemate.api.KeyHash;
+import com.fasterxml.storemate.api.KeyRange;
+import com.fasterxml.storemate.api.KeySpace;
 
 /**
  * Entity that represents subset of key hashes used for finding nodes

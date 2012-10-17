@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
 import java.io.*;
 

@@ -1,5 +1,6 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
+import com.fasterxml.storemate.api.EntryKey;
 import com.fasterxml.storemate.shared.StorableKey;
 
 /**

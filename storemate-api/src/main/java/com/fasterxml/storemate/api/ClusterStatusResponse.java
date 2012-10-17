@@ -1,7 +1,9 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
 import java.util.Collection;
 import java.util.Collections;
+
+import com.fasterxml.storemate.api.NodeState;
 
 /**
  * POJO used as response for GET on cluster status.

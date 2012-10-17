@@ -1,8 +1,12 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
 import java.util.BitSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.fasterxml.storemate.api.KeyHash;
+import com.fasterxml.storemate.api.KeyRange;
+import com.fasterxml.storemate.api.KeySpace;
 
 /**
  * Logical slice of a {@link KeySpace}; a consecutive range of individual

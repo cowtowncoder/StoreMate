@@ -1,4 +1,8 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
+
+import com.fasterxml.storemate.api.HTTPConstants;
+import com.fasterxml.storemate.api.SMServerResponse;
+import com.fasterxml.storemate.api.StreamingResponseContent;
 
 
 /**

@@ -1,6 +1,6 @@
-package com.fasterxml.storemate.service;
+package com.fasterxml.storemate.api;
 
-import com.fasterxml.storemate.service.ClientId;
+import com.fasterxml.storemate.api.ClientId;
 import com.fasterxml.storemate.shared.SharedTestBase;
 
 public class ClientIdTest extends SharedTestBase
