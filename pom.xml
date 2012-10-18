@@ -183,4 +183,5 @@
     </profile>
   </profiles>
 
+  <!-- repos from parent pom -->
 </project>
