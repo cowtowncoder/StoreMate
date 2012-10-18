@@ -15,7 +15,7 @@ Working as part of a bigger system -- high-level system to be open sources -- bu
 
 Unit tests exist to verify basic functioning of the single-node data store, when accessed locally (not over network).
 
-More documentation sorely needed.
+More documentation still needed.
 
 # Sub-modules
 
