@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.client;
 
 import com.fasterxml.storemate.api.KeyRange;
+import com.fasterxml.storemate.api.RequestPathBuilder;
 import com.fasterxml.storemate.shared.IpAndPort;
 
 /**
@@ -26,7 +27,8 @@ public interface ServerNodeState
     public long getLastClusterUpdateAvailable();
 
     /**
-     * Accessor for finding URL for server endpoint
+     * Accessor for finding URL for server endpoint used for
+     * accessing (CRUD) of stored entries.
      */
-    public String resourceEndpoint();
+    public <P extends RequestPathBuilder> P resourceEndpoint();
 }

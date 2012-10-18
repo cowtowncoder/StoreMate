@@ -13,4 +13,9 @@ public abstract class EntryKey
     public abstract StorableKey asStorableKey();
 
     public abstract byte[] asBytes();
+
+    /**
+     * Method for appending key information into path, using given path builder.
+     */
+    public abstract <B extends RequestPathBuilder> B appendToPath(B pathBuilder);
 }
