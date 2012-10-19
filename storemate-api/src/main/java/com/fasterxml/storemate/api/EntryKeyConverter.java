@@ -1,7 +1,9 @@
 package com.fasterxml.storemate.api;
 
 import com.fasterxml.storemate.api.EntryKey;
+import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.hash.IncrementalHasher32;
 
 /**
  * Abstract class that defines interface to use for converting
@@ -32,4 +34,12 @@ public abstract class EntryKeyConverter<K extends EntryKey>
      * regarding given content key.
      */
     public abstract int routingHashFor(K key);
+
+    public abstract int contentHashFor(ByteContainer bytes);
+
+    /**
+     * Method that will create a <b>new</b> hasher instance for calculating
+     * hash values for content that can not be handled as a single block.
+     */
+    public abstract IncrementalHasher32 createStreamingContentHasher();
 }

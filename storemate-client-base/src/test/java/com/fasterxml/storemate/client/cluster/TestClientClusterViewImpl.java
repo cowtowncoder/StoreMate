@@ -1,6 +1,5 @@
 package com.fasterxml.storemate.client.cluster;
 
-import com.fasterxml.storemate.api.EntryKeyConverter;
 import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.api.KeySpace;
 import com.fasterxml.storemate.client.cluster.ClusterViewByClientImpl;
