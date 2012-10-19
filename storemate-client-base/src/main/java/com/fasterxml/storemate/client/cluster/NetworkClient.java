@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.client.cluster;
 
 import com.fasterxml.storemate.api.EntryKey;
+import com.fasterxml.storemate.api.EntryKeyConverter;
 import com.fasterxml.storemate.api.RequestPathBuilder;
 import com.fasterxml.storemate.shared.IpAndPort;
 
@@ -17,4 +18,11 @@ public abstract class NetworkClient<K extends EntryKey>
      * main client library is stopped.
      */
     public abstract void shutdown();
+
+    /**
+     * Accessor for factory method(s) for creating per-server accessor objects.
+     */
+    public abstract EntryAccessors getEntryAccessors();
+
+    public abstract EntryKeyConverter<K> getKeyConverter();
 }
