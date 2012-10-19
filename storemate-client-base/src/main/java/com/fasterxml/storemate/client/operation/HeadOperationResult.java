@@ -2,7 +2,7 @@ package com.fasterxml.storemate.client.operation;
 
 import java.util.LinkedList;
 
-import com.fasterxml.storemate.client.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 public class HeadOperationResult extends OperationResultImpl<HeadOperationResult>
 {

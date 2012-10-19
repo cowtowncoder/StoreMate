@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.client;
 
 import com.fasterxml.storemate.api.HTTPConstants;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**
  * Container for details of a single failed call to a server.

@@ -3,7 +3,7 @@ package com.fasterxml.storemate.client.operation;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.storemate.client.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 public class PutOperationResult extends OperationResultImpl<PutOperationResult>
 {

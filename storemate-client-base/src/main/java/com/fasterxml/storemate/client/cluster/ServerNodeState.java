@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.cluster;
 
 import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.api.RequestPathBuilder;

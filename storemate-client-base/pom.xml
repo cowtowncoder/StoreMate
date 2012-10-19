@@ -24,7 +24,14 @@ StoreMate-based service.
       <version>${project.version}</version>
     </dependency>
 
-    <!--  and we may need base test stuff -->
+    <!-- need Jackson for some stuff, dont we? -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.jackson}</version>
+    </dependency>
+
+    <!-- and we may need base test stuff -->
     <dependency>
       <groupId>com.fasterxml.storemate</groupId>
       <artifactId>storemate-shared</artifactId>

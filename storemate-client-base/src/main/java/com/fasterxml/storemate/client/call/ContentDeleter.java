@@ -2,7 +2,7 @@ package com.fasterxml.storemate.client.call;
 
 import com.fasterxml.storemate.api.EntryKey;
 import com.fasterxml.storemate.client.CallFailure;
-import com.fasterxml.storemate.client.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 public interface ContentDeleter<K extends EntryKey>
 {

@@ -1,5 +1,7 @@
 package com.fasterxml.storemate.client;
 
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
+
 
 /**
  * Container class for an ordered set of references to server nodes

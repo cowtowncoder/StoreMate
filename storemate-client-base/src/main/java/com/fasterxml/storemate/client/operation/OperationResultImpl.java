@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 import com.fasterxml.storemate.client.NodeFailure;
 import com.fasterxml.storemate.client.OperationResult;
-import com.fasterxml.storemate.client.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**
  * Intermediate base class to simplify actual result implementations.

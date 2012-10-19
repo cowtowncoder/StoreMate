@@ -1,6 +1,7 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.cluster;
 
 import com.fasterxml.storemate.api.EntryKey;
+import com.fasterxml.storemate.client.NodesForKey;
 
 public abstract class ClusterViewByClient
 {

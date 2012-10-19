@@ -2,6 +2,8 @@ package com.fasterxml.storemate.client;
 
 import java.util.*;
 
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
+
 /**
  * Class that contains information about failure of an operation as it
  * relates to call(s) to a single server node.

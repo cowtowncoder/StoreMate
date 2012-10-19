@@ -3,8 +3,8 @@ package com.fasterxml.storemate.client.operation;
 import java.util.LinkedList;
 
 import com.fasterxml.storemate.client.OperationResult;
-import com.fasterxml.storemate.client.ServerNodeState;
 import com.fasterxml.storemate.client.call.GetContentProcessor;
+import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**
  * {@link OperationResult} subtype used with GET operations, adds actual
