@@ -115,7 +115,7 @@ public abstract class StoreClient<K extends EntryKey,
     ///////////////////////////////////////////////////////////////////////
      */
     
-    protected final ClusterViewByClient _clusterView;
+    protected final ClusterViewByClient<K> _clusterView;
 
     /*
     ///////////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ public abstract class StoreClient<K extends EntryKey,
      */
 
     protected StoreClient(CONFIG config,
-            ClusterStatusAccessor statusAccessor, ClusterViewByClient clusterView,
+            ClusterStatusAccessor statusAccessor, ClusterViewByClient<K> clusterView,
             NetworkClient<K> httpClientImpl)
     {
         super(StoreClient.class);
@@ -187,7 +187,7 @@ public abstract class StoreClient<K extends EntryKey,
     /**
      * Accessor for getting full cluster information
      */
-    public ClusterViewByClient getCluster() {
+    public ClusterViewByClient<K> getCluster() {
         return _clusterView;
     }
 

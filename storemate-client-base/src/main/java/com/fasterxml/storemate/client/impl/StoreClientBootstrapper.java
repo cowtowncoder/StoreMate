@@ -179,7 +179,7 @@ public abstract class StoreClientBootstrapper<
         final long waitUntil = (maxWaitSecs <= 0) ? Long.MAX_VALUE : (startTime + 1000 * maxWaitSecs);
         // We'll keep track of other seed nodes:
         ArrayList<IpAndPort> ips = new ArrayList<IpAndPort>(_nodes);
-        ClusterViewByClientImpl clusterView = _getInitialState(_config, ips, waitUntil);
+        ClusterViewByClientImpl<K> clusterView = _getInitialState(_config, ips, waitUntil);
 
         // Nothing found before timeout? Bummer!
         if (clusterView == null) {
@@ -232,13 +232,13 @@ public abstract class StoreClientBootstrapper<
     }
 
     protected abstract STORE _buildClient(CONFIG config, ClusterStatusAccessor accessor,
-            ClusterViewByClientImpl clusterView, NetworkClient<K> client);
+            ClusterViewByClientImpl<K> clusterView, NetworkClient<K> client);
     
     /**
      * Method called to find information from the first available seed
      * server node.
      */
-    protected ClusterViewByClientImpl _getInitialState(CONFIG config,
+    protected ClusterViewByClientImpl<K> _getInitialState(CONFIG config,
             Collection<IpAndPort> nodes,
             long waitUntil) throws IOException
     {
@@ -259,8 +259,8 @@ public abstract class StoreClientBootstrapper<
                     }
                     it.remove(); // remove from bootstrap list
                     NodeState local = resp.local;
-                    ClusterViewByClientImpl clusterView = new ClusterViewByClientImpl(_httpClient,
-                    		local.totalRange().getKeyspace());
+                    ClusterViewByClientImpl<K> clusterView = new ClusterViewByClientImpl<K>(
+                            _httpClient, local.totalRange().getKeyspace());
                     clusterView.updateDirectState(ip, local,
                             requestTime, System.currentTimeMillis(), resp.clusterLastUpdated);
                     for (NodeState stateSec : resp.remote) {
@@ -295,7 +295,7 @@ public abstract class StoreClientBootstrapper<
      * @return True if we managed to resolve one more node; false if not.
      */
     protected boolean _updateInitialState(Collection<IpAndPort> nodes,
-            long waitUntil, ClusterViewByClientImpl clusterView) throws IOException
+            long waitUntil, ClusterViewByClientImpl<K> clusterView) throws IOException
     {
         Iterator<IpAndPort> it = nodes.iterator();
         while (it.hasNext()) {

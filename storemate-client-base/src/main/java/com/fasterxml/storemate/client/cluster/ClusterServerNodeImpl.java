@@ -94,7 +94,7 @@ public class ClusterServerNodeImpl
 
     public ClusterServerNodeImpl(RequestPath pathBase,
             IpAndPort address, KeyRange activeRange, KeyRange passiveRange,
-            EntryAccessors entryAccessors)
+            EntryAccessors<?> entryAccessors)
     {
         _pathBase = pathBase;
         _address = address;

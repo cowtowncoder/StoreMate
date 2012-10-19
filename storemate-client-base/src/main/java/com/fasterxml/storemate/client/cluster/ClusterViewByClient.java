@@ -2,7 +2,7 @@ package com.fasterxml.storemate.client.cluster;
 
 import com.fasterxml.storemate.api.EntryKey;
 
-public abstract class ClusterViewByClient
+public abstract class ClusterViewByClient<K extends EntryKey>
 {
     /**
      * Accessor for finding out number of server nodes cluster is known
@@ -30,5 +30,5 @@ public abstract class ClusterViewByClient
      * Method for finding set of nodes to contact for accessing content with
      * specified key.
      */
-    public abstract NodesForKey getNodesFor(EntryKey key);
+    public abstract NodesForKey getNodesFor(K key);
 }

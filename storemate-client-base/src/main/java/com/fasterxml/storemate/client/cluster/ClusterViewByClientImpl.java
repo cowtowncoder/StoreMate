@@ -17,8 +17,8 @@ import com.fasterxml.storemate.shared.IpAndPort;
  * Class that encapsulates view of the cluster, as whole, from
  * client perspective.
  */
-public class ClusterViewByClientImpl
-    extends ClusterViewByClient
+public class ClusterViewByClientImpl<K extends EntryKey>
+    extends ClusterViewByClient<K>
 {
 	protected final static String PATH_STORE = "apicursorfile";
 	
@@ -26,13 +26,13 @@ public class ClusterViewByClientImpl
 	 * Reference to the underlying network client, so that we can
 	 * construct paths for requests.
 	 */
-	private final NetworkClient<?> _client;
+	private final NetworkClient<K> _client;
 
 	private final KeySpace _keyspace;
     
-    private final EntryKeyConverter<EntryKey> _keyConverter;
+	private final EntryKeyConverter<K> _keyConverter;
     
-    private final Map<IpAndPort, ClusterServerNodeImpl> _nodes = new LinkedHashMap<IpAndPort, ClusterServerNodeImpl>();
+	private final Map<IpAndPort, ClusterServerNodeImpl> _nodes = new LinkedHashMap<IpAndPort, ClusterServerNodeImpl>();
 
     /**
      * Since we will need to iterate over server node 
@@ -49,14 +49,13 @@ public class ClusterViewByClientImpl
 
     private final AtomicReferenceArray<NodesForKey> _routing;
 
-    private final EntryAccessors _entryAccessors;
+    private final EntryAccessors<K> _entryAccessors;
     
-    @SuppressWarnings("unchecked")
-    public ClusterViewByClientImpl(NetworkClient<?> client, KeySpace keyspace)
+    public ClusterViewByClientImpl(NetworkClient<K> client, KeySpace keyspace)
     {
         _keyspace = keyspace;
         _client = client;
-        _keyConverter = (EntryKeyConverter<EntryKey>) client.getKeyConverter();
+        _keyConverter = client.getKeyConverter();
         _routing = new AtomicReferenceArray<NodesForKey>(keyspace.getLength());
         _entryAccessors = client.getEntryAccessors();
     }
@@ -70,9 +69,9 @@ public class ClusterViewByClientImpl
         _entryAccessors = null;
     }
     
-    public static ClusterViewByClientImpl forTesting(KeySpace keyspace)
+    public static <K extends EntryKey> ClusterViewByClientImpl<K> forTesting(KeySpace keyspace)
     {
-        return new ClusterViewByClientImpl(keyspace);
+        return new ClusterViewByClientImpl<K>(keyspace);
     }
     
     /*
@@ -107,7 +106,7 @@ public class ClusterViewByClientImpl
     }
 
     @Override
-    public NodesForKey getNodesFor(EntryKey key)
+    public NodesForKey getNodesFor(K key)
     {
         int fullHash = _keyConverter.routingHashFor(key);
         KeyHash hash = new KeyHash(fullHash, _keyspace.getLength());

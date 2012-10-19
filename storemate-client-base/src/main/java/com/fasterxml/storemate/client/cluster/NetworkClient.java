@@ -22,7 +22,7 @@ public abstract class NetworkClient<K extends EntryKey>
     /**
      * Accessor for factory method(s) for creating per-server accessor objects.
      */
-    public abstract EntryAccessors getEntryAccessors();
+    public abstract EntryAccessors<K> getEntryAccessors();
 
     public abstract EntryKeyConverter<K> getKeyConverter();
 }

@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.client.cluster;
 
+import com.fasterxml.storemate.api.EntryKey;
 import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.api.KeySpace;
 import com.fasterxml.storemate.client.cluster.ClusterViewByClientImpl;
@@ -22,7 +23,7 @@ public class TestClientClusterViewImpl extends ClientTestBase
     
     public void testSimpleDistanceCalc()
     {
-        ClusterViewByClientImpl view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
+        ClusterViewByClientImpl<EntryKey> view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
         NodesForKey nodes;
 
         // first: test with all enabled
@@ -55,7 +56,7 @@ public class TestClientClusterViewImpl extends ClientTestBase
 
     public void testDistanceCalcWithDisabled()
     {
-        ClusterViewByClientImpl view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
+        ClusterViewByClientImpl<EntryKey> view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
         NodesForKey nodes;
 
         ClusterServerNodeImpl disabledNode2 = ClusterServerNodeImpl.forTesting(range2);
@@ -82,7 +83,7 @@ public class TestClientClusterViewImpl extends ClientTestBase
 
     public void testActiveVsPassive()
     {
-        ClusterViewByClientImpl view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
+        ClusterViewByClientImpl<EntryKey> view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
 
         KeyRange range1a = DEFAULT_SPACE.range(30, 60); // 30 - 89
         KeyRange range1p = DEFAULT_SPACE.range(0, 120); // 0 - 119
@@ -112,7 +113,7 @@ public class TestClientClusterViewImpl extends ClientTestBase
     
     public void testFullCoverage()
     {
-        ClusterViewByClientImpl view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
+        ClusterViewByClientImpl<EntryKey> view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
         assertEquals(210, view._getCoverage(allNodes));
 
         KeyRange extraRange = DEFAULT_SPACE.range(100, 200);
