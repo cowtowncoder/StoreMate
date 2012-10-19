@@ -2,6 +2,10 @@ package com.fasterxml.storemate.client.call;
 
 import com.fasterxml.storemate.api.EntryKey;
 
+/**
+ * Interface for a general purpose HEAD accessor, for a resource stored
+ * in a single server; one accessor per server and end point.
+ */
 public interface ContentHeader<K extends EntryKey>
 {
     /**
@@ -10,7 +14,6 @@ public interface ContentHeader<K extends EntryKey>
      * 
      * @param config Configuration settings to use for call
      * @param endOfTime Time point at which the whole operation will time out
-     * @param server Information about server node to call
      * @param contentId Key of content to access
      */
     public HeadCallResult tryHead(CallConfig config, long endOfTime, K contentId);
