@@ -23,6 +23,12 @@ StoreMate-based service.
       <artifactId>storemate-api</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--  for base Client impl, JSON also needed: -->
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-json</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- need Jackson for some stuff, dont we? -->
     <dependency>
