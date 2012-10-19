@@ -468,7 +468,7 @@ public abstract class StoreClient<K extends EntryKey,
         /* Ok: first round; try PUT into every enabled store, up to optimal number
          * of successes we expect.
          */
-        final boolean noRetries = !config.getAllowRetries();
+        final boolean noRetries = !allowRetries();
         List<NodeFailure> retries = null;
         for (int i = 0; i < nodeCount; ++i) {
             ClusterServerNode server = nodes.node(i);
@@ -623,7 +623,7 @@ public abstract class StoreClient<K extends EntryKey,
         final long lastValidTime = endOfTime - config.getCallConfig().getMinimumTimeoutMsecs();
 
         // Ok: first round; try GET from every enabled store
-        final boolean noRetries = !config.getAllowRetries();
+        final boolean noRetries = !allowRetries();
         List<NodeFailure> retries = null;
         for (int i = 0; i < nodeCount; ++i) {
             ClusterServerNode server = nodes.node(i);
@@ -773,7 +773,7 @@ public abstract class StoreClient<K extends EntryKey,
         final long lastValidTime = endOfTime - config.getCallConfig().getMinimumTimeoutMsecs();
 
         // Ok: first round; try HEAD from every enabled store (or, if only one try, all)
-        final boolean noRetries = !config.getAllowRetries();
+        final boolean noRetries = !allowRetries();
         List<NodeFailure> retries = null;
         for (int i = 0; i < nodeCount; ++i) {
             ClusterServerNode server = nodes.node(i);
@@ -922,7 +922,7 @@ public abstract class StoreClient<K extends EntryKey,
         /* Ok: first round; try DETE from every enabled store, up to optimal number
          * of successes we expect.
          */
-        final boolean noRetries = !config.getAllowRetries();
+        final boolean noRetries = !allowRetries();
         List<NodeFailure> retries = null;
         for (int i = 0; i < nodeCount; ++i) {
             ClusterServerNode server = nodes.node(i);
@@ -1039,6 +1039,10 @@ public abstract class StoreClient<K extends EntryKey,
     ///////////////////////////////////////////////////////////////////////
      */
 
+    protected boolean allowRetries() {
+        return _config.getOperationConfig().getAllowRetries();
+    }
+    
     protected <T> List<T> _add(List<T> list, T entry)
     {
         if (list == null) {

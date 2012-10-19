@@ -16,12 +16,6 @@ public abstract class StoreClientConfig<
     protected final EntryKeyConverter<K> _keyConverter;
 
     protected final ObjectMapper _jsonMapper;
-    
-    /**
-     * Setting that determines whether retries are allowed: usually only
-     * disabled for tests.
-     */
-    protected final boolean _allowRetries;
 
     protected final OperationConfig _operationConfig;
 
@@ -32,11 +26,10 @@ public abstract class StoreClientConfig<
      */
     
     protected StoreClientConfig(EntryKeyConverter<K> keyConverter,
-            ObjectMapper jsonMapper, boolean allowRetries, OperationConfig operConfig)
+            ObjectMapper jsonMapper, OperationConfig operConfig)
     {
         _keyConverter = keyConverter;
         _jsonMapper = jsonMapper;
-        _allowRetries = allowRetries;
         _operationConfig = operConfig;
     }
 
@@ -60,8 +53,6 @@ public abstract class StoreClientConfig<
     public ObjectMapper getJsonMapper() {
     	return _jsonMapper;
     }
-    
-    public boolean getAllowRetries() { return _allowRetries; }
 
     /**
      * Accessor for per-call configuration settings.

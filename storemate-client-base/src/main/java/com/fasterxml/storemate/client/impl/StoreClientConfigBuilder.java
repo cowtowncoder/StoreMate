@@ -84,22 +84,20 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
      */
     
     public StoreClientConfigBuilder(EntryKeyConverter<K> keyConverter) {
-        this(keyConverter, DEFAULT_JSON_MAPPER,
-        		DEFAULT_OPERATION_CONFIG, true);
+        this(keyConverter, DEFAULT_JSON_MAPPER, DEFAULT_OPERATION_CONFIG);
     }
 
     public StoreClientConfigBuilder(CONFIG config)
     {
         this(config.getKeyConverter(), config.getJsonMapper(),
-        		config.getOperationConfig(), config.getAllowRetries());
+        		config.getOperationConfig());
     }
 
     protected StoreClientConfigBuilder(EntryKeyConverter<K> keyConv, ObjectMapper jsonMapper,
-            OperationConfig operationConfig, boolean allowRetries)
+            OperationConfig operationConfig)
     {
         _keyConverter = keyConv;
         _jsonMapper = jsonMapper;
-        _allowRetries = allowRetries;
 
         _minOksToSucceed = operationConfig.getMinimalOksToSucceed();
         _optimalOks = operationConfig.getOptimalOks();
@@ -108,13 +106,15 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
         _putOperationTimeoutMsecs = operationConfig.getPutOperationTimeoutMsecs();
         _getOperationTimeoutMsecs = operationConfig.getGetOperationTimeoutMsecs();
         _deleteOperationTimeoutMsecs = operationConfig.getDeleteOperationTimeoutMsecs();
+
+        _allowRetries = operationConfig.getAllowRetries();
         
         final CallConfig callConfig = operationConfig.getCallConfig();
         _connectTimeoutMsecs = callConfig.getConnectTimeoutMsecs();
         _putCallTimeoutMsecs = callConfig.getPutCallTimeoutMsecs();
         _getCallTimeoutMsecs = callConfig.getGetCallTimeoutMsecs();
         _deleteCallTimeoutMsecs = callConfig.getDeleteCallTimeoutMsecs();
-    }
+   }
 
     /**
      * Main build method; needs to be abstract for sub-classes to produce
@@ -126,7 +126,8 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
         CallConfig cc = buildCallConfig();
         return new OperationConfig(cc,
                 _minOksToSucceed, _optimalOks, _maxOks,
-                _putOperationTimeoutMsecs, _getOperationTimeoutMsecs, _deleteOperationTimeoutMsecs
+                _putOperationTimeoutMsecs, _getOperationTimeoutMsecs, _deleteOperationTimeoutMsecs,
+                _allowRetries
         );
     }
 
@@ -141,12 +142,6 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
     // Mutators
     ///////////////////////////////////////////////////////////////////////
      */
-
-    @SuppressWarnings("unchecked")
-    public BUILDER setAllowRetries(boolean enable) {
-        _allowRetries = enable;
-        return (BUILDER) this;
-    }
 
     // // // Low-level single-call timeouts
     
@@ -181,6 +176,12 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
     }
     
     // // // High-level operation settings
+
+    @SuppressWarnings("unchecked")
+    public BUILDER setAllowRetries(boolean enable) {
+        _allowRetries = enable;
+        return (BUILDER) this;
+    }
     
     @SuppressWarnings("unchecked")
     public BUILDER setMinimalOksToSucceed(int count) {
@@ -229,8 +230,6 @@ public abstract class StoreClientConfigBuilder<K extends EntryKey,
     public EntryKeyConverter<K> getKeyConverter() {
         return _keyConverter;
     }
-
-    public boolean getAllowRetries() { return _allowRetries; }
 
     public ObjectMapper getJsonMapper() {
     	return _jsonMapper;

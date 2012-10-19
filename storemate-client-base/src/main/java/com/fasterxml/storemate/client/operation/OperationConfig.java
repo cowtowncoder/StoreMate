@@ -60,6 +60,14 @@ public class OperationConfig
 
     protected final long _deleteOperationTimeoutMsecs;
 
+    // // // Other
+
+    /**
+     * Setting that determines whether retries are allowed: usually only
+     * disabled for tests.
+     */
+    protected final boolean _allowRetries;
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Instance creation, building
@@ -74,13 +82,16 @@ public class OperationConfig
 
                 DEFAULT_PUT_OPERATION_TIMEOUT_MSECS,
                 DEFAULT_GET_OPERATION_TIMEOUT_MSECS,
-                DEFAULT_DELETE_OPERATION_TIMEOUT_MSECS
+                DEFAULT_DELETE_OPERATION_TIMEOUT_MSECS,
+                
+                true // yes, retries please
         );
     }
 
     public OperationConfig(CallConfig callConfig,
             int minOks, int optimalOks, int maxOks,
-            long put, long get, long delete)
+            long put, long get, long delete,
+            boolean allowRetries)
     {
         _callConfig = callConfig;
         
@@ -91,12 +102,15 @@ public class OperationConfig
         _putOperationTimeoutMsecs = put;
         _getOperationTimeoutMsecs = get;
         _deleteOperationTimeoutMsecs = delete;
+
+        _allowRetries = allowRetries;
     }
 
     public OperationConfig withCallConfig(CallConfig cc) {
         return (_callConfig == cc) ? this : new OperationConfig(cc,
                 _minOksToSucceed, _optimalOks, _maxOks,
-                _putOperationTimeoutMsecs, _getOperationTimeoutMsecs, _deleteOperationTimeoutMsecs
+                _putOperationTimeoutMsecs, _getOperationTimeoutMsecs, _deleteOperationTimeoutMsecs,
+                _allowRetries
                 );
     }
     
@@ -139,5 +153,6 @@ public class OperationConfig
     public long getPutOperationTimeoutMsecs() { return _putOperationTimeoutMsecs; }
     public long getGetOperationTimeoutMsecs() { return _getOperationTimeoutMsecs; }
     public long getDeleteOperationTimeoutMsecs() { return _deleteOperationTimeoutMsecs; }
-    
+
+    public boolean getAllowRetries() { return _allowRetries; }
 }
