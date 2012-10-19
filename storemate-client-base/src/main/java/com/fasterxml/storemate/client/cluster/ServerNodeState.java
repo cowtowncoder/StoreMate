@@ -10,20 +10,47 @@ import com.fasterxml.storemate.shared.IpAndPort;
  */
 public interface ServerNodeState
 {
+    /**
+     * End point if the server node
+     */
     public IpAndPort getAddress();
 
     public KeyRange getActiveRange();
     public KeyRange getPassiveRange();
     public KeyRange getTotalRange();
 
+    /**
+     * Whether server node is disabled: usually occurs during shutdowns
+     * and startups, and is considered a transient state. Clients typically
+     * try to avoid GET access from disabled nodes; and schedule updates
+     * (if any) after all enabled instances.
+     */
     public boolean isDisabled();
 
+    /**
+     * Timestamp when last node state access request was sent.
+     */
     public long getLastRequestSent();
+
+    /**
+     * Timestamp when last node state access response was received (note:
+     * does NOT include cases where error occured during request).
+     */
     public long getLastResponseReceived();
 
+    /**
+     * Timestamp when last node state response update was processed.
+     */
     public long getLastNodeUpdateFetched();
+
+    /**
+     * Timestamp of the last update that has been fetched from the server node.
+     */
     public long getLastClusterUpdateFetched();
 
+    /**
+     * Timestamp of the latest update for the server node.
+     */
     public long getLastClusterUpdateAvailable();
 
     /**
