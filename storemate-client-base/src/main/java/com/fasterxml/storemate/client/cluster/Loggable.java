@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.cluster;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -1,23 +1,25 @@
 package com.fasterxml.storemate.client.cluster;
 
+import com.fasterxml.storemate.api.EntryKey;
 import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.api.RequestPathBuilder;
-import com.fasterxml.storemate.shared.IpAndPort;
+import com.fasterxml.storemate.client.ServerNode;
+import com.fasterxml.storemate.client.call.ContentDeleter;
+import com.fasterxml.storemate.client.call.ContentGetter;
+import com.fasterxml.storemate.client.call.ContentHeader;
+import com.fasterxml.storemate.client.call.ContentPutter;
 
 /**
- * Read-only part of logical server node state; used for exposing state
- * via result objects.
+ * Read-only part of state of a server node that is part of a cluster.
  */
 public interface ServerNodeState
+    extends ServerNode
 {
-    /**
-     * End point if the server node
+    /*
+    /**********************************************************************
+    /* Basic state accessors
+    /**********************************************************************
      */
-    public IpAndPort getAddress();
-
-    public KeyRange getActiveRange();
-    public KeyRange getPassiveRange();
-    public KeyRange getTotalRange();
 
     /**
      * Whether server node is disabled: usually occurs during shutdowns
@@ -27,6 +29,22 @@ public interface ServerNodeState
      */
     public boolean isDisabled();
 
+    /*
+    /**********************************************************************
+    /* Key range access
+    /**********************************************************************
+     */
+    
+    public KeyRange getActiveRange();
+    public KeyRange getPassiveRange();
+    public KeyRange getTotalRange();
+
+    /*
+    /**********************************************************************
+    /* Timestamp access
+    /**********************************************************************
+     */
+    
     /**
      * Timestamp when last node state access request was sent.
      */
@@ -53,9 +71,23 @@ public interface ServerNodeState
      */
     public long getLastClusterUpdateAvailable();
 
+    /*
+    /**********************************************************************
+    /* Call accessors, paths etc
+    /**********************************************************************
+     */
+    
     /**
      * Accessor for finding URL for server endpoint used for
      * accessing (CRUD) of stored entries.
      */
     public <P extends RequestPathBuilder> P resourceEndpoint();
+
+    public abstract <K extends EntryKey> ContentPutter<K> entryPutter();
+
+    public abstract <K extends EntryKey> ContentGetter<K> entryGetter();
+
+    public abstract <K extends EntryKey> ContentHeader<K> entryHeader();
+
+    public abstract <K extends EntryKey> ContentDeleter<K> entryDeleter();
 }

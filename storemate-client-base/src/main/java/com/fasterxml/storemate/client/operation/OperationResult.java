@@ -1,7 +1,6 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.operation;
 
 import com.fasterxml.storemate.client.cluster.ServerNodeState;
-import com.fasterxml.storemate.client.operation.OperationConfig;
 
 /**
  * Class used for returning information about operation success (or lack thereof).

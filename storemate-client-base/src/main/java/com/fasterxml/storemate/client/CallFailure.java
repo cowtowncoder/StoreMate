@@ -1,14 +1,13 @@
 package com.fasterxml.storemate.client;
 
 import com.fasterxml.storemate.api.HTTPConstants;
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**
  * Container for details of a single failed call to a server.
  */
 public class CallFailure
 {
-    protected final ServerNodeState _server;
+    protected final ServerNode _server;
 
     protected final long _callTime;
     
@@ -35,7 +34,7 @@ public class CallFailure
     ///////////////////////////////////////////////////////////////////////
      */
 
-    public CallFailure(ServerNodeState server, int statusCode,
+    public CallFailure(ServerNode server, int statusCode,
             long callTime, long endTime,
             String errorMsg, byte[] responseExcerpt)
     {
@@ -48,7 +47,7 @@ public class CallFailure
         _rawResponse = responseExcerpt;
     }
 
-    public CallFailure(ServerNodeState server, int statusCode,
+    public CallFailure(ServerNode server, int statusCode,
             long callTime, long endTime,
             Throwable error, byte[] responseExcerpt)
     {
@@ -66,7 +65,7 @@ public class CallFailure
      * for actual timed out call, or not being able to make a call due to operation
      * time out
      */
-    public static CallFailure timeout(ServerNodeState server, long callTime, long endTime) {
+    public static CallFailure timeout(ServerNode server, long callTime, long endTime) {
         return new CallFailure(server, HTTPConstants.HTTP_STATUS_TIMEOUT_ON_READ,
                 callTime, endTime, "timeout after "+ (endTime - callTime) + " msecs",
                 null);
@@ -75,7 +74,7 @@ public class CallFailure
     /**
      * Factory method for general "not sure what or why failed" failure
      */
-    public static CallFailure general(ServerNodeState server, int statusCode, long callTime,
+    public static CallFailure general(ServerNode server, int statusCode, long callTime,
             long endTime, String msg) {
         return new CallFailure(server, statusCode, callTime, endTime, msg, null);
     }
@@ -83,7 +82,7 @@ public class CallFailure
     /**
      * Factory method for "could not parse response" failure.
      */
-    public static CallFailure formatException(ServerNodeState server, int statusCode, long callTime,
+    public static CallFailure formatException(ServerNode server, int statusCode, long callTime,
             long endTime, String msg) {
         return new CallFailure(server, statusCode, callTime, endTime, msg, null);
     }
@@ -92,7 +91,7 @@ public class CallFailure
      * Factory method for general I/O failure, caused by HTTP request or response
      * processing.
      */
-    public static CallFailure ioProblem(ServerNodeState server, int statusCode, long callTime,
+    public static CallFailure ioProblem(ServerNode server, int statusCode, long callTime,
             long endTime, String msg, Exception e)
     {
         if (e != null) {
@@ -107,7 +106,7 @@ public class CallFailure
      * threw an exception causing individual call to fail, and we have an
      * exception indicating what happened.
      */
-    public static CallFailure internal(ServerNodeState server, long callTime,
+    public static CallFailure internal(ServerNode server, long callTime,
             long endTime, Throwable cause) {
         cause = _peel(cause);
         return new CallFailure(server, HTTPConstants.HTTP_STATUS_CUSTOM_FAIL_THROWABLE,
@@ -119,7 +118,7 @@ public class CallFailure
      * threw an exception causing individual call to fail, but we did not
      * get an exception.
      */
-    public static CallFailure internal(ServerNodeState server, long callTime,
+    public static CallFailure internal(ServerNode server, long callTime,
             long endTime, String msg) {
         return new CallFailure(server, HTTPConstants.HTTP_STATUS_CUSTOM_FAIL_MESSAGE,
                 callTime, endTime, msg, null);
@@ -131,7 +130,7 @@ public class CallFailure
     ///////////////////////////////////////////////////////////////////////
      */
     
-    public ServerNodeState getServer() { return _server; }
+    public ServerNode getServer() { return _server; }
     public int getStatusCode() { return _statusCode; }
 
     /**
@@ -157,7 +156,7 @@ public class CallFailure
 
     /**
      * Accessor for explicitly provided failure message; either from code
-     * that knows what failed, or from response message succesfully parsed.
+     * that knows what failed, or from response message successfully parsed.
      */
     public String getErrorMessage() {
         return (_errorMessage == null) ? "N/A" : _errorMessage;

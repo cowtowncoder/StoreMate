@@ -1,7 +1,6 @@
 package com.fasterxml.storemate.client.call;
 
 import com.fasterxml.storemate.api.EntryKey;
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 public interface ContentHeader<K extends EntryKey>
 {
@@ -14,6 +13,5 @@ public interface ContentHeader<K extends EntryKey>
      * @param server Information about server node to call
      * @param contentId Key of content to access
      */
-    public HeadCallResult tryHead(CallConfig config, long endOfTime,
-    		ServerNodeState server, K contentId);
+    public HeadCallResult tryHead(CallConfig config, long endOfTime, K contentId);
 }

@@ -1,7 +1,8 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.operation;
 
 import java.util.*;
 
+import com.fasterxml.storemate.client.CallFailure;
 import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**

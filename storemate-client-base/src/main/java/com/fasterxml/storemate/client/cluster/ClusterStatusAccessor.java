@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.fasterxml.storemate.api.ClusterStatusResponse;
 import com.fasterxml.storemate.api.HTTPConstants;
-import com.fasterxml.storemate.client.Loggable;
 import com.fasterxml.storemate.shared.IpAndPort;
 import com.fasterxml.storemate.shared.util.IOUtil;
 

@@ -1,6 +1,5 @@
-package com.fasterxml.storemate.client;
+package com.fasterxml.storemate.client.cluster;
 
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 
 /**

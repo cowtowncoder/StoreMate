@@ -3,8 +3,6 @@ package com.fasterxml.storemate.client.operation;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import com.fasterxml.storemate.client.NodeFailure;
-import com.fasterxml.storemate.client.OperationResult;
 import com.fasterxml.storemate.client.cluster.ServerNodeState;
 
 /**
