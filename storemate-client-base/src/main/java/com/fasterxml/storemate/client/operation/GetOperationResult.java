@@ -3,7 +3,7 @@ package com.fasterxml.storemate.client.operation;
 import java.util.LinkedList;
 
 import com.fasterxml.storemate.client.call.GetContentProcessor;
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ClusterServerNode;
 
 /**
  * {@link OperationResult} subtype used with GET operations, adds actual
@@ -17,12 +17,12 @@ public class GetOperationResult<T> extends OperationResultImpl<GetOperationResul
     /**
      * Server that successfully delivered content, if any
      */
-    protected ServerNodeState _server;
+    protected ClusterServerNode _server;
 
     /**
      * List of nodes that do not have entry for specified key.
      */
-    protected LinkedList<ServerNodeState> _serversWithoutEntry = null;
+    protected LinkedList<ClusterServerNode> _serversWithoutEntry = null;
     
     /**
      * Actual contents successfully fetched, if any
@@ -34,7 +34,7 @@ public class GetOperationResult<T> extends OperationResultImpl<GetOperationResul
         super(config);
     }
 
-    public GetOperationResult<T> setContents(ServerNodeState server, T contents)
+    public GetOperationResult<T> setContents(ClusterServerNode server, T contents)
     {
         if (_server != null) {
             throw new IllegalStateException("Already received successful response from "+_server+"; trying to override with "+server);
@@ -50,10 +50,10 @@ public class GetOperationResult<T> extends OperationResultImpl<GetOperationResul
      * 
      * @param server Server that was missing requested entry
      */
-    public GetOperationResult<T> addMissing(ServerNodeState server)
+    public GetOperationResult<T> addMissing(ClusterServerNode server)
     {
         if (_serversWithoutEntry == null) {
-            _serversWithoutEntry = new LinkedList<ServerNodeState>();
+            _serversWithoutEntry = new LinkedList<ClusterServerNode>();
         }
         _serversWithoutEntry.add(server);
         return this;

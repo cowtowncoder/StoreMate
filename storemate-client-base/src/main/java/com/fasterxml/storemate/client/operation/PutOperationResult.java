@@ -3,7 +3,7 @@ package com.fasterxml.storemate.client.operation;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ClusterServerNode;
 
 public class PutOperationResult extends OperationResultImpl<PutOperationResult>
 {
@@ -11,20 +11,20 @@ public class PutOperationResult extends OperationResultImpl<PutOperationResult>
      * List of servers for which calls succeeded (possibly after initial failures and re-send),
      * in order of call completion.
      */
-    protected final List<ServerNodeState> _succeeded;
+    protected final List<ClusterServerNode> _succeeded;
 
     public PutOperationResult(OperationConfig config)
     {
         super(config);
-        _succeeded = new ArrayList<ServerNodeState>(config.getOptimalOks());
+        _succeeded = new ArrayList<ClusterServerNode>(config.getOptimalOks());
     }
 
-    public PutOperationResult addSucceeded(ServerNodeState server) {
+    public PutOperationResult addSucceeded(ClusterServerNode server) {
         _succeeded.add(server);
         return this;
     }
 
     @Override
     public int getSuccessCount() { return _succeeded.size(); }
-    public Iterable<ServerNodeState> getSuccessServers() { return _succeeded; }
+    public Iterable<ClusterServerNode> getSuccessServers() { return _succeeded; }
 }

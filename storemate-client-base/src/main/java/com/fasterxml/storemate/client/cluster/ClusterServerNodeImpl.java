@@ -20,8 +20,8 @@ import com.fasterxml.storemate.shared.IpAndPort;
  * Instances are mutable to a degree, and properly synchronized to allow
  * thread-safe use.
  */
-public class ServerNodeStateImpl
-	implements ServerNodeState
+public class ClusterServerNodeImpl
+	implements ClusterServerNode
 {
     /**
      * Address (ip number and port) used for communicating with the
@@ -92,7 +92,7 @@ public class ServerNodeStateImpl
     ///////////////////////////////////////////////////////////////////////
      */
 
-    public ServerNodeStateImpl(RequestPath pathBase,
+    public ClusterServerNodeImpl(RequestPath pathBase,
             IpAndPort address, KeyRange activeRange, KeyRange passiveRange,
             EntryAccessors entryAccessors)
     {
@@ -109,7 +109,7 @@ public class ServerNodeStateImpl
     }
 
     // only for test usage
-    private ServerNodeStateImpl(RequestPath pathBase,
+    private ClusterServerNodeImpl(RequestPath pathBase,
             IpAndPort address, KeyRange activeRange, KeyRange passiveRange)
     {
         _pathBase = pathBase;
@@ -124,12 +124,12 @@ public class ServerNodeStateImpl
         _entryDeleter = null;
     }
     
-    protected static ServerNodeStateImpl forTesting(KeyRange range) {
+    protected static ClusterServerNodeImpl forTesting(KeyRange range) {
         return forTesting(range, range);
     }
 
-    protected static ServerNodeStateImpl forTesting(KeyRange rangeActive, KeyRange rangePassive) {
-        return new ServerNodeStateImpl(null, // client not needed for kinds of tests
+    protected static ClusterServerNodeImpl forTesting(KeyRange rangeActive, KeyRange rangePassive) {
+        return new ClusterServerNodeImpl(null, // client not needed for kinds of tests
         		new IpAndPort("localhost:"+rangeActive.getStart()),
                 rangeActive, rangePassive);
     }

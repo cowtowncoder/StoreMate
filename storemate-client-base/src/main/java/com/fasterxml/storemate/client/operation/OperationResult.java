@@ -1,6 +1,6 @@
 package com.fasterxml.storemate.client.operation;
 
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ClusterServerNode;
 
 /**
  * Class used for returning information about operation success (or lack thereof).
@@ -46,7 +46,7 @@ public abstract class OperationResult<T extends OperationResult<T>>
     public abstract int getSuccessCount();
 
     public abstract Iterable<NodeFailure> getFailures();
-    public abstract Iterable<ServerNodeState> getIgnoredServers();
+    public abstract Iterable<ClusterServerNode> getIgnoredServers();
 
     public abstract NodeFailure getFirstFail();
 }

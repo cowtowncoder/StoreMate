@@ -10,7 +10,7 @@ import com.fasterxml.storemate.api.EntryKeyConverter;
 import com.fasterxml.storemate.api.KeyHash;
 import com.fasterxml.storemate.api.KeySpace;
 import com.fasterxml.storemate.api.NodeState;
-import com.fasterxml.storemate.client.cluster.ServerNodeStateImpl;
+import com.fasterxml.storemate.client.cluster.ClusterServerNodeImpl;
 import com.fasterxml.storemate.shared.IpAndPort;
 
 /**
@@ -32,13 +32,13 @@ public class ClusterViewByClientImpl
     
     private final EntryKeyConverter<EntryKey> _keyConverter;
     
-    private final Map<IpAndPort, ServerNodeStateImpl> _nodes = new LinkedHashMap<IpAndPort, ServerNodeStateImpl>();
+    private final Map<IpAndPort, ClusterServerNodeImpl> _nodes = new LinkedHashMap<IpAndPort, ClusterServerNodeImpl>();
 
     /**
      * Since we will need to iterate over server node 
      */
-    private AtomicReference<ServerNodeStateImpl[]> _states = new AtomicReference<ServerNodeStateImpl[]>(
-            new ServerNodeStateImpl[0]);
+    private AtomicReference<ClusterServerNodeImpl[]> _states = new AtomicReference<ClusterServerNodeImpl[]>(
+            new ClusterServerNodeImpl[0]);
 
     /**
      * Monotonically increasing counter we use for lazily constructing
@@ -97,10 +97,10 @@ public class ClusterViewByClientImpl
     }
 
     // separate method for testing:
-    protected int _getCoverage(ServerNodeStateImpl[] states)
+    protected int _getCoverage(ClusterServerNodeImpl[] states)
     {
         BitSet slices = new BitSet(_keyspace.getLength());
-        for (ServerNodeStateImpl state : states) {
+        for (ClusterServerNodeImpl state : states) {
             state.getTotalRange().fill(slices);
         }
         return slices.cardinality();
@@ -137,9 +137,9 @@ public class ClusterViewByClientImpl
             long requestTime, long responseTime,
             long clusterInfoVersion)
     {
-        ServerNodeStateImpl localState = _nodes.get(byNode);
+        ClusterServerNodeImpl localState = _nodes.get(byNode);
         if (localState == null) { // new info 
-            localState = new ServerNodeStateImpl(_client.pathBuilder(byNode).addPathSegment(PATH_STORE).build(),
+            localState = new ClusterServerNodeImpl(_client.pathBuilder(byNode).addPathSegment(PATH_STORE).build(),
             		byNode, stateInfo.getRangeActive(), stateInfo.getRangePassive(),
                     _entryAccessors);
             _addNode(byNode, localState);
@@ -170,9 +170,9 @@ public class ClusterViewByClientImpl
         }
         final long nodeInfoTimestamp = stateInfo.getLastUpdated();
         // otherwise pretty simple:
-        ServerNodeStateImpl state = _nodes.get(ip);
+        ClusterServerNodeImpl state = _nodes.get(ip);
         if (state == null) { // new info 
-            state = new ServerNodeStateImpl(
+            state = new ClusterServerNodeImpl(
             		_client.pathBuilder(ip).addPathSegment(PATH_STORE).build(),
             		ip, stateInfo.getRangeActive(), stateInfo.getRangePassive(),
                     _entryAccessors);
@@ -200,13 +200,13 @@ public class ClusterViewByClientImpl
     ///////////////////////////////////////////////////////////////////////
      */
 
-    private void _addNode(IpAndPort key, ServerNodeStateImpl state)
+    private void _addNode(IpAndPort key, ClusterServerNodeImpl state)
     {
         _nodes.put(key, state);
-        _states.set(_nodes.values().toArray(new ServerNodeStateImpl[_nodes.size()]));
+        _states.set(_nodes.values().toArray(new ClusterServerNodeImpl[_nodes.size()]));
     }
     
-    private ServerNodeStateImpl[] _states() {
+    private ClusterServerNodeImpl[] _states() {
         return _states.get();
     }
 
@@ -229,13 +229,13 @@ public class ClusterViewByClientImpl
 
     // separate method for testing
     protected NodesForKey _calculateNodes(int version, KeyHash keyHash,
-            ServerNodeStateImpl[] allNodes)
+            ClusterServerNodeImpl[] allNodes)
     {
         final int allCount = allNodes.length;
         // First: simply collect all applicable nodes:
-        ArrayList<ServerNodeStateImpl> appl = new ArrayList<ServerNodeStateImpl>();
+        ArrayList<ClusterServerNodeImpl> appl = new ArrayList<ClusterServerNodeImpl>();
         for (int i = 0; i < allCount; ++i) {
-            ServerNodeStateImpl state = allNodes[i];
+            ClusterServerNodeImpl state = allNodes[i];
             if (state.getTotalRange().contains(keyHash)) {
                 appl.add(state);
             }
@@ -244,14 +244,14 @@ public class ClusterViewByClientImpl
     }
 
     protected NodesForKey _sortNodes(int version, KeyHash keyHash,
-            Collection<ServerNodeStateImpl> appl)
+            Collection<ClusterServerNodeImpl> appl)
     {
         // edge case: no matching
         if (appl.isEmpty()) {
             return NodesForKey.empty(version);
         }
         // otherwise need to sort
-        ServerNodeStateImpl[] matching = appl.toArray(new ServerNodeStateImpl[appl.size()]);
+        ClusterServerNodeImpl[] matching = appl.toArray(new ClusterServerNodeImpl[appl.size()]);
         Arrays.sort(matching, 0, appl.size(), new NodePriorityComparator(keyHash));
         return new NodesForKey(version, matching);
     }
@@ -266,7 +266,7 @@ public class ClusterViewByClientImpl
      * Comparator that orders server in decreasing priority, that is, starts with
      * the closest enabled match, ending with disabled entries.
      */
-    private final static class NodePriorityComparator implements Comparator<ServerNodeStateImpl>
+    private final static class NodePriorityComparator implements Comparator<ClusterServerNodeImpl>
     {
         private final KeyHash _keyHash;
         
@@ -275,7 +275,7 @@ public class ClusterViewByClientImpl
         }
         
         @Override
-        public int compare(ServerNodeStateImpl node1, ServerNodeStateImpl node2)
+        public int compare(ClusterServerNodeImpl node1, ClusterServerNodeImpl node2)
         {
             return node1.calculateSortingDistance(_keyHash) - node2.calculateSortingDistance(_keyHash);
         }

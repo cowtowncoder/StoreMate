@@ -3,7 +3,7 @@ package com.fasterxml.storemate.client.operation;
 import java.util.*;
 
 import com.fasterxml.storemate.client.CallFailure;
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ClusterServerNode;
 
 /**
  * Class that contains information about failure of an operation as it
@@ -12,11 +12,11 @@ import com.fasterxml.storemate.client.cluster.ServerNodeState;
  */
 public class NodeFailure
 {
-    protected final ServerNodeState _server;
+    protected final ClusterServerNode _server;
 
     protected LinkedList<CallFailure> _failures;
     
-    public NodeFailure(ServerNodeState server, CallFailure firstFail)
+    public NodeFailure(ClusterServerNode server, CallFailure firstFail)
     {
         _server = server;
         _failures = new LinkedList<CallFailure>();
@@ -27,7 +27,7 @@ public class NodeFailure
         _failures.add(fail);
     }
     
-    public ServerNodeState getServer() { return _server; }
+    public ClusterServerNode getServer() { return _server; }
 
     /**
      * Returns number of attempts that were made before giving up

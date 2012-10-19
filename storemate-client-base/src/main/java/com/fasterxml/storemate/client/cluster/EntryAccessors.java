@@ -12,12 +12,12 @@ import com.fasterxml.storemate.client.call.ContentPutter;
  */
 public interface EntryAccessors
 {
-    public abstract <K extends EntryKey> ContentPutter<K> entryPutter(ServerNodeState server);
+    public abstract <K extends EntryKey> ContentPutter<K> entryPutter(ClusterServerNode server);
 
-    public abstract <K extends EntryKey> ContentGetter<K> entryGetter(ServerNodeState server);
+    public abstract <K extends EntryKey> ContentGetter<K> entryGetter(ClusterServerNode server);
 
-    public abstract <K extends EntryKey> ContentHeader<K> entryHeader(ServerNodeState server);
+    public abstract <K extends EntryKey> ContentHeader<K> entryHeader(ClusterServerNode server);
 
-    public abstract <K extends EntryKey> ContentDeleter<K> entryDeleter(ServerNodeState server);
+    public abstract <K extends EntryKey> ContentDeleter<K> entryDeleter(ClusterServerNode server);
 
 }

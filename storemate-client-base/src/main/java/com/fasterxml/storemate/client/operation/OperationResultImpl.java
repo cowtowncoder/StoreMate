@@ -3,7 +3,7 @@ package com.fasterxml.storemate.client.operation;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import com.fasterxml.storemate.client.cluster.ServerNodeState;
+import com.fasterxml.storemate.client.cluster.ClusterServerNode;
 
 /**
  * Intermediate base class to simplify actual result implementations.
@@ -24,7 +24,7 @@ public abstract class OperationResultImpl<T extends OperationResult<T>>
      * no further calls were necessary (disabled nodes, for example, are only
      * called if absolutely necessary)
      */
-    protected final Collection<ServerNodeState> _ignored;
+    protected final Collection<ClusterServerNode> _ignored;
 
     /*
     ///////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ public abstract class OperationResultImpl<T extends OperationResult<T>>
     {
         _config = config;
         _failed = new LinkedList<NodeFailure>();
-        _ignored = new LinkedList<ServerNodeState>();
+        _ignored = new LinkedList<ClusterServerNode>();
     }
 
 
@@ -60,7 +60,7 @@ public abstract class OperationResultImpl<T extends OperationResult<T>>
         return _this();
     }
     
-    public T addIgnored(ServerNodeState server) {
+    public T addIgnored(ClusterServerNode server) {
         _ignored.add(server);
         return _this();
     }
@@ -118,7 +118,7 @@ public abstract class OperationResultImpl<T extends OperationResult<T>>
     @Override
     public Iterable<NodeFailure> getFailures() { return _failed; }
     @Override
-    public Iterable<ServerNodeState> getIgnoredServers() { return _ignored; }
+    public Iterable<ClusterServerNode> getIgnoredServers() { return _ignored; }
 
     @Override
     public NodeFailure getFirstFail() {

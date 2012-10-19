@@ -10,9 +10,10 @@ import com.fasterxml.storemate.client.call.ContentHeader;
 import com.fasterxml.storemate.client.call.ContentPutter;
 
 /**
- * Read-only part of state of a server node that is part of a cluster.
+ * Representation of a server node that is part of a cluster, including
+ * read-only accessors to state.
  */
-public interface ServerNodeState
+public interface ClusterServerNode
     extends ServerNode
 {
     /*

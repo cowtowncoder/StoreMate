@@ -4,7 +4,7 @@ import com.fasterxml.storemate.api.KeyRange;
 import com.fasterxml.storemate.api.KeySpace;
 import com.fasterxml.storemate.client.cluster.ClusterViewByClientImpl;
 import com.fasterxml.storemate.client.cluster.NodesForKey;
-import com.fasterxml.storemate.client.cluster.ServerNodeStateImpl;
+import com.fasterxml.storemate.client.cluster.ClusterServerNodeImpl;
 
 public class TestClientClusterViewImpl extends ClientTestBase
 {
@@ -14,11 +14,11 @@ public class TestClientClusterViewImpl extends ClientTestBase
     protected final KeyRange range2 = DEFAULT_SPACE.range(90, 60); // 90 - 149
     protected final KeyRange range3 = DEFAULT_SPACE.range(300, 90); // 300 - 29
 
-    protected final ServerNodeStateImpl node1 = ServerNodeStateImpl.forTesting(range1);
-    protected final ServerNodeStateImpl node2 = ServerNodeStateImpl.forTesting(range2);
-    protected final ServerNodeStateImpl node3 = ServerNodeStateImpl.forTesting(range3);
+    protected final ClusterServerNodeImpl node1 = ClusterServerNodeImpl.forTesting(range1);
+    protected final ClusterServerNodeImpl node2 = ClusterServerNodeImpl.forTesting(range2);
+    protected final ClusterServerNodeImpl node3 = ClusterServerNodeImpl.forTesting(range3);
 
-    protected final ServerNodeStateImpl[] allNodes = new ServerNodeStateImpl[] { node1, node2, node3 };
+    protected final ClusterServerNodeImpl[] allNodes = new ClusterServerNodeImpl[] { node1, node2, node3 };
     
     public void testSimpleDistanceCalc()
     {
@@ -58,10 +58,10 @@ public class TestClientClusterViewImpl extends ClientTestBase
         ClusterViewByClientImpl view = ClusterViewByClientImpl.forTesting(DEFAULT_SPACE);
         NodesForKey nodes;
 
-        ServerNodeStateImpl disabledNode2 = ServerNodeStateImpl.forTesting(range2);
+        ClusterServerNodeImpl disabledNode2 = ClusterServerNodeImpl.forTesting(range2);
         disabledNode2.updateDisabled(true);
         
-        ServerNodeStateImpl[] disabledStates = new ServerNodeStateImpl[] { node1, disabledNode2, node3 };
+        ClusterServerNodeImpl[] disabledStates = new ClusterServerNodeImpl[] { node1, disabledNode2, node3 };
         
         // 2 ranges overlap; range2 would be closer but is disabled
         nodes = view._calculateNodes(1, DEFAULT_SPACE.hash(100), disabledStates);
@@ -90,21 +90,21 @@ public class TestClientClusterViewImpl extends ClientTestBase
         KeyRange range2a = DEFAULT_SPACE.range(60, 60); // 60 - 119
         KeyRange range2p = DEFAULT_SPACE.range(30, 120); // 30 - 149
 
-        ServerNodeStateImpl node1 = ServerNodeStateImpl.forTesting(range1a, range1p);
-        ServerNodeStateImpl node2 = ServerNodeStateImpl.forTesting(range2a, range2p);
+        ClusterServerNodeImpl node1 = ClusterServerNodeImpl.forTesting(range1a, range1p);
+        ClusterServerNodeImpl node2 = ClusterServerNodeImpl.forTesting(range2a, range2p);
 
         NodesForKey nodes;
 
         // overlap; both included...
         nodes = view._calculateNodes(1, DEFAULT_SPACE.hash(30),
-                new ServerNodeStateImpl[] { node1, node2 });
+                new ClusterServerNodeImpl[] { node1, node2 });
         assertEquals(2, nodes.size());
         assertSame(node1, nodes.node(0));
         assertSame(node2, nodes.node(1));
 
         // changing order should not matter:
         nodes = view._calculateNodes(1, DEFAULT_SPACE.hash(30),
-                new ServerNodeStateImpl[] { node2, node1 });
+                new ClusterServerNodeImpl[] { node2, node1 });
         assertEquals(2, nodes.size());
         assertSame(node1, nodes.node(0));
         assertSame(node2, nodes.node(1));
@@ -116,9 +116,9 @@ public class TestClientClusterViewImpl extends ClientTestBase
         assertEquals(210, view._getCoverage(allNodes));
 
         KeyRange extraRange = DEFAULT_SPACE.range(100, 200);
-        ServerNodeStateImpl extraNode = ServerNodeStateImpl.forTesting(extraRange);
+        ClusterServerNodeImpl extraNode = ClusterServerNodeImpl.forTesting(extraRange);
 
-        ServerNodeStateImpl[] moreNodes = new ServerNodeStateImpl[] { node1, node2, node3, extraNode };
+        ClusterServerNodeImpl[] moreNodes = new ClusterServerNodeImpl[] { node1, node2, node3, extraNode };
         assertEquals(360, view._getCoverage(moreNodes));
     }
 }

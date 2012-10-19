@@ -2,6 +2,7 @@ package com.fasterxml.storemate.client.cluster;
 
 
 
+
 /**
  * Container class for an ordered set of references to server nodes
  * that should be contacted for accessing content for given
@@ -9,11 +10,11 @@ package com.fasterxml.storemate.client.cluster;
  */
 public class NodesForKey
 {
-    private final static ServerNodeState[] NO_NODES = new ServerNodeState[0];
+    private final static ClusterServerNode[] NO_NODES = new ClusterServerNode[0];
     
     private final int _version;
 
-    private final ServerNodeState[] _nodes;
+    private final ClusterServerNode[] _nodes;
     
     /*
     ///////////////////////////////////////////////////////////////////////
@@ -21,7 +22,7 @@ public class NodesForKey
     ///////////////////////////////////////////////////////////////////////
      */
     
-    public NodesForKey(int version, ServerNodeState[] nodes)
+    public NodesForKey(int version, ClusterServerNode[] nodes)
     {
         _version = version;
         _nodes = nodes;
@@ -42,7 +43,7 @@ public class NodesForKey
 
     public int size() { return _nodes.length; }
     
-    public ServerNodeState node(int index) {
+    public ClusterServerNode node(int index) {
         return _nodes[index];
     }
 
@@ -61,7 +62,7 @@ public class NodesForKey
             if (i > 0) {
                 sb.append(", ");
             }
-            ServerNodeState node = _nodes[i];
+            ClusterServerNode node = _nodes[i];
             sb.append(node.getAddress()).append(": ranges=");
             sb.append(node.getActiveRange()).append('/').append(node.getPassiveRange());
         }
