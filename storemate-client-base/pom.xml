@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.fasterxml.storemate</groupId>
     <artifactId>storemate-parent</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>storemate-client-base</artifactId>
   <name>StoreMate-client-base</name>
@@ -21,12 +21,6 @@ StoreMate-based service.
     <dependency>
       <groupId>com.fasterxml.storemate</groupId>
       <artifactId>storemate-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <!--  for base Client impl, JSON also needed: -->
-    <dependency>
-      <groupId>com.fasterxml.storemate</groupId>
-      <artifactId>storemate-json</artifactId>
       <version>${project.version}</version>
     </dependency>
 
