@@ -17,7 +17,6 @@
     <module>storemate-shared</module>
     <module>storemate-store</module>
     <module>storemate-backend-bdb-je</module>
-    <module>storemate-api</module>
     <module>storemate-client-base</module>
   </modules>
 

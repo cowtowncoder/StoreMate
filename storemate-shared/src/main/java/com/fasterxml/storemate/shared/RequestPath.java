@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
 /**
  * Immutable class that defines generic API for paths used to make

@@ -1,6 +1,6 @@
 package com.fasterxml.storemate.client.call;
 
-import com.fasterxml.storemate.api.EntryKey;
+import com.fasterxml.storemate.shared.EntryKey;
 
 /**
  * Interface for a general purpose HEAD accessor, for a resource stored

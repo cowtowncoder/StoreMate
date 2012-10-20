@@ -1,6 +1,5 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
-import com.fasterxml.storemate.shared.StorableKey;
 
 /**
  * Base class for application-specific "refined" keys, constructed usually

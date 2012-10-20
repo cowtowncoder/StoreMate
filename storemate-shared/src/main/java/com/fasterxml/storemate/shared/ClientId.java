@@ -1,8 +1,8 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
 import java.io.ByteArrayOutputStream;
 
-import com.fasterxml.storemate.api.ClientId;
+import com.fasterxml.storemate.shared.ClientId;
 
 /**
  * Value class used for encapsulating details of client ids.

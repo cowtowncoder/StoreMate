@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
 /**
  * Builder object used for constructing {@link RequestPath}

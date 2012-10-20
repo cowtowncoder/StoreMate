@@ -1,6 +1,6 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
-import com.fasterxml.storemate.api.ByteRange;
+import com.fasterxml.storemate.shared.ByteRange;
 
 /**
  * Helper class used for dealing with HTTP "Range" and "Content-Range" headers.

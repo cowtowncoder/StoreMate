@@ -1,8 +1,6 @@
-package com.fasterxml.storemate.api;
+package com.fasterxml.storemate.shared;
 
-import com.fasterxml.storemate.api.EntryKey;
-import com.fasterxml.storemate.shared.ByteContainer;
-import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.EntryKey;
 import com.fasterxml.storemate.shared.hash.IncrementalHasher32;
 
 /**
