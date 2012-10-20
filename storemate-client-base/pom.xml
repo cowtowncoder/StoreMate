@@ -18,11 +18,6 @@ StoreMate-based service.
       <artifactId>storemate-shared</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.fasterxml.storemate</groupId>
-      <artifactId>storemate-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <!-- and we may need base test stuff -->
     <dependency>
