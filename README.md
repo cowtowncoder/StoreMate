@@ -24,7 +24,6 @@ Sub-modules are can be grouped in following categories:
 
 * Low-level utility libraries:
  * `shared`: data structures and utility methods for dealing with things like compression and hash code calculation
- * `json`: [Jackson](https://github.com/FasterXML/jackson-databind) converters for core datatypes (from shared), used for client-server and server-server communication
 * Single-node store implementation
  * `store`: Backend-independent single-node data store implementation that uses a backend implementation
  * `backend-bdb-je`: Backend implementation that uses BDB-JE store (default choice)
