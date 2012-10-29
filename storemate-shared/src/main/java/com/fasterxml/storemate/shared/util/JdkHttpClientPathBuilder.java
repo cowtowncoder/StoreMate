@@ -107,12 +107,10 @@ public class JdkHttpClientPathBuilder extends RequestPathBuilder
          sb.append(_serverPart);
          sb.append(_path);
          final int len = _queryParams.size();
-         if (len > 0) {
-             sb.append('?');
-             for (int i = 0; i < len; i += 2) {
-                 sb.append(_queryParams.get(i)).append('=');
-                 _urlEncoder.appendEncoded(sb, _queryParams.get(i+1));
-             }
+         for (int i = 0; i < len; i += 2) {
+             sb.append((i == 0) ? '?' : '&');
+             sb.append(_queryParams.get(i)).append('=');
+             _urlEncoder.appendEncoded(sb, _queryParams.get(i+1));
          }
          return sb.toString();
     }
