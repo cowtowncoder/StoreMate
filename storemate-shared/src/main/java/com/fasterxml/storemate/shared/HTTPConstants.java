@@ -8,9 +8,9 @@ package com.fasterxml.storemate.shared;
 public abstract class HTTPConstants
 {
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Standard HTTP Headers
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Standard HTTP Headers
+    /**********************************************************************
      */
 
     /**
@@ -47,9 +47,9 @@ public abstract class HTTPConstants
     public final static String HTTP_HEADER_RANGE_FOR_RESPONSE = "Content-Range";
 
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Custom HTTP Headers
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Custom HTTP Headers
+    /**********************************************************************
      */
     
     /**
@@ -92,9 +92,9 @@ public abstract class HTTPConstants
     public final static String HTTP_QUERY_PARAM_KEYRANGE_LENGTH = "keyRangeLength";
     
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // HTTP Response codes, standard
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* HTTP Response codes, standard
+    /**********************************************************************
      */
 
     public final static int HTTP_STATUS_OK = 200;
@@ -103,11 +103,10 @@ public abstract class HTTPConstants
 
     public final static int HTTP_STATUS_NOT_FOUND = 404;
 
-
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // HTTP Response codes, custom
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* HTTP Response codes, custom
+    /**********************************************************************
      */
 
     /* Response code used when the request timed out; as per docs, while
@@ -121,33 +120,12 @@ public abstract class HTTPConstants
     public final static int HTTP_STATUS_CUSTOM_FAIL_MESSAGE = -3;
     
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Content types
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Content types
+    /**********************************************************************
      */
 
     public final static String CONTENT_TYPE_JSON = "application/json";
     
     public final static String CONTENT_TYPE_SMILE = "application/x-jackson-smile";
-
-    /*
-    ///////////////////////////////////////////////////////////////////////
-    // HTTP Paths
-    ///////////////////////////////////////////////////////////////////////
-     */
-    
-    /**
-     * Path to Cluster status end point
-     */
-    public final static String PATH_CLUSTER_STATUS = "cluster/status";
-
-    /**
-     * Path to GET endpoint for getting latest inserts
-     */
-    public final static String PATH_SYNC_LIST = "sync/list";
-
-    /**
-     * Path to GET endpoint for actually pulling 'missing' entries.
-     */
-    public final static String PATH_SYNC_PULL = "sync/pull";
 }

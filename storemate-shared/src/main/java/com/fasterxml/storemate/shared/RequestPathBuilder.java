@@ -29,4 +29,11 @@ public abstract class RequestPathBuilder
      * with information builder has accumulated.
      */
     public abstract RequestPath build();
+
+    /**
+     * Implementations MUST override this to produce a valid URL that
+     * represents the current state of builder.
+     */
+    @Override
+    public abstract String toString();
 }
