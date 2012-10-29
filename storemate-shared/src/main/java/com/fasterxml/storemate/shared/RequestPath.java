@@ -8,10 +8,15 @@ package com.fasterxml.storemate.shared;
  */
 public abstract class RequestPath
 {
-	/**
-	 * Factory method for creating builder instance that can
-	 * be used for building a more refined path, given this
-	 * instance as the base.
-	 */
-	public abstract RequestPathBuilder builder();
+    /**
+     * Factory method for creating builder instance that can
+     * be used for building a more refined path, given this
+     * instance as the base.
+     */
+    public abstract RequestPathBuilder builder();
+
+    @Override
+    public String toString() {
+        return builder().toString();
+    }
 }
