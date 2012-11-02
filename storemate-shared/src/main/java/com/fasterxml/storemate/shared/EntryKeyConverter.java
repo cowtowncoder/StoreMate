@@ -1,6 +1,5 @@
 package com.fasterxml.storemate.shared;
 
-import com.fasterxml.storemate.shared.EntryKey;
 import com.fasterxml.storemate.shared.hash.IncrementalHasher32;
 
 /**
@@ -33,6 +32,11 @@ public abstract class EntryKeyConverter<K extends EntryKey>
      */
     public abstract int routingHashFor(K key);
 
+    /**
+     * Method for appending key information into path, using given path builder.
+     */
+    public abstract <B extends RequestPathBuilder> B appendToPath(B pathBuilder, K key);
+    
     public abstract int contentHashFor(ByteContainer bytes);
 
     /**
