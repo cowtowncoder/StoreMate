@@ -51,17 +51,17 @@ public class FileManager
     private final static int MINUTE_MODULO = 5;
     
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Helper objects
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Helper objects
+    /**********************************************************************
      */
 
     protected final TimeMaster _timeMaster;
 
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Construction
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
      */
 
     protected final FilenameConverter _filenameConverter;
@@ -83,11 +83,11 @@ public class FileManager
     protected final int _maxFilesPerDir;
 
     protected final int _maxFilenameBaseLength;
-    
+
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // State
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* State
+    /**********************************************************************
      */
     
     /**
@@ -126,7 +126,7 @@ public class FileManager
 	
     /*
     /**********************************************************************
-    // Construction
+    /* Construction
     /**********************************************************************
      */
 	
@@ -252,22 +252,39 @@ public class FileManager
         if (comp == null) {
             comp = Compression.NONE;
         }
-    	// We will try to create name like "ORIG-NAME-MANGLED.[seqNr][comprType]"
+        // We will try to create name like "[seqNr]-ORIG-NAME-MANGLED.[comprType]"
     	
-    	int keyLen = key.length();
+        int keyLen = key.length();
         StringBuilder sb = new StringBuilder(FILENAME_OVERHEAD
         		+ Math.min(_maxFilenameBaseLength, keyLen));
+        // Start with index, to ensure uniqueness (might not work at the end
+        sb = _appendIndex(sb, index);
+        sb.append(':');
         sb = _filenameConverter.appendFilename(key, sb);
-    	if (sb.length() > _maxFilenameBaseLength) {
-    		// could get fancy, trying to preserve suffix etc, but simple does it for now
-    		sb.setLength(_maxFilenameBaseLength);
-    	}
-        // and then something like ".289G" 
+        if (sb.length() > _maxFilenameBaseLength) {
+            // could get fancy, trying to preserve suffix etc, but simple does it for now
+            sb.setLength(_maxFilenameBaseLength);
+        }
+        // and then something like ".G" 
         sb.append('.')
-            .append(index)
             .append(comp.asChar())
             ;
         return sb.toString();
+    }
+
+    protected StringBuilder _appendIndex(StringBuilder sb, int index)
+    {
+        if (index <= 999) {
+            sb.append('0');
+            if (index <= 99) {
+                sb.append('0');
+                if (index <= 9) {
+                    sb.append('0');
+                }
+            }
+        }
+        sb.append(index);
+        return sb;
     }
     
     protected void _calculateDateBranch(long timestamp)

@@ -69,8 +69,8 @@ public class MediumEntryTest extends BDBJETestBase
 
         String filename = path.substring(path.lastIndexOf('/')+1);
         String suffix = filename.substring(filename.lastIndexOf('.'));
-        assertEquals(".0Z", suffix);
-        assertEquals("data_1", filename.substring(0, filename.lastIndexOf('.')));
+        assertEquals(".Z", suffix);
+        assertEquals("0000:data_1", filename.substring(0, filename.lastIndexOf('.')));
 
         // but as importantly, check that file is there and contains data...
         assertTrue(file.exists());
@@ -134,8 +134,8 @@ public class MediumEntryTest extends BDBJETestBase
 
         String filename = path.substring(path.lastIndexOf('/')+1);
         String suffix = filename.substring(filename.lastIndexOf('.'));
-        assertEquals(".0L", suffix);
-        assertEquals("data_1", filename.substring(0, filename.lastIndexOf('.')));
+        assertEquals(".L", suffix);
+        assertEquals("0000:data_1", filename.substring(0, filename.lastIndexOf('.')));
 
         // but as importantly, check that file is there and contains data...
         assertTrue(file.exists());
