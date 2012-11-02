@@ -45,34 +45,4 @@ public class FileManagerConfig
      * actual data directories will be created.
      */
     public File dataRoot;
-
-    /*
-    /**********************************************************************
-    /* Overridable handlers
-    /**********************************************************************
-     */
-    
-    /**
-     * {@link FilenameConverter} implementation to use, if any
-     */
-    public Class<? extends FilenameConverter> filenameConverter = FilenameConverter.class;
-	
-    /*
-    /**********************************************************************
-    /* Accessors
-    /**********************************************************************
-     */
-
-    public FilenameConverter createFilenameConverter()
-    {
-        if (filenameConverter == null || filenameConverter == FilenameConverter.class) {
-            return new FilenameConverter.Default();
-        }
-        try {
-            return (FilenameConverter) filenameConverter.newInstance();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to instantiate FilenameConverter of type "
-                    +filenameConverter+": "+e, e);
-        }
-    }
 }

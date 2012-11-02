@@ -7,7 +7,7 @@ public class TestFilenames extends StoreTestBase
 {
     public void testNameMangling() throws Exception
     {
-        FilenameConverter conv = new FilenameConverter.Default('@');
+        FilenameConverter conv = new DefaultFilenameConverter('@');
         assertEquals("this@here@and@there", conv.createFilename(storableKey("this/here and there")));
     }
 }

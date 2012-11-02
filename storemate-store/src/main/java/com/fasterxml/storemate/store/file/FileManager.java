@@ -130,10 +130,15 @@ public class FileManager
     /**********************************************************************
      */
 	
-    public FileManager(FileManagerConfig config, TimeMaster timeMaster)
+    /**
+     * @param filenameConverter Converter to use (for example,
+     *   {@link DefaultFilenameConverter}
+     */
+    public FileManager(FileManagerConfig config, TimeMaster timeMaster,
+            FilenameConverter filenameConverter)
     {
         _timeMaster = timeMaster;
-        _filenameConverter = config.createFilenameConverter();
+        _filenameConverter = filenameConverter;
         final long now = timeMaster.currentTimeMillis();
         File dataRoot = config.dataRoot;
         if (dataRoot == null) {
