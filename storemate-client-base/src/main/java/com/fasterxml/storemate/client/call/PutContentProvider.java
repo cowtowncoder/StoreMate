@@ -6,7 +6,7 @@ import com.fasterxml.storemate.shared.ByteContainer;
 
 /**
  * Interface that defines how calling application needs to expose data to upload,
- * so that {@link StoreClient} can upload it to multiple stores (and for possible
+ * so that client can upload it to multiple stores (or for possible
  * retries) as necessary.
  *<p>
  * Methods are typically called in order of:

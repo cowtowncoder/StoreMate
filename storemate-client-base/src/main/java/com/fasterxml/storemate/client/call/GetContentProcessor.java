@@ -29,7 +29,7 @@ public abstract class GetContentProcessor<T>
         // // // Sequence of stateful calls for success case
     
         /**
-         * Method used when {@link StoreClient} can only deliver content in
+         * Method used when content can only be delivered in
          * chunks: if so, this method may be called zero or more times
          * before {@link #completeContentProcessing} is called.
          */
@@ -58,9 +58,9 @@ public abstract class GetContentProcessor<T>
     }
 
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Helper classes
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Helper classes
+    /**********************************************************************
      */
 
     public static class OutputStreamWrapper extends OutputStream
