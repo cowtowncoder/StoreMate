@@ -43,6 +43,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     
     <version.config-magic>0.14</version.config-magic>
+    <version.logback>1.0.7</version.logback>
+    <version.slf4j>1.7.2</version.slf4j>
 
   </properties>
 
