@@ -20,7 +20,7 @@ public abstract class StorableIterationCallback
 
     /**
      * Method called for each "accepted" entry (entry for which
-     * {@link #verifKey} returned {@link IterationAction#PROCESS_ENTRY}).
+     * {@link #verifyKey} returned {@link IterationAction#PROCESS_ENTRY}).
      * 
      * @return Action to take; specifically, whether to continue processing
      *   or not (semantics for other values depend on context)

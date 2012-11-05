@@ -13,14 +13,14 @@ public abstract class FilenameConverter
 {
     /**
      * Method to call to convert given
-     * {@link rawKey} into filename that is safe with respect to
+     * <code>rawKey</code> into filename that is safe with respect to
      * quotable characters.
      */
     public abstract String createFilename(StorableKey rawKey);
 
     /**
      * Method to call to append filename created from given
-     * {@link rawKey} in given {@link StringBuilder}.
+     * <code>rawKey</code> in given {@link StringBuilder}.
      */
     public abstract StringBuilder appendFilename(StorableKey rawKey, final StringBuilder sb);
 }

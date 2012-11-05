@@ -7,7 +7,7 @@ package com.fasterxml.storemate.shared.hash;
  *<p>
  * Note: implementations are required to retain state so that it is possible
  * to calculate "partial" hash values throughout content, and call
- * {@link #getValue} multiple times, at different points. This is different
+ * {@link #calculateHash} multiple times, at different points. This is different
  * from many other hash calculation abstractions.
  */
 public abstract class IncrementalHasher32

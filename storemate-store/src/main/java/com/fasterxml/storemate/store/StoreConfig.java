@@ -44,8 +44,6 @@ public class StoreConfig
     /**
      * Name of root directory (using relative or absolute path) under which
      * data files will be located (possibly with additional dir hierarchy).
-     *<p>
-     * Should not be same as {@link #dataRootForMetadata}
      */
     public File dataRootForFiles;
     

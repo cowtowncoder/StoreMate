@@ -192,7 +192,7 @@ public abstract class StoreBackend
      *    true if deletion succeeeded
      * 
      * @throws StoreException If deletion failed to due to backend-specific problem
-     * @throws IOExcetion If deletion failed due to underlying I/O problem, exposed by
+     * @throws IOException If deletion failed due to underlying I/O problem, exposed by
      *   store (not all stores expose them)
      */
     public abstract boolean deleteEntry(StorableKey key)

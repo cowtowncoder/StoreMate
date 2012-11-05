@@ -644,21 +644,21 @@ public class StorableStoreImpl extends AdminStorableStore
         StorableCreationResult result = _partitions.withLockedPartition(key, operationTime,
                 new StoreOperationCallback<Storable,StorableCreationResult>() {
                     @Override
-                    public StorableCreationResult perform(StorableKey key,
-                            StoreBackend backend, Storable storable)
+                    public StorableCreationResult perform(StorableKey k0,
+                            StoreBackend backend, Storable s0)
                         throws IOException, StoreException
                     {
                         if (allowOverwrite) { // "upsert"
-                            Storable old = backend.putEntry(key, storable);
-                            return new StorableCreationResult(key, true, storable, old);
+                            Storable old = backend.putEntry(k0, s0);
+                            return new StorableCreationResult(k0, true, s0, old);
                         }
                         // strict "insert"
-                        Storable old = backend.createEntry(key, storable);
+                        Storable old = backend.createEntry(k0, s0);
                         if (old == null) { // ok, succeeded
-                            return new StorableCreationResult(key, true, storable, null);
+                            return new StorableCreationResult(k0, true, s0, null);
                         }
                         // fail: caller may need to clean up the underlying file
-                        return new StorableCreationResult(key, false, storable, old);
+                        return new StorableCreationResult(k0, false, s0, old);
                     }
                 },
                 storable);
@@ -693,15 +693,15 @@ public class StorableStoreImpl extends AdminStorableStore
         Storable entry = _partitions.withLockedPartition(key, currentTime,
             new ReadModifyOperationCallback<Object,Storable>() {
                 @Override
-                protected Storable perform(StorableKey key,
-                        StoreBackend backend, Object arg, Storable entry)
+                protected Storable perform(StorableKey k0,
+                        StoreBackend backend, Object arg, Storable e0)
                     throws IOException, StoreException
                 {
                     // First things first: if no entry, nothing to do
-                    if (entry == null) {
+                    if (e0 == null) {
                         return null;
                     }
-                    return _softDelete(key, entry, currentTime, removeInlinedData, removeExternalData);
+                    return _softDelete(k0, e0, currentTime, removeInlinedData, removeExternalData);
                 }
         }, null);
         return new StorableDeletionResult(key, entry);
@@ -718,15 +718,15 @@ public class StorableStoreImpl extends AdminStorableStore
             new ReadModifyOperationCallback<Object,Storable>() {
 
                 @Override
-                protected Storable perform(StorableKey key,
-                        StoreBackend backend, Object arg, Storable entry)
+                protected Storable perform(StorableKey k0,
+                        StoreBackend backend, Object arg, Storable e0)
                     throws IOException, StoreException
                 {                
                     // First things first: if no entry, nothing to do
-                    if (entry == null) {
+                    if (e0 == null) {
                         return null;
                     }
-                    return _hardDelete(key, entry, removeExternalData);
+                    return _hardDelete(k0, e0, removeExternalData);
                 }
         }, null);
         return new StorableDeletionResult(key, entry);

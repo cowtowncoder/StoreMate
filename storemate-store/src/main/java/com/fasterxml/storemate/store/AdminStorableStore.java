@@ -28,7 +28,7 @@ public abstract class AdminStorableStore extends StorableStore
         throws IllegalStateException, StoreException;
 
     /**
-     * Method that can be used to access first {@link maxCount} entries
+     * Method that can be used to access first <code>maxCount</code> entries
      * (in key order) from the store
      * 
      * @param maxCount Maximum number of entries to include.
@@ -38,7 +38,7 @@ public abstract class AdminStorableStore extends StorableStore
         throws StoreException;
 
     /**
-     * Method that can be used to access first {@link maxCount} entries
+     * Method that can be used to access first <code>maxCount</code> entries
      * (in 'last-modified' order, from oldest to newest) from the store
      * 
      * @param maxCount Maximum number of entries to include.

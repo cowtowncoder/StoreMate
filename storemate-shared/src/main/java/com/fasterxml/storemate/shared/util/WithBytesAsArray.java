@@ -5,8 +5,6 @@ import java.util.Arrays;
 /**
  * Simple {@link WithBytesCallback} implementation to use when all you
  * really want is a byte array copy.
- * 
- * @see {@link WithBytesAsContainer}, {@link WithBytesAsContainer}
  */
 public class WithBytesAsArray implements WithBytesCallback<byte[]>
 {
