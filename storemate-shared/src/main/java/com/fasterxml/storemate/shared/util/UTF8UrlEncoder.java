@@ -10,24 +10,30 @@ public class UTF8UrlEncoder
      * Encoding table used for figuring out ASCII characters that must be escaped
      * (all non-ASCII characers need to be encoded anyway)
      */
-    private final static int[] SAFE_ASCII = new int[128];
-
+    private final static int[] SAFE_ASCII_NO_SLASH = new int[128];
     static {
         for (int i = 'a'; i <= 'z'; ++i) {
-            SAFE_ASCII[i] = 1;
+            SAFE_ASCII_NO_SLASH[i] = 1;
         }
         for (int i = 'A'; i <= 'Z'; ++i) {
-            SAFE_ASCII[i] = 1;
+            SAFE_ASCII_NO_SLASH[i] = 1;
         }
         for (int i = '0'; i <= '9'; ++i) {
-            SAFE_ASCII[i] = 1;
+            SAFE_ASCII_NO_SLASH[i] = 1;
         }
-        SAFE_ASCII['-'] = 1;
-        SAFE_ASCII['.'] = 1;
-        SAFE_ASCII['_'] = 1;
-        SAFE_ASCII['~'] = 1;
+        SAFE_ASCII_NO_SLASH['-'] = 1;
+        SAFE_ASCII_NO_SLASH['.'] = 1;
+        SAFE_ASCII_NO_SLASH['_'] = 1;
+        SAFE_ASCII_NO_SLASH['~'] = 1;
     }
 
+    private final static int[] SAFE_ASCII_WITH_SLASH = new int[SAFE_ASCII_NO_SLASH.length];
+    static {
+        System.arraycopy(SAFE_ASCII_NO_SLASH, 0, SAFE_ASCII_WITH_SLASH, 0,
+                SAFE_ASCII_NO_SLASH.length);
+        SAFE_ASCII_WITH_SLASH['/'] = 1;
+    }
+    
     private final static char[] HEX = "0123456789ABCDEF".toCharArray();
 
     private final boolean _encodeSpaceUsingPlus;
@@ -41,15 +47,16 @@ public class UTF8UrlEncoder
         _encodeSpaceUsingPlus = encodeSpaceUsingPlus;
     }
 
-    public String encode(String input) {
+    public String encode(String input, boolean escapeSlash) {
         StringBuilder sb = new StringBuilder(input.length() + 16);
-        appendEncoded(sb, input);
+        appendEncoded(sb, input, escapeSlash);
         return sb.toString();
     }
 
-    public StringBuilder appendEncoded(StringBuilder sb, String input)
+    public StringBuilder appendEncoded(StringBuilder sb, String input,
+            boolean escapeSlash)
     {
-        final int[] safe = SAFE_ASCII;
+        final int[] safe = escapeSlash ? SAFE_ASCII_NO_SLASH : SAFE_ASCII_WITH_SLASH;
         for (int i = 0, len = input.length(); i < len; ++i) {
             char c = input.charAt(i);
             if (c <= 127) {
