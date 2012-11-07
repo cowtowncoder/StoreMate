@@ -47,6 +47,12 @@ public class UTF8UrlEncoder
         _encodeSpaceUsingPlus = encodeSpaceUsingPlus;
     }
 
+    /*
+    /**********************************************************************
+    /* Encoding
+    /**********************************************************************
+     */
+    
     public String encode(String input, boolean escapeSlash) {
         StringBuilder sb = new StringBuilder(input.length() + 16);
         appendEncoded(sb, input, escapeSlash);
@@ -95,4 +101,10 @@ public class UTF8UrlEncoder
             appendSingleByteEncoded(sb, (0x80 | (value & 0x3f)));
         }
     }
+
+    /*
+    /**********************************************************************
+    /* Decoding
+    /**********************************************************************
+     */
 }
