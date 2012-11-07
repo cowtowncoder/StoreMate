@@ -1,12 +1,43 @@
 package com.fasterxml.storemate.client;
 
-import com.fasterxml.storemate.shared.HTTPConstants;
-
 /**
  * Container for details of a single failed call to a server.
  */
 public class CallFailure
 {
+    /*
+    /**********************************************************************
+    /* Custom 'virtual' HTTP response codes; used to indicate client-side
+    /* failures that do not have real server-provided failing status code
+    /**********************************************************************
+     */
+    
+    /**
+     * Constant used as a placeholder for internal call failure caused
+     * by an exception thrown on client side.
+     */
+    public final static int HTTP_STATUS_CUSTOM_FAIL_CLIENT_THROWABLE = -2;
+
+    /**
+     * Constant used as a placeholder for internal call failure caused
+     * by a problem on client side (before trying to call server),
+     * as identified by given message
+     */
+    public final static int HTTP_STATUS_CUSTOM_FAIL_CLIENT_MESSAGE = -3;
+
+
+    /* Response code used when the request timed out; as per docs, while
+     * not a formally standardized code, is actually used. And is considered
+     * retriable (as 5xx code) which is why we choose it.
+     */
+    public final static int HTTP_STATUS_CLIENT_TIMEOUT_ON_READ = 598;
+
+    /*
+    /**********************************************************************
+    /* Internal information
+    /**********************************************************************
+     */
+    
     protected final ServerNode _server;
 
     protected final long _callTime;
@@ -27,11 +58,11 @@ public class CallFailure
      * Excerpt of the underlying error message.
      */
     protected final byte[] _rawResponse;
-    
+
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Construction
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Construction
+    /**********************************************************************
      */
 
     public CallFailure(ServerNode server, int statusCode,
@@ -66,7 +97,7 @@ public class CallFailure
      * time out
      */
     public static CallFailure timeout(ServerNode server, long callTime, long endTime) {
-        return new CallFailure(server, HTTPConstants.HTTP_STATUS_TIMEOUT_ON_READ,
+        return new CallFailure(server, HTTP_STATUS_CLIENT_TIMEOUT_ON_READ,
                 callTime, endTime, "timeout after "+ (endTime - callTime) + " msecs",
                 null);
     }
@@ -106,10 +137,10 @@ public class CallFailure
      * threw an exception causing individual call to fail, and we have an
      * exception indicating what happened.
      */
-    public static CallFailure internal(ServerNode server, long callTime,
+    public static CallFailure clientInternal(ServerNode server, long callTime,
             long endTime, Throwable cause) {
         cause = _peel(cause);
-        return new CallFailure(server, HTTPConstants.HTTP_STATUS_CUSTOM_FAIL_THROWABLE,
+        return new CallFailure(server, HTTP_STATUS_CUSTOM_FAIL_CLIENT_THROWABLE,
                 callTime, endTime, cause, null);
     }
 
@@ -118,16 +149,16 @@ public class CallFailure
      * threw an exception causing individual call to fail, but we did not
      * get an exception.
      */
-    public static CallFailure internal(ServerNode server, long callTime,
+    public static CallFailure clientInternal(ServerNode server, long callTime,
             long endTime, String msg) {
-        return new CallFailure(server, HTTPConstants.HTTP_STATUS_CUSTOM_FAIL_MESSAGE,
+        return new CallFailure(server, HTTP_STATUS_CUSTOM_FAIL_CLIENT_MESSAGE,
                 callTime, endTime, msg, null);
     }
     
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Simple accessors
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Simple accessors
+    /**********************************************************************
      */
     
     public ServerNode getServer() { return _server; }
@@ -192,9 +223,9 @@ public class CallFailure
     }
     
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Overrides
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Overrides
+    /**********************************************************************
      */
     
     @Override
@@ -210,11 +241,11 @@ public class CallFailure
         sb.append(']');
         return sb.toString();
     }
-    
+
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Helper methods
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Helper methods
+    /**********************************************************************
      */
     
     private static Throwable _peel(Throwable t)
