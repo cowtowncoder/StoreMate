@@ -35,5 +35,6 @@ public class TestUTF8UrlEncoder extends SharedTestBase
         
         // non-ASCII:
         assertEquals("This: \u00A9...", enc.decode("This%3A+%C2%A9..."));
+        assertEquals("test/Stuff-\u00A9", enc.decode("test/Stuff-%C2%A9"));
     }
 }

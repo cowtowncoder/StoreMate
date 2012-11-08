@@ -217,10 +217,8 @@ public class UTF8UrlEncoder
         
     private final static int _decodeSingleEscaped(String input, int i)
     {
-        final int end = input.length();
-
         // first: must get 2 more chars, minimum
-        if ((i + 2) < end) {
+        if ((i + 1) < input.length()) {
             // and they must be hex chars
             char c1 = input.charAt(i);
             char c2 = input.charAt(i+1);
