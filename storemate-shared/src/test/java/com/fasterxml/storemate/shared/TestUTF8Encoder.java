@@ -12,20 +12,26 @@ public class TestUTF8Encoder extends SharedTestBase
     private final static String STRING1 = "Short and brutish";
     private final static String STRING2 = "Scandic: \u00D8";
     
-    public void testSimple() throws Exception
+    /*
+    /**********************************************************************
+    /* Encoding tests
+    /**********************************************************************
+     */
+    
+    public void testSimpleEncoding() throws Exception
     {
         _verify(STRING1);
         _verify(STRING2);
     }
 
-    public void testPrefix() throws Exception
+    public void testPrefixEncoding() throws Exception
     {
         final byte[] PREFIX = new byte[] { 1, 2, 3};
         _verifyPrefix(STRING1, PREFIX);
         _verifyPrefix(STRING2, PREFIX);
     }
 
-    public void testFluff() throws Exception
+    public void testEncodingWithFluff() throws Exception
     {
         _verifyFluff(STRING1, 5, 30);
         _verifyFluff(STRING2, 0, 27);
@@ -34,7 +40,7 @@ public class TestUTF8Encoder extends SharedTestBase
         _verifyFluff(STRING1, 69000, 1);
         _verifyFluff(STRING2, 13, 73500);
     }
-    
+
     /*
     /**********************************************************************
     /* Secondary test methods
