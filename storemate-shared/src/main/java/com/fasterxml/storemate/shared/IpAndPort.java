@@ -7,7 +7,7 @@ import java.net.UnknownHostException;
  * Simple value type used for basic "IP:PORT" style Strings extracted
  * from configuration file.
  */
-public final class IpAndPort
+public final class IpAndPort implements Comparable<IpAndPort>
 {
     public final static String DEFAULT_PROTOCOL = "http";
     
@@ -156,5 +156,11 @@ public final class IpAndPort
             _ipAddress = addr = InetAddress.getByName(_ipName);
         }
         return addr;
+    }
+
+    @Override
+    public int compareTo(IpAndPort other) {
+        // Simple lexicographic (~= alphabetic) ordering:
+        return getEndpoint().compareTo(other.getEndpoint());
     }
 }
