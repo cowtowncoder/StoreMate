@@ -1,0 +1,9 @@
+Project: StoreMate
+
+0.8.8 (xx-Jan-2012):
+
+Changes:
+
+0.8.7 (16-Dec-2012):
+
+Baseline version (no earlier notes)
