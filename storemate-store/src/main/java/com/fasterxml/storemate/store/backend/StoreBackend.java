@@ -121,6 +121,17 @@ public abstract class StoreBackend
             StorableKey firstKey)
         throws StoreException;
 
+    /**
+     * Method for scanning potentially all the entries in the store,
+     * ordered by the primary key, starting with entry <b>after</b>
+     * specified key
+     *<p>
+     * @since 0.8.8
+     */
+    public abstract IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
+            StorableKey lastSeen)
+        throws StoreException;
+    
     public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb)
         throws StoreException
     {

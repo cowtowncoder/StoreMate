@@ -27,7 +27,81 @@ public class StorableKey
         _length = len;
     }
 
+    /*
+    /**********************************************************************
+    /* Simple accessories
+    /**********************************************************************
+     */
+
     public final int length() { return _length; }
+
+    /**
+     * Method that can be called to see whether this key has specified
+     * key as a prefix, including possible case that keys are identical
+     */
+    public final boolean hasPrefix(StorableKey other)
+    {
+        if (other == this) return true;
+        if (other == null) { // since meaning here would be ambiguous, let's fail instead
+            throw new IllegalArgumentException("Can't pass null key");
+        }
+        final int prefixLen = other.length();
+        if (prefixLen > _length) {
+            return false;
+        }
+        // Optimization for common case of no offsets
+        if (_offset == 0 && other._offset == 0) {
+            return _equals(_buffer, other._buffer, prefixLen);
+        }
+        // otherwise offline
+        return _equals(_buffer, _offset, other._buffer, other._offset,
+                _offset + prefixLen);
+    }
+
+    /**
+     * Method for checking whether raw contents of this key equal contents
+     * of given byte sequence.
+     */
+    public final boolean equals(byte[] buffer, int offset, int length)
+    {
+        if (length != _length) {
+            return false;
+        }
+        if (offset == 0 && _offset == 0) {
+            return _equals(_buffer, buffer, length);
+        }
+        return _equals(_buffer, _offset, buffer, offset, length);
+    }
+
+    private final boolean _equals(byte[] b1, byte[] b2, int len)
+    {
+        int ptr = 0;
+        while (ptr < len) {
+            if (b1[ptr] != b2[ptr]) {
+                return false;
+            }
+            ++ptr;
+        }
+        return true;
+    }
+    
+    private final boolean _equals(byte[] b1, int ptr1, byte[] b2, int ptr2, int end)
+    {
+        while (ptr1 < end) {
+            if (b1[ptr1] != b2[ptr2]) {
+                return false;
+            }
+            ++ptr1;
+            ++ptr2;
+        }
+        return true;
+    }
+    
+    /*
+    /**********************************************************************
+    /* Mutant factories
+    /**********************************************************************
+     */
     
     public final byte[] asBytes() {
         if (_offset == 0) {
@@ -61,6 +135,12 @@ public class StorableKey
         return cb.withBytes(_buffer, _offset+offset, length);
     }
 
+    /*
+    /**********************************************************************
+    /* Hash code calculation
+    /**********************************************************************
+     */
+    
     public int hashCode(BlockHasher32 hasher) {
         return hasher.hash(BlockHasher32.DEFAULT_SEED, _buffer, _offset, _length);
     }
@@ -72,6 +152,12 @@ public class StorableKey
         }
         return hasher.hash(BlockHasher32.DEFAULT_SEED, _buffer, _offset+offset, length);
     }
+    
+    /*
+    /**********************************************************************
+    /* Std method overrides
+    /**********************************************************************
+     */
     
     @Override public int hashCode() {
         int h = _hashCode;

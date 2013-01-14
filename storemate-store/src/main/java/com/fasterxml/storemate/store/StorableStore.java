@@ -214,6 +214,24 @@ public abstract class StorableStore
     /**
      * Method for iterating over entries store has,
      * in key order,
+     * starting with entry <b>AFTER</b> specified key.
+     *<p>
+     * Note that iteration is not transactional, in that operations
+     * may modify entries during iteration process.
+     * 
+     * @param cb Callback used for actual iteration
+     * @param firstKey (optional) If not null, key for the first entry
+     *   to include (inclusive); if null, starts from the very first entry
+     *
+     * @return Value that indicates how iteration ended
+     */
+    public abstract IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
+            StorableKey firstKey)
+        throws StoreException;
+    
+    /**
+     * Method for iterating over entries store has,
+     * in key order,
      * starting with specified key (inclusive).
      *<p>
      * Note that iteration is not transactional, in that operations

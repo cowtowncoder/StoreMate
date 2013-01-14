@@ -268,7 +268,6 @@ public class BDBJEStoreBackend extends StoreBackend
             keyEntry = dbKey(firstKey);
             status = crsr.getSearchKeyRange(keyEntry, data, null);
         }
-
         try {
             main_loop:
             for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
@@ -293,6 +292,53 @@ public class BDBJEStoreBackend extends StoreBackend
         }
     }
 
+    @Override
+    public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
+            StorableKey lastSeen)
+        throws StoreException
+    {
+        Cursor crsr = _entries.openCursor(null, new CursorConfig());
+
+        try {
+            final DatabaseEntry data = new DatabaseEntry();
+            final DatabaseEntry keyEntry = dbKey(lastSeen);
+            OperationStatus status = crsr.getSearchKeyRange(keyEntry, data, null);
+            do { // bogus loop so we can break
+                if (status != OperationStatus.SUCCESS) { // if it was the very last entry in store?
+                    break;
+                }
+                // First, did we find the entry (should, but better safe than sorry)
+                byte[] b = keyEntry.getData();
+                if (lastSeen.equals(b, 0, b.length)) { // yes, same thingy
+                    status = crsr.getNext(keyEntry, data, null);
+                    if (status != OperationStatus.SUCCESS) {
+                        break;
+                    }
+                }
+                main_loop:
+                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
+                    StorableKey key = storableKey(keyEntry);
+                    switch (cb.verifyKey(key)) {
+                    case SKIP_ENTRY: // nothing to do
+                        continue main_loop;
+                    case PROCESS_ENTRY: // bind, process
+                        break;
+                    case TERMINATE_ITERATION: // all done?
+                        return IterationResult.TERMINATED_FOR_KEY;
+                    }
+                    Storable entry = _storableConverter.decode(key, data.getData());
+                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                        return IterationResult.TERMINATED_FOR_ENTRY;
+                    }
+                    
+                }
+            } while (false);
+            return IterationResult.FULLY_ITERATED;
+        } finally {
+            crsr.close();
+        }
+    }
+    
     @Override
     public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)

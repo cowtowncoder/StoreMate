@@ -741,11 +741,21 @@ public class StorableStoreImpl extends AdminStorableStore
     @Override
     public IterationResult iterateEntriesByKey(StorableIterationCallback cb,
             StorableKey firstKey)
-        throws StoreException
-    {
+        throws StoreException {
         return _backend.iterateEntriesByKey(cb, firstKey);
     }
 
+    @Override
+    public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
+            StorableKey lastSeen)
+        throws StoreException {
+        // if we didn't get "lastSeen", same as regular method
+        if (lastSeen == null) {
+            return _backend.iterateEntriesByKey(cb, null);
+        }
+        return _backend.iterateEntriesAfterKey(cb, lastSeen);
+    }
+    
     @Override
     public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
             long firstTimestamp)

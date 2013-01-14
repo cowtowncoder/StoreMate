@@ -4,6 +4,9 @@ Project: StoreMate
 
 Changes:
 
+* Added 'StorableStore.iterateEntriesAfterKey()'
+* Added 'StorableKey.hasPrefix()'
+
 0.8.7 (16-Dec-2012):
 
 Baseline version (no earlier notes)
