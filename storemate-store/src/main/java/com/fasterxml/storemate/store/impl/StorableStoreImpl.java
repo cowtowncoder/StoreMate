@@ -301,9 +301,9 @@ public class StorableStoreImpl extends AdminStorableStore
             boolean allowOverwrite)
         throws IOException, StoreException
     {
-    	/* NOTE: we do NOT want to clone passed-in metadata, because we want
-    	 * to fill in some of optional values, and override others (compression)
-    	 */
+        /* NOTE: we do NOT want to clone passed-in metadata, because we want
+         * to fill in some of optional values, and override others (compression)
+         */
         BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
         final byte[] readBuffer = bufferHolder.borrowBuffer(_minBytesToStream);
         int len = 0;

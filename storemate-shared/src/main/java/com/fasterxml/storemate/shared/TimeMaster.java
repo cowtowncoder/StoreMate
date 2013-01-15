@@ -61,7 +61,7 @@ public abstract class TimeMaster
         if (msecs < 0L) {
             msecs = 0L;
         }
-        if (msecs < 1000L) {
+        if (msecs < 200L) { // let's switch to "0.x seconds" at 0.2...
             return String.format("%d msecs", msecs);
         }
         double secs = (double) msecs / 1000.0;
