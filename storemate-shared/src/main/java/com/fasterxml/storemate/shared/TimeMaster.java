@@ -56,7 +56,7 @@ public abstract class TimeMaster
     ///////////////////////////////////////////////////////////////////////
      */
 
-    public String timeDesc(long msecs)
+    public static String timeDesc(long msecs)
     {
         if (msecs < 0L) {
             msecs = 0L;
@@ -77,9 +77,16 @@ public abstract class TimeMaster
             return String.format("%d mins", minutes);
         }
         int hours = (int) (minutes / 60);
-        minutes -= (60 * hours);
-        // should we support days as well... ?
-        return String.format("%dh, %d mins", hours, minutes);
+        if (hours < 48) {
+            minutes -= (60 * hours);
+            return String.format("%dh, %d mins", hours, minutes);
+        }
+        int days = hours / 24;
+        if (days < 7) {
+            hours -= (days * 24);
+            return String.format("%dd, %d hours", hours, minutes);
+        }
+        return String.format("%d days", days);
     }
     
     /*
