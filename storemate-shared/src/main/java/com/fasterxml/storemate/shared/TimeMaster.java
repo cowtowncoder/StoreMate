@@ -84,7 +84,7 @@ public abstract class TimeMaster
         int days = hours / 24;
         if (days < 7) {
             hours -= (days * 24);
-            return String.format("%dd, %d hours", hours, minutes);
+            return String.format("%dd, %d hours", hours, days);
         }
         return String.format("%d days", days);
     }
