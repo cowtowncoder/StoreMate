@@ -19,7 +19,7 @@ public abstract class GetContentProcessor<T>
     {
         /**
          * Factory method to use for creating a wrapper that exposes this
-         * handlers as a simple {@link OutputStream}, to allow adapting to
+         * handler as a simple {@link OutputStream}, to allow adapting to
          * input sources that require a stream.
          */
         public OutputStream asStream() {

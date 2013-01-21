@@ -2,7 +2,7 @@ package com.fasterxml.storemate.client.call;
 
 import com.fasterxml.storemate.client.CallFailure;
 
-public abstract class GetCallResult<T>
+public abstract class EntryListResult<T>
     extends CallResult
 {
     protected final T _result;
@@ -13,13 +13,13 @@ public abstract class GetCallResult<T>
     /**********************************************************************
      */
     
-    protected GetCallResult(int status, T result)
+    protected EntryListResult(int status, T result)
     {
         super(status);
         _result = result;
     }
 
-    protected GetCallResult(CallFailure fail)
+    protected EntryListResult(CallFailure fail)
     {
         super(fail);
         _result = null;
