@@ -13,13 +13,13 @@ public abstract class EntryListResult<T>
     /**********************************************************************
      */
     
-    protected EntryListResult(int status, T result)
+    public EntryListResult(int status, T result)
     {
         super(status);
         _result = result;
     }
 
-    protected EntryListResult(CallFailure fail)
+    public EntryListResult(CallFailure fail)
     {
         super(fail);
         _result = null;
