@@ -1,6 +1,10 @@
 Project: StoreMate
 
-0.8.8 (xx-Jan-2012):
+0.9.0 (25-Jan-2012:
+
+* Refactoring: promoted base client up to ClusterMate
+
+0.8.8 (12-Jan-2012):
 
 Changes:
 
