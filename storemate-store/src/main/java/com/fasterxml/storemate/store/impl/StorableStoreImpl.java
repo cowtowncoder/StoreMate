@@ -567,7 +567,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         +", bytes read: "+copiedBytes);
             }
 
-        	final int actualHash = hasher.calculateHash();
+            final int actualHash = _cleanChecksum(hasher.calculateHash());
             stdMetadata.storageSize = copiedBytes;
             if (stdMetadata.compression == Compression.NONE) {
                 if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
@@ -579,7 +579,7 @@ public class StorableStoreImpl extends AdminStorableStore
                                     +Integer.toHexString(actualHash));
                 }
             } else { // already compressed
-//                stdMetadata.compressedContentHash = hasher.calculateHash();
+//                stdMetadata.compressedContentHash = _cleanChecksum(hasher.calculateHash());
                 if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
@@ -595,8 +595,8 @@ public class StorableStoreImpl extends AdminStorableStore
             // we don't really know the original size, either way:
             stdMetadata.uncompressedSize = 0L;
         } else {
-            final int contentHash = hasher.calculateHash();
-            final int compressedHash = compressedOut.calculateHash();
+            final int contentHash = _cleanChecksum(hasher.calculateHash());
+            final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
             
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
@@ -970,9 +970,13 @@ public class StorableStoreImpl extends AdminStorableStore
         }
     }    
             
-    protected int _calcChecksum(ByteContainer data)
-    {
-        return data.hash(BlockMurmur3Hasher.instance, HASH_SEED);
+    protected static int _calcChecksum(ByteContainer data) {
+        // important: mask zero value, which occurs with empty content
+        return _cleanChecksum(data.hash(BlockMurmur3Hasher.instance, HASH_SEED));
+    }
+
+    protected static int _cleanChecksum(int checksum) {
+        return (checksum == StoreConstants.NO_CHECKSUM) ? StoreConstants.CHECKSUM_FOR_ZERO : checksum;
     }
     
     /**
