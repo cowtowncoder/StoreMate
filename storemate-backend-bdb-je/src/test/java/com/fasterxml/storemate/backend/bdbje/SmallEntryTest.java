@@ -73,6 +73,60 @@ public class SmallEntryTest extends BDBJETestBase
     }
 
     /**
+     * Test to verify that "empty" content entries are handled correctly
+     */
+    public void testZeroLengthEntry() throws IOException
+    {
+        final long startTime = _date(2012, 6, 6);
+        StorableStore store = createStore("bdb-small-empty", startTime);
+        assertEquals(0L, store.getEntryCount());
+        assertEquals(0L, store.getIndexedCount());
+
+        final StorableKey KEY1 = storableKey("data/entry/0");
+        final byte[] NO_DATA = new byte[0];
+        final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
+
+        assertNull(store.findEntry(KEY1));
+
+        // Ok: store a small entry:
+        StorableCreationMetadata metadata = new StorableCreationMetadata(
+               /*existing compression*/ null,
+               calcChecksum32(NO_DATA), StoreConstants.NO_CHECKSUM);
+        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(NO_DATA),
+               metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        assertTrue(resp.succeeded());
+        assertNull(resp.getPreviousEntry());
+
+        assertEquals(1L, store.getEntryCount());
+        assertEquals(1L, store.getIndexedCount());
+
+        Storable entry = store.findEntry(KEY1);
+        assertNotNull(entry);
+
+        assertEquals(startTime, entry.getLastModified());
+
+        // no content, so:
+        assertFalse(entry.hasInlineData());
+        assertFalse(entry.hasExternalData());
+        // too short to be compressed:
+        assertEquals(Compression.NONE, entry.getCompression());
+        assertEquals(NO_DATA.length, entry.getStorageLength());
+        // -1 means N/A, used when no compression is used:
+        assertEquals(-1L, entry.getOriginalLength());
+
+        // we passed bit of custom metadata, verify:
+        _verifyMetadata(entry, CUSTOM_METADATA_IN);
+        
+        // then let's verify inlined content itself
+        byte[] actualContents1 = entry.getInlinedData().asBytes();
+        byte[] actualContents2 = entry.withInlinedData(WithBytesAsArray.instance);
+        assertArrayEquals(NO_DATA, actualContents1);
+        assertArrayEquals(NO_DATA, actualContents2);
+        
+        store.stop();
+    }
+    
+    /**
      * Slight variation of basic test: let's accept compressed
      * contents; verify that we are served compressed thing
      */

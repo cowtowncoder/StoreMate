@@ -92,7 +92,7 @@ public class Storable
             int metadataOffset, int metadataLength,
             int payloadOffset, long storageLength)
     {
-    	_key = key;
+        _key = key;
         _rawEntry = bytes;
 
         _lastModified = lastMod;
