@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 import com.fasterxml.storemate.shared.util.WithBytesAsArray;
 import com.fasterxml.storemate.store.*;
 
@@ -32,7 +33,7 @@ public class DeleteEntryTest extends BDBJETestBase
 
         // Ok: insert entries first
         StorableCreationMetadata metadata = new StorableCreationMetadata(null,
-                calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+                calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());

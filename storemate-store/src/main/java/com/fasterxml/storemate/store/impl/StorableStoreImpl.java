@@ -13,6 +13,7 @@ import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
 import com.fasterxml.storemate.shared.hash.BlockHasher32;
 import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
 import com.fasterxml.storemate.shared.util.BufferRecycler;
 import com.fasterxml.storemate.shared.util.IOUtil;
@@ -372,7 +373,7 @@ public class StorableStoreImpl extends AdminStorableStore
         // do we insist on checksum? Not if client has not yet compressed it:
         int actualChecksum = _calcChecksum(data);
         final int origChecksum = metadata.contentHash;
-        if (origChecksum == StoreConstants.NO_CHECKSUM) {
+        if (origChecksum == HashConstants.NO_CHECKSUM) {
             metadata.contentHash = actualChecksum;
         } else {
             if (origChecksum != actualChecksum) {
@@ -421,7 +422,7 @@ public class StorableStoreImpl extends AdminStorableStore
          *   verify etc...
          */
         final int origChecksum = metadata.contentHash;
-        if (origChecksum == StoreConstants.NO_CHECKSUM) {
+        if (origChecksum == HashConstants.NO_CHECKSUM) {
             if (_requireChecksumForPreCompressed) {
                 throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
                         "No checksum for non-compressed data provided for pre-compressed entry");
@@ -435,7 +436,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
         // may get checksum for compressed data, or might not; if not, calculate:
         if (metadata.compression != Compression.NONE) {
-            if (metadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
+            if (metadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
                 metadata.compressedContentHash = _calcChecksum(data);
             }
         }
@@ -570,7 +571,7 @@ public class StorableStoreImpl extends AdminStorableStore
             final int actualHash = _cleanChecksum(hasher.calculateHash());
             stdMetadata.storageSize = copiedBytes;
             if (stdMetadata.compression == Compression.NONE) {
-                if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
+                if (stdMetadata.contentHash == HashConstants.NO_CHECKSUM) {
                     stdMetadata.contentHash = actualHash;
                 } else if (stdMetadata.contentHash != actualHash) {
                     throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
@@ -580,7 +581,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 }
             } else { // already compressed
 //                stdMetadata.compressedContentHash = _cleanChecksum(hasher.calculateHash());
-                if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
+                if (stdMetadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
                     stdMetadata.compressedContentHash = actualHash;
                 } else {
                     if (stdMetadata.compressedContentHash != actualHash) {
@@ -601,7 +602,7 @@ public class StorableStoreImpl extends AdminStorableStore
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
             // must verify checksum, if one was offered...
-            if (stdMetadata.contentHash == StoreConstants.NO_CHECKSUM) {
+            if (stdMetadata.contentHash == HashConstants.NO_CHECKSUM) {
                 stdMetadata.contentHash = contentHash;
             } else {
                 if (stdMetadata.contentHash != contentHash) {
@@ -612,7 +613,7 @@ public class StorableStoreImpl extends AdminStorableStore
                             		+", calculated to be 0x"+Integer.toHexString(contentHash));
                 }
             }
-            if (stdMetadata.compressedContentHash == StoreConstants.NO_CHECKSUM) {
+            if (stdMetadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
                 stdMetadata.compressedContentHash = compressedHash;
             } else {
                 if (stdMetadata.compressedContentHash != compressedHash) {
@@ -976,7 +977,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     protected static int _cleanChecksum(int checksum) {
-        return (checksum == StoreConstants.NO_CHECKSUM) ? StoreConstants.CHECKSUM_FOR_ZERO : checksum;
+        return (checksum == HashConstants.NO_CHECKSUM) ? HashConstants.CHECKSUM_FOR_ZERO : checksum;
     }
     
     /**

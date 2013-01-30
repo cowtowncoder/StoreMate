@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.storemate.shared.*;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
@@ -27,11 +28,11 @@ public class LastModTest extends BDBJETestBase
 
        // Ok: store a small entry:
        StorableCreationMetadata metadata = new StorableCreationMetadata(
-                       /*existing compression*/ null,
-                       calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+               /*existing compression*/ null,
+               calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
        StorableCreationResult resp = store.insert(
-                       KEY1, new ByteArrayInputStream(SMALL_DATA),
-                       metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+               KEY1, new ByteArrayInputStream(SMALL_DATA),
+               metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
        assertTrue(resp.succeeded());
        assertNull(resp.getPreviousEntry());
        assertEquals(1L, store.getEntryCount());
@@ -71,7 +72,7 @@ public class LastModTest extends BDBJETestBase
        final byte[] SMALL_DATA2 = "Foo".getBytes("UTF-8");
        metadata = new StorableCreationMetadata(
                /*existing compression*/ null,
-               calcChecksum32(SMALL_DATA2), StoreConstants.NO_CHECKSUM);
+               calcChecksum32(SMALL_DATA2), HashConstants.NO_CHECKSUM);
        resp = store.insert(
                KEY2, new ByteArrayInputStream(SMALL_DATA2),
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));

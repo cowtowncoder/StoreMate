@@ -1,5 +1,9 @@
 Project: StoreMate
 
+0.9.1 (...)
+
+* Fixed problems with hash code handling for empty content (0 must be masked)
+
 0.9.0 (25-Jan-2012:
 
 * Refactoring: promoted base client up to ClusterMate

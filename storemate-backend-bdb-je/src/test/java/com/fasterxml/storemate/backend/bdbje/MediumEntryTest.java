@@ -10,6 +10,7 @@ import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 import com.fasterxml.storemate.store.*;
 
 public class MediumEntryTest extends BDBJETestBase
@@ -34,7 +35,7 @@ public class MediumEntryTest extends BDBJETestBase
         // then try adding said entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                 /*existing compression*/ null,
-                calcChecksum32(DATA), StoreConstants.NO_CHECKSUM);
+                calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -99,7 +100,7 @@ public class MediumEntryTest extends BDBJETestBase
         // then try adding said entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                 /*existing compression*/ null,
-                calcChecksum32(DATA), StoreConstants.NO_CHECKSUM);
+                calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());

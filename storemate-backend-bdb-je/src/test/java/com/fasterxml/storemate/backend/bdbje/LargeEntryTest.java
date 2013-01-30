@@ -10,6 +10,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.ThrottlingByteArrayInputStream;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 
 import com.fasterxml.storemate.store.*;
 
@@ -39,8 +40,7 @@ public class LargeEntryTest extends BDBJETestBase
         // then try adding said entry
         StorableCreationMetadata metadata0 = new StorableCreationMetadata(
                 /*existing compression*/ null,
-                calcChecksum32(DATA),
-                StoreConstants.NO_CHECKSUM);
+                calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
         
         // important: throttle input reading, to force chunking (and maybe tease out bugs)
         StorableCreationResult resp = store.insert(KEY1, new ThrottlingByteArrayInputStream(DATA, 97),

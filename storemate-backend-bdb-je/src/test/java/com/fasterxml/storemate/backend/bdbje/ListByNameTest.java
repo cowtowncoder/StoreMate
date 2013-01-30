@@ -6,11 +6,8 @@ import java.util.*;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.store.Storable;
-import com.fasterxml.storemate.store.StorableCreationMetadata;
-import com.fasterxml.storemate.store.StorableCreationResult;
-import com.fasterxml.storemate.store.StorableStore;
-import com.fasterxml.storemate.store.StoreConstants;
+import com.fasterxml.storemate.shared.hash.HashConstants;
+import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.IterationAction;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 
@@ -60,7 +57,7 @@ public class ListByNameTest extends BDBJETestBase
         for (StorableKey key : new StorableKey[] { KEY2, KEY4, KEY3, KEY1 } ) {
             StorableCreationMetadata metadata = new StorableCreationMetadata(
                     /*existing compression*/ null,
-                    0, StoreConstants.NO_CHECKSUM);
+                    0, HashConstants.NO_CHECKSUM);
             StorableCreationResult resp = store.insert(key, new ByteArrayInputStream(key.asBytes()),
                     metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
             assertTrue(resp.succeeded());

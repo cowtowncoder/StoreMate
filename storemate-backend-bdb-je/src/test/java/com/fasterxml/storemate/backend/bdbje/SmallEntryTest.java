@@ -9,6 +9,7 @@ import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
+import com.fasterxml.storemate.shared.hash.HashConstants;
 import com.fasterxml.storemate.shared.util.WithBytesAsArray;
 
 import com.fasterxml.storemate.store.*;
@@ -36,7 +37,7 @@ public class SmallEntryTest extends BDBJETestBase
         // Ok: store a small entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
         		/*existing compression*/ null,
-        		calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+        		calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(
         		KEY1, new ByteArrayInputStream(SMALL_DATA),
         		metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
@@ -91,7 +92,7 @@ public class SmallEntryTest extends BDBJETestBase
         // Ok: store a small entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                /*existing compression*/ null,
-               calcChecksum32(NO_DATA), StoreConstants.NO_CHECKSUM);
+               calcChecksum32(NO_DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(NO_DATA),
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -147,7 +148,7 @@ public class SmallEntryTest extends BDBJETestBase
         // Ok: insert compressible smallish (inlineable) entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
-                        calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+                        calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -198,7 +199,7 @@ public class SmallEntryTest extends BDBJETestBase
         // Ok: insert entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
-                        calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+                        calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -250,7 +251,7 @@ public class SmallEntryTest extends BDBJETestBase
         // and then verify that it is stored as if not compressed
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
-                        calcChecksum32(SMALL_DATA_LZF), StoreConstants.NO_CHECKSUM);
+                        calcChecksum32(SMALL_DATA_LZF), HashConstants.NO_CHECKSUM);
         StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA_LZF),
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -296,7 +297,7 @@ public class SmallEntryTest extends BDBJETestBase
         // Ok, then with data that claims to be LZF, but is not. Should be caught:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                 Compression.LZF,
-                calcChecksum32(SMALL_DATA), StoreConstants.NO_CHECKSUM);
+                calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         try {
             /*StorableCreationResult resp =*/ store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
