@@ -9,6 +9,10 @@ Check out [Project Wiki](StoreMate/wiki) for complete description; here are some
 * Automatic, configurable auto-negotiated on-the-fly compression, decompression (GZIP, LZF, depending on payload size)
 * Pluggable DB storage backends: current basic implementation based on [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB)
 
+# License
+
+Good old [Apache 2](https://github.com/cowtowncoder/ClusterMate)
+
 # Status
 
 Working as part of a bigger system -- high-level system to be open sources -- but both implementation and API still likely to change before 1.0.
