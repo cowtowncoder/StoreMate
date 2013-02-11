@@ -19,13 +19,18 @@ public class LastModKeyCreator implements SecondaryKeyCreator
     {
         // sanity check first:
         byte[] raw = data.getData();
-        if (raw.length < 8) {
+        int len = data.getSize();
+        if (len < 8) {
             throw new IllegalStateException("Illegal entry, with length of "+raw.length
                     +" (less than 8 bytes): can not create secondary key");
         }
         // not sure if BDB-JE shares/reuses data, let's not take chances:
-        byte[] rawKey = Arrays.copyOf(raw, 8);
-        result.setData(rawKey);
+        final int offset = data.getOffset();
+        if (offset == 0) {
+            result.setData(Arrays.copyOf(raw, 8));
+        } else {
+            result.setData(Arrays.copyOfRange(raw, offset, offset + 8));
+        }
         return true;
     }
 }

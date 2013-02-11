@@ -1,16 +1,18 @@
 Project: StoreMate
 
-0.9.1 (...)
+0.9.2:
+
+* Fixed an issue with BDB backend not handling possible entry offsets
+
+0.9.1:
 
 * Fixed problems with hash code handling for empty content (0 must be masked)
 
-0.9.0 (25-Jan-2012:
+0.9.0:
 
 * Refactoring: promoted base client up to ClusterMate
 
 0.8.8 (12-Jan-2012):
-
-Changes:
 
 * Added 'StorableStore.iterateEntriesAfterKey()'
 * Added 'StorableKey.hasPrefix()'
