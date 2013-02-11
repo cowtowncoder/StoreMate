@@ -159,7 +159,7 @@ public class StorableKey
             return this;
         }
         int from = _offset+offset;
-        return new StorableKey(_buffer, from, from + _length);
+        return new StorableKey(_buffer, from, length);
     }
     
     public final byte[] rangeAsBytes(int offset, int length)
