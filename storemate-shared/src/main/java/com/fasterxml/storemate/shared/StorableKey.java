@@ -57,7 +57,7 @@ public class StorableKey
         return _equals(_buffer, _offset, other._buffer, other._offset,
                 _offset + prefixLen);
     }
-
+    
     /**
      * Method for checking whether raw contents of this key equal contents
      * of given byte sequence.
@@ -96,6 +96,43 @@ public class StorableKey
         }
         return true;
     }
+
+    /*
+    /**********************************************************************
+    /* Find methods
+    /**********************************************************************
+     */
+
+    public final int indexOf(byte toMatch) {
+        return indexOf(toMatch, 0);
+    }
+
+    public final int indexOf(byte toMatch, int atOrAfter)
+    {
+        final byte[] b  = _buffer;
+        for (int i = _offset+atOrAfter, end = _offset + _length; i < end; ++i) {
+            if (b[i] == toMatch) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public final int lastIndexOf(byte toMatch) {
+        return lastIndexOf(toMatch, 0);
+    }
+
+    public final int lastIndexOf(byte toMatch, int atOrAfter)
+    {
+        final byte[] b  = _buffer;
+        final int first = _offset + atOrAfter;
+        for (int i = _offset + _length; --i >= first; ) {
+            if (b[i] == toMatch) {
+                return i;
+            }
+        }
+        return -1;
+    }
     
     /*
     /**********************************************************************
@@ -113,6 +150,18 @@ public class StorableKey
         return Arrays.copyOfRange(_buffer, _offset, _offset+_length);
     }
 
+    public final StorableKey range(int offset, int length) {
+        if (offset < 0 || length < 0 || (offset+length) > _length) {
+            throw new IllegalArgumentException("Invalid range (offset "+offset+", length "+length
+                    +"), for key with length of "+_length+" bytes");
+        }
+        if (offset == 0 && length == _length) {
+            return this;
+        }
+        int from = _offset+offset;
+        return new StorableKey(_buffer, from, from + _length);
+    }
+    
     public final byte[] rangeAsBytes(int offset, int length)
     {
         if (offset < 0 || length < 0 || (offset+length) > _length) {
