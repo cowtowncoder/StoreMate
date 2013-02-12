@@ -31,6 +31,5 @@ Sub-modules are can be grouped in following categories:
 * Single-node store implementation
  * `store`: Backend-independent single-node data store implementation that uses a backend implementation
  * `backend-bdb-je`: Backend implementation that uses BDB-JE store (default choice)
-* Skeletal Client/Server code
- * `client-base`: components to use for building clients (usually HTTP-based) for accessing data in a StoreMate-based clustered data store
- * `server-base`: component to use for building server components of StoreMate-based clustered data store
+
+More on design on [Wiki](StoreMate/wiki).
