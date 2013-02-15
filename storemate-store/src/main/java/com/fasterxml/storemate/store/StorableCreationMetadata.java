@@ -2,6 +2,7 @@ package com.fasterxml.storemate.store;
 
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.store.file.FileReference;
+import com.fasterxml.storemate.store.impl.StorableFlags;
 
 /**
  * Helper class for containing information needed for storing
@@ -10,9 +11,6 @@ import com.fasterxml.storemate.store.file.FileReference;
 public class StorableCreationMetadata
     implements Cloneable
 {
-    public final static byte STATUS_ACTIVE = 0;
-    public final static byte STATUS_DELETED = 1;
-    
     /*
     /**********************************************************************
     /* Input data, provided by caller
@@ -37,6 +35,7 @@ public class StorableCreationMetadata
      * 0 means "not available"
      */
     public int compressedContentHash;
+
     /**
      * Compression method used for content, if any. If left as null,
      * means "not known" and store can compress it as it sees fit;
@@ -52,8 +51,10 @@ public class StorableCreationMetadata
     /**********************************************************************
      */
 
-    public boolean deleted = false;
-    
+    public boolean deleted;
+
+    public boolean replicated;
+
     /**
      * Timestamp used for the BDB entry to store
      */
@@ -105,11 +106,13 @@ public class StorableCreationMetadata
         }
         return (byte) compression.asIndex();
     }
-    
-    public byte statusAsByte() {
-        if (deleted) {
-            return STATUS_DELETED;
+
+    public byte statusAsByte()
+    {
+        int status = deleted ? StorableFlags.F_STATUS_SOFT_DELETED : 0;
+        if (replicated) {
+            status |= StorableFlags.F_STATUS_REPLICATED;
         }
-        return STATUS_ACTIVE;
+        return (byte) status;
     }
 }

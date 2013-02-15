@@ -81,7 +81,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         // Ok: ensure version number is valid
         _verifyVersion(reader.nextByte());
         
-        final boolean deleted = _decodeStatus(reader.nextByte());
+        int statusFlags = reader.nextByte();
         final Compression compression = _decodeCompression(reader.nextByte());
         final int externalPathLength = reader.nextByte() & 0xFF;
 
@@ -123,8 +123,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
                     +raw.length+")");
         }
         return new Storable(key, ByteContainer.simple(raw, offset, length),
-                lastmod,
-                deleted, compression, externalPathLength,
+                lastmod, statusFlags, compression, externalPathLength,
                 contentHash, compressedHash, originalLength,
                 metadataOffset, metadataLength,
                 payloadOffset, storageLength
@@ -190,7 +189,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             
         }
         return new Storable(key, writer.bufferedBytes(), modtime,
-                stdMetadata.deleted, stdMetadata.compression, 0,
+                stdMetadata.statusAsByte(), stdMetadata.compression, 0,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,
                 payloadOffset, stdMetadata.storageSize);
@@ -250,7 +249,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             return null;
         }
         return new Storable(key, writer.bufferedBytes(), modtime,
-                stdMetadata.deleted, stdMetadata.compression, rawRef.length,
+                stdMetadata.statusAsByte(), stdMetadata.compression, rawRef.length,
                 stdMetadata.contentHash, stdMetadata.compressedContentHash, stdMetadata.uncompressedSize,
                 metadataOffset, metadataLength,
                 payloadOffset, stdMetadata.storageSize);
@@ -268,12 +267,12 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         final boolean removeExternal = deleteExternal && orig.hasExternalData();
         final boolean removeInlined = deleteInlined && orig.hasInlineData();
         
-        /* First things first: if we are retain external or inlined,
+        /* First things first: if we have retain external or inlined,
          * it's just a single byte change.
          */
         if (!(removeInlined || removeExternal)) {
             byte[] raw = orig.withRaw(WithBytesAsArray.instance);
-            raw[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
+            raw[OFFSET_STATUS] |= StorableFlags.F_STATUS_SOFT_DELETED;
             _ovewriteTimestamp(raw, 0, deletionTime);
             return orig.softDeletedCopy(ByteContainer.simple(raw), false);
         }
@@ -285,7 +284,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             public byte[] withBytes(byte[] buffer, int offset, int length) {
                 // minor kink: we need room for one more null byte:
                 byte[] result = Arrays.copyOfRange(buffer, offset, length+1);
-                result[OFFSET_STATUS] = StorableCreationMetadata.STATUS_DELETED;
+                result[OFFSET_STATUS] |= StorableFlags.F_STATUS_SOFT_DELETED;
                 // Length is a VLong, so:
                 result[length] = StuffToBytes.ZERO_LENGTH_AS_BYTE;
                 return result;
@@ -316,17 +315,14 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         }
     }
     
-    protected boolean _decodeStatus(byte b) throws IllegalArgumentException
-    {
-        switch ((int) b) {
-        case 0: // available
-            return false;
-        case 1: // deleted (tombstone)
-            return true;
-        }
-        throw new IllegalArgumentException("Unrecognized status value of "+(b & 0xFF));
+    protected boolean _decodeStatusDeleted(byte b) throws IllegalArgumentException {
+        return ((b & StorableFlags.F_STATUS_SOFT_DELETED) != 0);
     }
 
+    protected boolean _decodeStatusReplicated(byte b) throws IllegalArgumentException {
+        return ((b & StorableFlags.F_STATUS_REPLICATED) != 0);
+    }
+    
     protected void _ovewriteTimestamp(byte[] buffer, int offset, long time)
     {
         offset += OFFSET_LASTMOD;

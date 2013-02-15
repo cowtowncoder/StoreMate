@@ -8,6 +8,7 @@ import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.util.IOUtil;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.impl.StorableFlags;
 
 /**
  * Class that represents an entry read from the backing BDB-JE store.
@@ -30,8 +31,9 @@ public class Storable
     protected final long _lastModified;
 
     protected final Compression _compression;
-    
+
     protected final boolean _isDeleted;
+    protected final boolean _isReplicated;
 
     @Override
     public String toString()
@@ -86,8 +88,8 @@ public class Storable
      */
     
     public Storable(StorableKey key, ByteContainer bytes,
-            long lastMod,
-            boolean isDeleted, Compression comp, int externalPathLength,
+            long lastMod, int statusFlags,
+            Compression comp, int externalPathLength,
             int contentHash, int compressedHash, long originalLength,
             int metadataOffset, int metadataLength,
             int payloadOffset, long storageLength)
@@ -97,7 +99,8 @@ public class Storable
 
         _lastModified = lastMod;
 
-        _isDeleted = isDeleted;
+        _isDeleted = (statusFlags & StorableFlags.F_STATUS_SOFT_DELETED) != 0;
+        _isReplicated =  (statusFlags & StorableFlags.F_STATUS_REPLICATED) != 0;
         _compression = (comp == null) ? Compression.NONE : comp;
         _externalPathLength = externalPathLength;
         
@@ -119,9 +122,13 @@ public class Storable
      */
     public Storable softDeletedCopy(ByteContainer bytes, boolean removeData)
     {
+        // clear deleted flag, i.e. just retain replicated flag
+        int statusFlags = StorableFlags.F_STATUS_SOFT_DELETED;
+        if (_isReplicated) {
+            statusFlags |= StorableFlags.F_STATUS_REPLICATED;
+        }
         return new Storable(_key, bytes,
-                _lastModified,
-                true, _compression,
+                _lastModified, statusFlags, _compression,
                 removeData ? 0 : _externalPathLength,
                 _contentHash, _compressedHash, _originalLength,
                 _metadataOffset, _metadataLength,
@@ -152,8 +159,16 @@ public class Storable
         }
         return (int) _storageLength;
     }
-    
+
     public boolean isDeleted() { return _isDeleted; }
+    
+    /**
+     * Method to check whether this entry was created (or last updated) by
+     * replication process; if not, it was created by directly. Exact
+     * semantics depend on surrounding context, StoreMate simply notes
+     * this setting.
+     */
+    public boolean isReplicated() { return _isReplicated; }
 
     public boolean hasInlineData() {
         return (_externalPathLength == 0L) && (_storageLength > 0L);
@@ -167,10 +182,10 @@ public class Storable
      * Accessor for getting length of the content, uncompressed if necessary.
      */
     public long getActualUncompressedLength() {
-    	if (_compression != Compression.NONE) {
-    		return _originalLength;
-    	}
-    	return _storageLength;
+        if (_compression != Compression.NONE) {
+            return _originalLength;
+        }
+        return _storageLength;
     }
     
     /*
