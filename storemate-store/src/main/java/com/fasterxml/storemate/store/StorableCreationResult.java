@@ -25,7 +25,7 @@ public class StorableCreationResult
      * In case there was an existing entry, it will be returned here
      */
     protected final Storable _prevEntry;
-    
+
     public StorableCreationResult(StorableKey key, boolean success,
     		Storable newEntry, Storable prevEntry)
     {

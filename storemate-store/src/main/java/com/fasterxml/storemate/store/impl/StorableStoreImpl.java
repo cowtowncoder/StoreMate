@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
+import com.fasterxml.storemate.store.util.OverwriteChecker;
 
 /**
  * Full store front-end implementation.
@@ -43,6 +45,10 @@ public class StorableStoreImpl extends AdminStorableStore
      * shouldn't be too high to waste resources on locks themselves.
      */
     private final static int LOCK_PARTITIONS = 64;
+
+    private final static OverwriteChecker OVERWRITE_OK = OverwriteChecker.AlwaysOkToOverwrite.instance;
+
+    private final static OverwriteChecker OVERWRITE_NOT_OK = OverwriteChecker.NeverOkToOverwrite.instance;
     
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
@@ -236,7 +242,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        return _putEntry(key, input, stdMetadata, customMetadata, false);
+        return _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
     }
 
     @Override
@@ -245,7 +251,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        return _putEntry(key, input, stdMetadata, customMetadata, false);
+        return _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
     }
     
     @Override
@@ -255,7 +261,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, false);
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_OK);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -272,7 +278,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, false);
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_OK);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -282,6 +288,40 @@ public class StorableStoreImpl extends AdminStorableStore
         return result;
     }
 
+    @Override
+    public StorableCreationResult upsertConditionally(StorableKey key, InputStream input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile, OverwriteChecker checker)
+        throws IOException, StoreException
+    {
+        _checkClosed();
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, checker);
+        if (removeOldDataFile) {
+            Storable old = result.getPreviousEntry();
+            if (old != null) {
+                _deleteBackingFile(key, old.getExternalFile(_fileManager));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public StorableCreationResult upsertConditionally(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile, OverwriteChecker checker)
+        throws IOException, StoreException
+    {
+        _checkClosed();
+        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, checker);
+        if (removeOldDataFile) {
+            Storable old = result.getPreviousEntry();
+            if (old != null) {
+                _deleteBackingFile(key, old.getExternalFile(_fileManager));
+            }
+        }
+        return result;
+    }
+    
     /*
     /**********************************************************************
     /* Internal methods for entry creation, first level
@@ -299,7 +339,7 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     protected StorableCreationResult _putEntry(StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            boolean allowOverwrite)
+            OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
         /* NOTE: we do NOT want to clone passed-in metadata, because we want
@@ -325,14 +365,14 @@ public class StorableStoreImpl extends AdminStorableStore
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
                     return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
-                            allowOverwrite, ByteContainer.simple(readBuffer, 0, len));
+                            allowOverwrites, ByteContainer.simple(readBuffer, 0, len));
                 }
                 return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
-                        allowOverwrite, ByteContainer.simple(readBuffer, 0, len));
+                        allowOverwrites, ByteContainer.simple(readBuffer, 0, len));
             }
             // partial read in buffer, rest from input stream:
             return _putLargeEntry(key, stdMetadata, customMetadata,
-                    allowOverwrite, readBuffer, len, input);
+                    allowOverwrites, readBuffer, len, input);
         } finally {
             bufferHolder.returnBuffer(readBuffer);
         }
@@ -340,7 +380,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
     protected StorableCreationResult _putEntry(StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            boolean allowOverwrite)
+            OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
         // First things first: verify that compression is what it claims to be:
@@ -351,10 +391,10 @@ public class StorableStoreImpl extends AdminStorableStore
         }
         if (originalCompression == null) { // client did not compress, we may try to
             return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
-                    allowOverwrite, input);
+                    allowOverwrites, input);
         }
         return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
-                allowOverwrite, input);
+                allowOverwrites, input);
     }
     
     /*
@@ -365,7 +405,7 @@ public class StorableStoreImpl extends AdminStorableStore
     
     protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            boolean allowOverwrite, ByteContainer data)
+            OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
     {
         final int origLength = data.byteLength();
@@ -409,12 +449,12 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         }
         metadata.storageSize = data.byteLength();
-        return _putSmallEntry(key, metadata, customMetadata, allowOverwrite, data);
+        return _putSmallEntry(key, metadata, customMetadata, allowOverwrites, data);
     }
 
     protected StorableCreationResult _putSmallPreCompressedEntry(StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
-            boolean allowOverwrite, ByteContainer data)
+            OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
     {
         /* !!! TODO: what to do with checksum? Should we require checksum
@@ -440,12 +480,12 @@ public class StorableStoreImpl extends AdminStorableStore
                 metadata.compressedContentHash = _calcChecksum(data);
             }
         }
-        return _putSmallEntry(key, metadata, customMetadata, allowOverwrite, data);
+        return _putSmallEntry(key, metadata, customMetadata, allowOverwrites, data);
     }
 
     protected StorableCreationResult _putSmallEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            boolean allowOverwrite, ByteContainer data)
+            OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
     {
         Storable storable;
@@ -474,13 +514,13 @@ public class StorableStoreImpl extends AdminStorableStore
             storable = _storableConverter.encodeOfflined(key, creationTime,
                     stdMetadata, customMetadata, fileRef);
         }
-        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     @SuppressWarnings("resource")
     protected StorableCreationResult _putLargeEntry(StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            boolean allowOverwrite,
+            OverwriteChecker allowOverwrites,
             byte[] readBuffer, int readByteCount,
             InputStream input)
         throws IOException, StoreException
@@ -629,7 +669,7 @@ public class StorableStoreImpl extends AdminStorableStore
         Storable storable = _storableConverter.encodeOfflined(key, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
-        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrite);
+        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     /**
@@ -639,7 +679,7 @@ public class StorableStoreImpl extends AdminStorableStore
     protected StorableCreationResult _putPartitionedEntry(StorableKey key,
             final long operationTime,
             final StorableCreationMetadata stdMetadata, Storable storable,
-            final boolean allowOverwrite)
+            final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
         StorableCreationResult result = _partitions.withLockedPartition(key, operationTime,
@@ -649,17 +689,28 @@ public class StorableStoreImpl extends AdminStorableStore
                             StoreBackend backend, Storable s0)
                         throws IOException, StoreException
                     {
-                        if (allowOverwrite) { // "upsert"
-                            Storable old = backend.putEntry(k0, s0);
-                            return new StorableCreationResult(k0, true, s0, old);
+                        // blind update, insert-only are easy
+                        Boolean defaultOk = allowOverwrites.mayOverwrite(k0);
+                        if (defaultOk != null) { // depends on entry in question...
+                            if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
+                                Storable old = backend.putEntry(k0, s0);
+                                return new StorableCreationResult(k0, true, s0, old);
+                            }
+                            // strict "insert"
+                            Storable old = backend.createEntry(k0, s0);
+                            if (old == null) { // ok, succeeded
+                                return new StorableCreationResult(k0, true, s0, null);
+                            }
+                            // fail: caller may need to clean up the underlying file
+                            return new StorableCreationResult(k0, false, s0, old);
                         }
-                        // strict "insert"
-                        Storable old = backend.createEntry(k0, s0);
-                        if (old == null) { // ok, succeeded
-                            return new StorableCreationResult(k0, true, s0, null);
+                        // But if things depend on existence of old entry, or entries, trickier:
+                        AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
+                        if (!backend.upsertEntry(k0, s0, allowOverwrites, oldEntryRef)) {
+                            // fail due to existing entry
+                            return new StorableCreationResult(k0, false, s0, oldEntryRef.get());
                         }
-                        // fail: caller may need to clean up the underlying file
-                        return new StorableCreationResult(k0, false, s0, old);
+                        return new StorableCreationResult(k0, true, s0, oldEntryRef.get());
                     }
                 },
                 storable);
@@ -667,12 +718,11 @@ public class StorableStoreImpl extends AdminStorableStore
         //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
             // One piece of clean up: for failed insert, delete backing file, if any
-            if (!allowOverwrite) {
-                // otherwise, may need to delete file that was created
-                FileReference ref = stdMetadata.dataFile;
-                if (ref != null) {
-                    _deleteBackingFile(key, ref.getFile());
-                }
+//            if (!allowOverwrite) {
+            // otherwise, may need to delete file that was created
+            FileReference ref = stdMetadata.dataFile;
+            if (ref != null) {
+                _deleteBackingFile(key, ref.getFile());
             }
         }
         return result;

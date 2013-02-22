@@ -1,12 +1,14 @@
 package com.fasterxml.storemate.store.backend;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.Storable;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreException;
 import com.fasterxml.storemate.store.impl.StorableConverter;
+import com.fasterxml.storemate.store.util.OverwriteChecker;
 
 /**
  * Abstraction used by {@link StorableStore} for interacting with the
@@ -187,6 +189,25 @@ public abstract class StoreBackend
      * (to avoid race conditions).
      */
     public abstract void ovewriteEntry(StorableKey key, Storable storable)
+        throws IOException, StoreException;
+
+    /**
+     * Method that may insert (if no entry with given key exists) or
+     * try to overwrite an entry with given key; but overwrite only happens
+     * if given 'checker' object allows overwrite.
+     * It should only be called if overwrite is truly conditional; otherwise
+     * other methods (like {@link #putEntry}} or {@link #ovewriteEntry(StorableKey, Storable)})
+     * are more efficient.
+     * 
+     * @param oldEntryRef If not null, existing entry will be returned via this object
+     * 
+     * @return True if entry was created or updated; false if not (an old entry
+     *   exists, and checker did not allow overwrite)
+     * 
+     * @since 0.9.3
+     */
+    public abstract boolean upsertEntry(StorableKey key, Storable storable,
+            OverwriteChecker checker, AtomicReference<Storable> oldEntryRef)
         throws IOException, StoreException;
     
     /*

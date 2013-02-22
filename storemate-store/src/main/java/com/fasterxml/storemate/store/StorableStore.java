@@ -9,6 +9,7 @@ import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.util.OverwriteChecker;
 
 /**
  * Simple abstraction for storing "decorated BLOBs", with a single
@@ -146,6 +147,42 @@ public abstract class StorableStore
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException;
+
+    /**
+     * Method for inserting an entry, or possibly updating existing entry; latter depending
+     * in result of a callback caller passes, which lets it determine whether update
+     * should proceed.
+     * 
+     * @param input Payload to store with entry
+     * @param removeOldDataFile Whether method should delete backing data file for
+     *   the existing entry (if one was found) or not.
+     * @param checker Object that is called if overwriting of content is necessary, to check whether
+     *   update is allowed.
+     *   
+     * @since 0.9.3
+     */
+    public abstract StorableCreationResult upsertConditionally(StorableKey key, InputStream input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile, OverwriteChecker checker)
+        throws IOException, StoreException;
+
+    /**
+     * Method for inserting an entry, or possibly updating existing entry; latter depending
+     * in result of a callback caller passes, which lets it determine whether update
+     * should proceed.
+     * 
+     * @param input Payload to store with entry
+     * @param removeOldDataFile Whether method should delete backing data file for
+     *   the existing entry (if one was found) or not.
+     * @param checker Object that is called if overwriting of content is necessary, to check whether
+     *   update is allowed.
+     *
+     * @since 0.9.3
+     */
+    public abstract StorableCreationResult upsertConditionally(StorableKey key, ByteContainer input,
+            StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            boolean removeOldDataFile, OverwriteChecker checker)
+        throws IOException, StoreException;
     
     /*
     /**********************************************************************
@@ -158,7 +195,8 @@ public abstract class StorableStore
      * logical deletion, but without deleting entry metadata. This is often
      * necessary to ensure that deletes are properly propagated, similar to how
      * insertions are.
-     * 
+     * Note that <b>entry data</b> may be deleted, depending on arguments. 
+     *
      * @param key Key of entry to soft delete
      * @param removeInlinedData Whether operation should remove inlined data,
      *   if entry has any

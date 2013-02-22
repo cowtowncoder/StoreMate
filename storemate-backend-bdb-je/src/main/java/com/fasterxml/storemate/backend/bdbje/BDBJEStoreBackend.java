@@ -2,6 +2,7 @@ package com.fasterxml.storemate.backend.bdbje;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.sleepycat.je.*;
 
@@ -15,6 +16,7 @@ import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.impl.StorableConverter;
+import com.fasterxml.storemate.store.util.OverwriteChecker;
 
 /**
  * {@link StoreBackend} implementation that builds on BDB-JE.
@@ -187,6 +189,38 @@ public class BDBJEStoreBackend extends StoreBackend
         if (status != OperationStatus.SUCCESS) {
             throw new StoreException.Internal(key, "Failed to overwrite entry, OperationStatus="+status);
         }
+    }
+
+    @Override
+    public boolean upsertEntry(StorableKey key, Storable storable,
+            OverwriteChecker checker, AtomicReference<Storable> oldEntryRef)
+        throws IOException, StoreException
+    {
+        DatabaseEntry dbKey = dbKey(key);
+        DatabaseEntry result = new DatabaseEntry();
+        // First: do we have an entry?
+        OperationStatus status = _entries.get(null, dbKey, result, null);
+        if (status == OperationStatus.SUCCESS) {
+            // yes: is it ok to overwrite?
+            Storable old = _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
+            if (oldEntryRef != null) {
+                oldEntryRef.set(old);
+            }
+            if (!checker.mayOverwrite(key, old, storable)) {
+                // no, return
+                return false;
+            }
+        } else {
+            if (oldEntryRef != null) {
+                oldEntryRef.set(null);
+            }
+        }
+        // Ok we are good, go ahead:
+        status = _entries.put(null, dbKey, dbValue(storable));
+        if (status != OperationStatus.SUCCESS) {
+            throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
+        }
+        return true;
     }
     
     /*
