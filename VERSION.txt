@@ -1,6 +1,11 @@
 Project: StoreMate
+License: Apache License 2.0
 
-0.9.3 (...)
+0.9.4 (xx-xxx-xxxx)
+
+...
+
+0.9.3 (25-Feb-2013)
 
 * Add support for conditionally overwriting entries; needed to support "undelete"
  (and possibly for other things in future)
