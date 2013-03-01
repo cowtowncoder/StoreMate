@@ -1,9 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.4 (xx-xxx-xxxx)
+0.9.4 (01-Mar-2013)
 
-...
+* Minor configurability improvement: allow easier changing of BDB-JE cache
+ settings with newer version of config-magic
 
 0.9.3 (25-Feb-2013)
 

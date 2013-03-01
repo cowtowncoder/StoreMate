@@ -53,6 +53,36 @@ public class BDBJEConfig extends StoreBackendConfig
 
     public BDBJEConfig() { }
     public BDBJEConfig(File dataRoot) {
+        this(dataRoot, -1L);
+    }
+
+    public BDBJEConfig(File dataRoot, DataAmount cacheSize) {
         this.dataRoot = dataRoot;
+        if (cacheSize != null) {
+            this.cacheSize = cacheSize;
+        }
+    }
+    
+    public BDBJEConfig(File dataRoot, long cacheSizeInBytes) {
+        this.dataRoot = dataRoot;
+        if (cacheSizeInBytes > 0L) {
+            cacheSize = new DataAmount(cacheSizeInBytes);
+        }
+    }
+
+    /*
+    /**********************************************************************
+    /* Convenience stuff for overriding
+    /**********************************************************************
+     */
+
+    public BDBJEConfig overrideCacheSize(long cacheSizeInBytes) {
+        cacheSize = new DataAmount(cacheSizeInBytes);
+        return this;
+    }
+
+    public BDBJEConfig overrideCacheSize(String cacheSizeDesc) {
+        cacheSize = new DataAmount(cacheSizeDesc);
+        return this;
     }
 }
