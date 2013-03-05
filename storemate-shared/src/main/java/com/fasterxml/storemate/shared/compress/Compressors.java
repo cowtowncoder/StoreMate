@@ -1,19 +1,26 @@
 package com.fasterxml.storemate.shared.compress;
 
 import java.io.*;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
+import com.ning.compress.gzip.OptimizedGZIPInputStream;
+import com.ning.compress.gzip.OptimizedGZIPOutputStream;
+import com.ning.compress.lzf.ChunkDecoder;
 import com.ning.compress.lzf.LZFChunk;
-import com.ning.compress.lzf.LZFDecoder;
 import com.ning.compress.lzf.LZFEncoder;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
+import com.ning.compress.lzf.util.ChunkDecoderFactory;
 
 public class Compressors
 {
+    // TODO: perhaps make pluggable?
+    protected final static ChunkDecoder lzfDecoder;
+    static {
+        lzfDecoder = ChunkDecoderFactory.optimalInstance();
+    }
+    
     /*
     /**********************************************************************
     /* Verification
@@ -84,7 +91,7 @@ public class Compressors
     {
         // assume 50% compression rate
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(len>>1);
-        GZIPOutputStream out = new GZIPOutputStream(bytes);
+        OptimizedGZIPOutputStream out = new OptimizedGZIPOutputStream(bytes);
         out.write(data, offset, len);
         out.close();
         return bytes.toByteArray();
@@ -94,7 +101,7 @@ public class Compressors
     {
         // assume 50% compression rate
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(data.byteLength()>>1);
-        GZIPOutputStream out = new GZIPOutputStream(bytes);
+        OptimizedGZIPOutputStream out = new OptimizedGZIPOutputStream(bytes);
         data.writeBytes(out);
         out.close();
         return bytes.toByteArray();
@@ -130,7 +137,7 @@ public class Compressors
             case LZF:
                 return new LZFOutputStream(out);
             case GZIP:
-                return new GZIPOutputStream(out);
+                return new OptimizedGZIPOutputStream(out);
             default: // sanity check
                 throw new IllegalArgumentException("Unrecognized compression type: "+comp);
             }
@@ -154,7 +161,7 @@ public class Compressors
             case LZF:
                 return new LZFInputStream(in);
             case GZIP:
-                return new GZIPInputStream(in);
+                return new OptimizedGZIPInputStream(in);
             default: // sanity check
                 throw new IllegalArgumentException("Unrecognized compression type: "+comp);
             }
@@ -193,7 +200,7 @@ public class Compressors
             return gzipUncompress(compData);
         }
         byte[] buffer = new byte[expSize];
-        GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(compData));
+        OptimizedGZIPInputStream in = new OptimizedGZIPInputStream(new ByteArrayInputStream(compData));
         int offset = 0;
         int left = buffer.length;
         int count;
@@ -203,21 +210,24 @@ public class Compressors
             left -= count;
         }
         // should have gotten exactly expected amount
-        if (offset < expSize) {
-            throw new IOException("Corrupt GZIP/Deflate data: expected "+expSize+" bytes, got "+offset);
+        try {
+            if (offset < expSize) {
+                throw new IOException("Corrupt GZIP/Deflate data: expected "+expSize+" bytes, got "+offset);
+            }
+            // and no more
+            if (in.read() != -1) {
+                throw new IOException("Corrupt GZIP/Deflate data: expected "+expSize+" bytes, got at least one more");
+            }
+        } finally {
+            try { in.close(); } catch (IOException e) { }
         }
-        // and no more
-        if (in.read() != -1) {
-            throw new IOException("Corrupt GZIP/Deflate data: expected "+expSize+" bytes, got at least one more");
-        }
-        in.close();
         return buffer;
     }
 
     public static byte[] gzipUncompress(byte[] compData)
         throws IOException
     {
-        GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(compData));
+        OptimizedGZIPInputStream in = new OptimizedGZIPInputStream(new ByteArrayInputStream(compData));
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(16 + (compData.length << 1));
         byte[] buffer = new byte[500];
         int count;
@@ -232,18 +242,18 @@ public class Compressors
     
     public static byte[] lzfUncompress(byte[] data) throws IOException
     {
-        return LZFDecoder.decode(data);
+        return lzfDecoder.decode(data);
     }
 
     public static ByteContainer lzfUncompress(ByteContainer data) throws IOException
     {
-    	return data.withBytes(new WithBytesCallback<ByteContainer>() {
+        return data.withBytes(new WithBytesCallback<ByteContainer>() {
 			@Override
 			public ByteContainer withBytes(byte[] buffer, int offset, int length)
 				throws IllegalArgumentException
 			{
 				try {
-					return ByteContainer.simple(LZFDecoder.decode(buffer, offset, length));
+					return ByteContainer.simple(lzfDecoder.decode(buffer, offset, length));
 				} catch (IOException e) {
 					throw new IllegalArgumentException("Bad LZF data to uncompress ("+length+" bytes): "+e.getMessage(), e);
 				}
