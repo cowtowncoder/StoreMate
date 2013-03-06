@@ -8,7 +8,7 @@ public abstract class HashConstants
     public final static int NO_CHECKSUM = 0;
 
     /**
-     * Since we can not use value {@link NO_CHECKSUM} (which would be calculated
+     * Since we can not use value {@link #NO_CHECKSUM} (which would be calculated
      * for zero-length byte array, for example), this is the value used to
      * mask it
      */
