@@ -45,6 +45,17 @@ public class BDBJEConfig extends StoreBackendConfig
      */
     public DataAmount cacheSize = new DataAmount("40MB");
 
+    /**
+     * Configuration setting BDB-JE uses for
+     * <code>EnvironmentConfig.LOCK_N_LOCK_TABLES</code> setting; BDB defaults
+     * to 1, but typically a higher count should make sense. Let's start
+     * with 17; probably not much benefit from super-high value since it ought
+     * to be I/O bound.
+     *
+     * @since 0.9.5
+     */
+    public int lockTableCount = 17;
+    
     /*
     /**********************************************************************
     /* Construction
@@ -83,6 +94,14 @@ public class BDBJEConfig extends StoreBackendConfig
 
     public BDBJEConfig overrideCacheSize(String cacheSizeDesc) {
         cacheSize = new DataAmount(cacheSizeDesc);
+        return this;
+    }
+
+    public BDBJEConfig overrideLockTableCount(int count) {
+        if (count < 1 || count > 1000) {
+            throw new IllegalArgumentException("Illegal lockTableCount value ("+count+"); should be between [1, 1000]");
+        }
+        lockTableCount = count;
         return this;
     }
 }
