@@ -4,6 +4,8 @@ License: Apache License 2.0
 0.9.5 (xx-xxx-2013)
 
 * Optimized LZF/GZIP handling via Compressors a bit
+* Allow overriding default BDB-JE lockTable count; partitioned lock count
+ (for general store)
 
 0.9.4 (01-Mar-2013)
 
