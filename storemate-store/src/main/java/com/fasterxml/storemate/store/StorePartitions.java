@@ -125,7 +125,7 @@ public class StorePartitions
         long lowest = Long.MAX_VALUE;
         for (int i = 0, last = _modulo; i <= last; ++i) {
             long timestamp = _inFlightStartTimes.get(i);
-            if (timestamp != 0L) {
+            if (timestamp > 0L) {
                 if (timestamp < lowest) {
                     lowest = timestamp;
                 }

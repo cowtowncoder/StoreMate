@@ -15,6 +15,17 @@ public class StoreConfig
     public final static int DEFAULT_MIN_FOR_COMPRESS = 200;
     public final static int DEFAULT_MAX_FOR_GZIP = 16000;
     public final static int DEFAULT_MIN_PAYLOAD_FOR_STREAMING = 64000;
+
+    /**
+     * Default number of partitions in which local keyspace is sliced, for
+     * purpose of locking per-entry access; balanced between granularity
+     * of access (to minimize lock contention) and overhead of managing
+     * locks. 128 seems like a reasonable initial guess.
+     *<p>
+     * Note that in addition to memory overhead, there is additional overhead
+     * for finding latest in-flight timestamp, which is a linear operation.
+     */
+    public final static int DEFAULT_LOCK_PARTITIONS = 128;
     
     /*
     /**********************************************************************
@@ -34,6 +45,23 @@ public class StoreConfig
      * can not be used.
      */
     public boolean requireChecksumForPreCompressed = true;
+
+    /*
+    /**********************************************************************
+    /* Simple config properties, numeric
+    /**********************************************************************
+     */
+
+    /**
+     * Per-entry access is protected by a hash-based partitioned mutex; more
+     * partitions there are, lower is the expected lock contention, but
+     * more memory overhead there is. Value must be power of 2; if not,
+     * it will be rounded up to nearest such value.
+     *<p>
+     * Note that in addition to memory overhead, there is additional overhead
+     * for finding latest in-flight timestamp, which is a linear operation.
+     */
+    public int lockPartitions = DEFAULT_LOCK_PARTITIONS;
 
     /*
     /**********************************************************************
@@ -57,7 +85,7 @@ public class StoreConfig
      * Maximum size of entries that are to be stored inline in the database,
      * instead of written out separately on file system.
      *<p>
-     * Defualt value of about 4k is aligned to typical page size.
+     * Default value of about 4k is aligned to typical page size.
      */
     public int maxInlinedStorageSize = DEFAULT_MAX_INLINED;
 

@@ -39,12 +39,6 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     private final static int HASH_SEED = BlockHasher32.DEFAULT_SEED;
 
-    /**
-     * We will partition key space in 64 slices for locking purposes;
-     * needs to be high enough to make lock contention unlikely, but
-     * shouldn't be too high to waste resources on locks themselves.
-     */
-    private final static int LOCK_PARTITIONS = 64;
 
     private final static OverwriteChecker OVERWRITE_OK = OverwriteChecker.AlwaysOkToOverwrite.instance;
 
@@ -147,7 +141,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
         // May want to make this configurable in future...
         // 'true' means "fair", minor overhead, prevents potential starvation
-        _partitions = new StorePartitions(_backend, LOCK_PARTITIONS, true);
+        _partitions = new StorePartitions(_backend, config.lockPartitions, true);
     }
 
     @Override
