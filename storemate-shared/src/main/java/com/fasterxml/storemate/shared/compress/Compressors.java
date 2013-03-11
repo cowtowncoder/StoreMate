@@ -121,7 +121,7 @@ public class Compressors
             public byte[] withBytes(byte[] buffer, int offset, int length) {
                 try {
                     return LZFEncoder.encode(buffer, offset, length);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     throw new IllegalArgumentException(e);
                 }
             }
