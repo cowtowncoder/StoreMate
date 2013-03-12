@@ -11,7 +11,7 @@ Check out [Project Wiki](../../wiki) for complete description; here are some of 
 
 # License
 
-Good old [Apache 2]http://www.apache.org/licenses/LICENSE-2.0.html)
+Good old [Apache 2](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 # Status
 
