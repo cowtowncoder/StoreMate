@@ -42,7 +42,7 @@
     <javac.target.version>1.6</javac.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     
-    <version.config-magic>0.15</version.config-magic>
+    <version.config-magic>0.17</version.config-magic>
     <version.logback>1.0.7</version.logback>
     <version.slf4j>1.7.2</version.slf4j>
 
