@@ -41,11 +41,6 @@
     <javac.src.version>1.6</javac.src.version>
     <javac.target.version>1.6</javac.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    
-    <version.config-magic>0.17</version.config-magic>
-    <version.logback>1.0.7</version.logback>
-    <version.slf4j>1.7.2</version.slf4j>
-
   </properties>
 
   <licenses>
@@ -62,14 +57,49 @@
   </organization>
 
   <dependencies>
-     <!-- for testing, JUnit is needed -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.8.2</version>
-      <scope>test</scope>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.2</version>
     </dependency>
   </dependencies>
+
+  <dependencyManagement>
+   <dependencies>
+     <!-- logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.2</version>
+    </dependency>
+    <dependency>
+       <groupId>ch.qos.logback</groupId>
+       <artifactId>logback-classic</artifactId>
+       <version>1.0.7</version>
+    </dependency>
+     <!-- other config -->
+     <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
+      <version>0.17</version>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.1</version>
+    </dependency>
+
+    <!-- misc -->
+    <!-- only dependend on by BDB-JE backend, but declared here
+         to make importing of versions easier
+      -->
+    <dependency>
+      <groupId>com.sleepycat</groupId>
+      <artifactId>je</artifactId>
+      <version>5.0.34</version>
+    </dependency>
+   </dependencies>
+  </dependencyManagement>
 
   <build>
    <pluginManagement>

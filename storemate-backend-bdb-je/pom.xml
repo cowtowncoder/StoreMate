@@ -27,33 +27,17 @@
     <dependency>
       <groupId>org.skife.config</groupId>
       <artifactId>config-magic</artifactId>
-      <version>${version.config-magic}</version>
     </dependency>
-    <!-- Backend stores should not need direct logging... -->
-<!--    
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${version.slf4j}</version>
-    </dependency>
-    <dependency>
-       <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-       <version>${version.logback}</version>
-    </dependency>
--->
 
     <!-- Storage using BDB-JE -->
     <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
-      <version>5.0.34</version>
     </dependency>
     <!-- Joda for basic date/time stuff -->
     <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
-      <version>2.1</version>
     </dependency>
 
     <!--  and we need base test stuff -->
