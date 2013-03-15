@@ -90,6 +90,11 @@
     </dependency>
 
     <!-- misc -->
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>compress-lzf</artifactId>
+      <version>0.9.8</version>
+    </dependency>
     <!-- only dependend on by BDB-JE backend, but declared here
          to make importing of versions easier
       -->
