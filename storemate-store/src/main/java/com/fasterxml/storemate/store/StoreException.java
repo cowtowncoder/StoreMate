@@ -11,7 +11,7 @@ import com.fasterxml.storemate.shared.StorableKey;
  */
 public abstract class StoreException extends IOException
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -2550892688074309172L;
 
     protected final StorableKey _key;
     
@@ -126,7 +126,35 @@ public abstract class StoreException extends IOException
 
     /**
      * Specific {@link StoreException} subtype used for problems
-     * that are due I/O operations, but can not be exposed as
+     * that are due to a timeout on server side.
+     */
+    public static class ServerTimeout extends StoreException
+    {
+        private static final long serialVersionUID = 1L;
+
+        public ServerTimeout(StorableKey key, String msg) {
+            super(key, msg);
+        }
+
+        public ServerTimeout(StorableKey key, Throwable t) {
+            super(key, t);
+        }
+
+        public ServerTimeout(Throwable t) {
+            super(null, t);
+        }
+        
+        public ServerTimeout(StorableKey key, String msg, Throwable t) {
+            super(key, msg, t);
+        }
+
+        @Override public boolean isInputError() { return false; }
+        @Override public boolean isServerError() { return true; }
+    }
+    
+    /**
+     * Specific {@link StoreException} subtype used for problems
+     * that are due server I/O operations, but can not be exposed as
      * {@link IOException}s for some reason.
      */
     public static class IO extends StoreException

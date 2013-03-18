@@ -211,7 +211,7 @@ public class StorableStoreImpl extends AdminStorableStore
      */
 
     @Override
-    public boolean hasEntry(StorableKey key)
+    public boolean hasEntry(StorableKey key) throws StoreException
     {
         _checkClosed();
         return _backend.hasEntry(key);

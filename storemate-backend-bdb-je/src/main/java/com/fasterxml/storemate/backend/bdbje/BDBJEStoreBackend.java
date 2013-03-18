@@ -106,29 +106,37 @@ public class BDBJEStoreBackend extends StoreBackend
      */
 
     @Override
-    public boolean hasEntry(StorableKey key)
+    public boolean hasEntry(StorableKey key) throws StoreException
     {
-        OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(), null);
-        switch (status) {
-        case SUCCESS:
-        case KEYEXIST:
-            return true;
-        case KEYEMPTY: // was deleted during operation.. shouldn't be getting
-        case NOTFOUND:
-            // fall through
+        try {
+            OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(), null);
+            switch (status) {
+            case SUCCESS:
+            case KEYEXIST:
+                return true;
+            case KEYEMPTY: // was deleted during operation.. shouldn't be getting
+            case NOTFOUND:
+                // fall through
+            }
+            return false;
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
-        return false;
     }
-
+        
     @Override
     public Storable findEntry(StorableKey key) throws StoreException
     {
         DatabaseEntry result = new DatabaseEntry();
-        OperationStatus status = _entries.get(null, dbKey(key), result, null);
-        if (status != OperationStatus.SUCCESS) {
-            return null;
+        try {
+            OperationStatus status = _entries.get(null, dbKey(key), result, null);
+            if (status != OperationStatus.SUCCESS) {
+                return null;
+            }
+            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
-        return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
     }
 
     /*
@@ -142,52 +150,65 @@ public class BDBJEStoreBackend extends StoreBackend
         throws IOException, StoreException
     {
         DatabaseEntry dbKey = dbKey(key);
-        // first, try creating:
-        OperationStatus status = _entries.putNoOverwrite(null, dbKey, dbValue(storable));
-        if (status == OperationStatus.SUCCESS) { // the usual case:
-            return null;
+
+        try {
+            // first, try creating:
+            OperationStatus status = _entries.putNoOverwrite(null, dbKey, dbValue(storable));
+            if (status == OperationStatus.SUCCESS) { // the usual case:
+                return null;
+            }
+            if (status != OperationStatus.KEYEXIST) { // what?
+                throw new StoreException.Internal(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
+            }
+            // otherwise, ought to find existing entry, return it
+            DatabaseEntry result = new DatabaseEntry();
+            status = _entries.get(null, dbKey, result, null);
+            if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
+                throw new StoreException.Internal(key, "Internal error, failed to access old value, status: "+status);
+            }
+            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
-        if (status != OperationStatus.KEYEXIST) { // what?
-            throw new StoreException.Internal(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
-        }
-        // otherwise, ought to find existing entry, return it
-        DatabaseEntry result = new DatabaseEntry();
-        status = _entries.get(null, dbKey, result, null);
-        if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
-            throw new StoreException.Internal(key, "Internal error, failed to access old value, status: "+status);
-        }
-        return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
     }
 
     @Override
     public Storable putEntry(StorableKey key, Storable storable)
         throws IOException, StoreException
     {
-        DatabaseEntry dbKey = dbKey(key);
-        DatabaseEntry result = new DatabaseEntry();
-        // First: do we have an entry? If so, read to be returned
-        OperationStatus status = _entries.get(null, dbKey, result, null);
-        if (status != OperationStatus.SUCCESS) {
-            result = null;
+        try {
+            DatabaseEntry dbKey = dbKey(key);
+            DatabaseEntry result = new DatabaseEntry();
+            // First: do we have an entry? If so, read to be returned
+            OperationStatus status = _entries.get(null, dbKey, result, null);
+            if (status != OperationStatus.SUCCESS) {
+                result = null;
+            }
+            // if not, create
+            status = _entries.put(null, dbKey, dbValue(storable));
+            if (status != OperationStatus.SUCCESS) {
+                throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
+            }
+            if (result == null) {
+                return null;
+            }
+            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
-        // if not, create
-        status = _entries.put(null, dbKey, dbValue(storable));
-        if (status != OperationStatus.SUCCESS) {
-            throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
-        }
-        if (result == null) {
-            return null;
-        }
-        return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
     }
 
     @Override
     public void ovewriteEntry(StorableKey key, Storable storable)
         throws IOException, StoreException
     {
-        OperationStatus status = _entries.put(null, dbKey(key), dbValue(storable));
-        if (status != OperationStatus.SUCCESS) {
-            throw new StoreException.Internal(key, "Failed to overwrite entry, OperationStatus="+status);
+        try {
+            OperationStatus status = _entries.put(null, dbKey(key), dbValue(storable));
+            if (status != OperationStatus.SUCCESS) {
+                throw new StoreException.Internal(key, "Failed to overwrite entry, OperationStatus="+status);
+            }
+        } catch (DatabaseException de) {
+            _convertDBE(key, de);
         }
     }
 
@@ -196,31 +217,35 @@ public class BDBJEStoreBackend extends StoreBackend
             OverwriteChecker checker, AtomicReference<Storable> oldEntryRef)
         throws IOException, StoreException
     {
-        DatabaseEntry dbKey = dbKey(key);
-        DatabaseEntry result = new DatabaseEntry();
-        // First: do we have an entry?
-        OperationStatus status = _entries.get(null, dbKey, result, null);
-        if (status == OperationStatus.SUCCESS) {
-            // yes: is it ok to overwrite?
-            Storable old = _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
-            if (oldEntryRef != null) {
-                oldEntryRef.set(old);
+        try {
+            DatabaseEntry dbKey = dbKey(key);
+            DatabaseEntry result = new DatabaseEntry();
+            // First: do we have an entry?
+            OperationStatus status = _entries.get(null, dbKey, result, null);
+            if (status == OperationStatus.SUCCESS) {
+                // yes: is it ok to overwrite?
+                Storable old = _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
+                if (oldEntryRef != null) {
+                    oldEntryRef.set(old);
+                }
+                if (!checker.mayOverwrite(key, old, storable)) {
+                    // no, return
+                    return false;
+                }
+            } else {
+                if (oldEntryRef != null) {
+                    oldEntryRef.set(null);
+                }
             }
-            if (!checker.mayOverwrite(key, old, storable)) {
-                // no, return
-                return false;
+            // Ok we are good, go ahead:
+            status = _entries.put(null, dbKey, dbValue(storable));
+            if (status != OperationStatus.SUCCESS) {
+                throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
             }
-        } else {
-            if (oldEntryRef != null) {
-                oldEntryRef.set(null);
-            }
+            return true;
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
-        // Ok we are good, go ahead:
-        status = _entries.put(null, dbKey, dbValue(storable));
-        if (status != OperationStatus.SUCCESS) {
-            throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
-        }
-        return true;
     }
     
     /*
@@ -233,15 +258,19 @@ public class BDBJEStoreBackend extends StoreBackend
     public boolean deleteEntry(StorableKey key)
         throws IOException, StoreException
     {
-        OperationStatus status = _entries.delete(null, dbKey(key));
-        switch (status) {
-        case SUCCESS:
-            return true;
-        case NOTFOUND:
-            return false;
-        default:
-            // should not be getting other choices so:
-            throw new StoreException.Internal(key, "Internal error, failed to delete entry, OperationStatus="+status);
+        try {
+            OperationStatus status = _entries.delete(null, dbKey(key));
+            switch (status) {
+            case SUCCESS:
+                return true;
+            case NOTFOUND:
+                return false;
+            default:
+                // should not be getting other choices so:
+                throw new StoreException.Internal(key, "Internal error, failed to delete entry, OperationStatus="+status);
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(key, de);
         }
     }
 
@@ -255,32 +284,36 @@ public class BDBJEStoreBackend extends StoreBackend
     public IterationResult scanEntries(StorableIterationCallback cb)
         throws StoreException
     {
-        DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
-        DiskOrderedCursor crsr = _entries.openCursor(config);
-
-        final DatabaseEntry keyEntry = new DatabaseEntry();
-        final DatabaseEntry data = new DatabaseEntry();
-        
         try {
-            main_loop:
-            while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
-                StorableKey key = storableKey(keyEntry);
-                switch (cb.verifyKey(key)) {
-                case SKIP_ENTRY: // nothing to do
-                    continue main_loop;
-                case PROCESS_ENTRY: // bind, process
-                    break;
-                case TERMINATE_ITERATION: // all done?
-                    return IterationResult.TERMINATED_FOR_KEY;
+            DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
+            DiskOrderedCursor crsr = _entries.openCursor(config);
+    
+            final DatabaseEntry keyEntry = new DatabaseEntry();
+            final DatabaseEntry data = new DatabaseEntry();
+            
+            try {
+                main_loop:
+                while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
+                    StorableKey key = storableKey(keyEntry);
+                    switch (cb.verifyKey(key)) {
+                    case SKIP_ENTRY: // nothing to do
+                        continue main_loop;
+                    case PROCESS_ENTRY: // bind, process
+                        break;
+                    case TERMINATE_ITERATION: // all done?
+                        return IterationResult.TERMINATED_FOR_KEY;
+                    }
+                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                        return IterationResult.TERMINATED_FOR_ENTRY;
+                    }
                 }
-                Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return IterationResult.TERMINATED_FOR_ENTRY;
-                }
+                return IterationResult.FULLY_ITERATED;
+            } finally {
+                crsr.close();
             }
-            return IterationResult.FULLY_ITERATED;
-        } finally {
-            crsr.close();
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
         }
     }
 
@@ -289,66 +322,21 @@ public class BDBJEStoreBackend extends StoreBackend
             StorableKey firstKey)
         throws StoreException
     {
-        CursorConfig config = new CursorConfig();
-        Cursor crsr = _entries.openCursor(null, config);
-        final DatabaseEntry keyEntry;
-        final DatabaseEntry data = new DatabaseEntry();
-
-        OperationStatus status;
-        if (firstKey == null) { // from beginning (i.e. no ranges)
-            keyEntry = new DatabaseEntry();
-            status = crsr.getFirst(keyEntry, data, null);
-        } else {
-            keyEntry = dbKey(firstKey);
-            status = crsr.getSearchKeyRange(keyEntry, data, null);
-        }
         try {
-            main_loop:
-            for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
-                StorableKey key = storableKey(keyEntry);
-                switch (cb.verifyKey(key)) {
-                case SKIP_ENTRY: // nothing to do
-                    continue main_loop;
-                case PROCESS_ENTRY: // bind, process
-                    break;
-                case TERMINATE_ITERATION: // all done?
-                    return IterationResult.TERMINATED_FOR_KEY;
-                }
-                Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return IterationResult.TERMINATED_FOR_ENTRY;
-                }
-                
-            }
-            return IterationResult.FULLY_ITERATED;
-        } finally {
-            crsr.close();
-        }
-    }
-
-    @Override
-    public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
-            StorableKey lastSeen)
-        throws StoreException
-    {
-        Cursor crsr = _entries.openCursor(null, new CursorConfig());
-
-        try {
+            CursorConfig config = new CursorConfig();
+            Cursor crsr = _entries.openCursor(null, config);
+            final DatabaseEntry keyEntry;
             final DatabaseEntry data = new DatabaseEntry();
-            final DatabaseEntry keyEntry = dbKey(lastSeen);
-            OperationStatus status = crsr.getSearchKeyRange(keyEntry, data, null);
-            do { // bogus loop so we can break
-                if (status != OperationStatus.SUCCESS) { // if it was the very last entry in store?
-                    break;
-                }
-                // First, did we find the entry (should, but better safe than sorry)
-                byte[] b = keyEntry.getData();
-                if (lastSeen.equals(b, keyEntry.getOffset(), keyEntry.getSize())) { // yes, same thingy
-                    status = crsr.getNext(keyEntry, data, null);
-                    if (status != OperationStatus.SUCCESS) {
-                        break;
-                    }
-                }
+    
+            OperationStatus status;
+            if (firstKey == null) { // from beginning (i.e. no ranges)
+                keyEntry = new DatabaseEntry();
+                status = crsr.getFirst(keyEntry, data, null);
+            } else {
+                keyEntry = dbKey(firstKey);
+                status = crsr.getSearchKeyRange(keyEntry, data, null);
+            }
+            try {
                 main_loop:
                 for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
                     StorableKey key = storableKey(keyEntry);
@@ -366,10 +354,63 @@ public class BDBJEStoreBackend extends StoreBackend
                     }
                     
                 }
-            } while (false);
-            return IterationResult.FULLY_ITERATED;
-        } finally {
-            crsr.close();
+                return IterationResult.FULLY_ITERATED;
+            } finally {
+                crsr.close();
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
+        }
+    }
+
+    @Override
+    public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
+            StorableKey lastSeen)
+        throws StoreException
+    {
+        try {
+            Cursor crsr = _entries.openCursor(null, new CursorConfig());
+    
+            try {
+                final DatabaseEntry data = new DatabaseEntry();
+                final DatabaseEntry keyEntry = dbKey(lastSeen);
+                OperationStatus status = crsr.getSearchKeyRange(keyEntry, data, null);
+                do { // bogus loop so we can break
+                    if (status != OperationStatus.SUCCESS) { // if it was the very last entry in store?
+                        break;
+                    }
+                    // First, did we find the entry (should, but better safe than sorry)
+                    byte[] b = keyEntry.getData();
+                    if (lastSeen.equals(b, keyEntry.getOffset(), keyEntry.getSize())) { // yes, same thingy
+                        status = crsr.getNext(keyEntry, data, null);
+                        if (status != OperationStatus.SUCCESS) {
+                            break;
+                        }
+                    }
+                    main_loop:
+                    for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
+                        StorableKey key = storableKey(keyEntry);
+                        switch (cb.verifyKey(key)) {
+                        case SKIP_ENTRY: // nothing to do
+                            continue main_loop;
+                        case PROCESS_ENTRY: // bind, process
+                            break;
+                        case TERMINATE_ITERATION: // all done?
+                            return IterationResult.TERMINATED_FOR_KEY;
+                        }
+                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                            return IterationResult.TERMINATED_FOR_ENTRY;
+                        }
+                        
+                    }
+                } while (false);
+                return IterationResult.FULLY_ITERATED;
+            } finally {
+                crsr.close();
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
         }
     }
     
@@ -381,54 +422,58 @@ public class BDBJEStoreBackend extends StoreBackend
         if (cb == null) {
             throw new IllegalArgumentException("Can not pass null 'cb' argument");
         }
-        
-        CursorConfig config = new CursorConfig();
-        SecondaryCursor crsr = _index.openCursor(null, config);
-        final DatabaseEntry keyEntry;
-        final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
-        final DatabaseEntry data = new DatabaseEntry();
-        
-        OperationStatus status;
-        if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
-            keyEntry = new DatabaseEntry();
-            status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
-        } else {
-            keyEntry = timestampKey(firstTimestamp);
-            status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, null);
-        }
-        
+
         try {
-            main_loop:
-            for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
-                // First things first: timestamp check
-                long timestamp = _getLongBE(keyEntry.getData(), keyEntry.getOffset());
-                switch (cb.verifyTimestamp(timestamp)) {
-                case SKIP_ENTRY:
-                    continue main_loop;
-                case PROCESS_ENTRY:
-                    break;
-                case TERMINATE_ITERATION: // all done?
-                    return IterationResult.TERMINATED_FOR_TIMESTAMP;
-                }
-                
-                StorableKey key = storableKey(primaryKeyEntry);
-                switch (cb.verifyKey(key)) {
-                case SKIP_ENTRY: // nothing to do
-                    continue main_loop;
-                case PROCESS_ENTRY: // bind, process
-                    break;
-                case TERMINATE_ITERATION: // all done?
-                    return IterationResult.TERMINATED_FOR_KEY;
-                }
-                Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                    return IterationResult.TERMINATED_FOR_ENTRY;
-                }
-                
+            CursorConfig config = new CursorConfig();
+            SecondaryCursor crsr = _index.openCursor(null, config);
+            final DatabaseEntry keyEntry;
+            final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
+            final DatabaseEntry data = new DatabaseEntry();
+            
+            OperationStatus status;
+            if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
+                keyEntry = new DatabaseEntry();
+                status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
+            } else {
+                keyEntry = timestampKey(firstTimestamp);
+                status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, null);
             }
-            return IterationResult.FULLY_ITERATED;
-        } finally {
-            crsr.close();
+            
+            try {
+                main_loop:
+                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
+                    // First things first: timestamp check
+                    long timestamp = _getLongBE(keyEntry.getData(), keyEntry.getOffset());
+                    switch (cb.verifyTimestamp(timestamp)) {
+                    case SKIP_ENTRY:
+                        continue main_loop;
+                    case PROCESS_ENTRY:
+                        break;
+                    case TERMINATE_ITERATION: // all done?
+                        return IterationResult.TERMINATED_FOR_TIMESTAMP;
+                    }
+                    
+                    StorableKey key = storableKey(primaryKeyEntry);
+                    switch (cb.verifyKey(key)) {
+                    case SKIP_ENTRY: // nothing to do
+                        continue main_loop;
+                    case PROCESS_ENTRY: // bind, process
+                        break;
+                    case TERMINATE_ITERATION: // all done?
+                        return IterationResult.TERMINATED_FOR_KEY;
+                    }
+                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                        return IterationResult.TERMINATED_FOR_ENTRY;
+                    }
+                    
+                }
+                return IterationResult.FULLY_ITERATED;
+            } finally {
+                crsr.close();
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
         }
     }
    
@@ -437,6 +482,18 @@ public class BDBJEStoreBackend extends StoreBackend
     /* Internal methods
     /**********************************************************************
      */
+
+    /**
+     * Helper method used for creating more useful exceptions for given BDB exception
+     */
+    protected <T> T _convertDBE(StorableKey key, DatabaseException bdbException)
+        throws StoreException
+    {
+        if (bdbException instanceof LockTimeoutException) {
+            throw new StoreException.ServerTimeout(key, bdbException);
+        }
+        throw new StoreException.Internal(key, bdbException);
+    }
     
     protected DatabaseEntry dbKey(StorableKey key) {
         return key.with(BDB_CONV);

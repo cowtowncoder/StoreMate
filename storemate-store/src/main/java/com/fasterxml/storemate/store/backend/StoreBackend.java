@@ -66,7 +66,8 @@ public abstract class StoreBackend
     /**********************************************************************
      */
 
-    public abstract boolean hasEntry(StorableKey key);
+    public abstract boolean hasEntry(StorableKey key) throws StoreException;
+
 
     public abstract Storable findEntry(StorableKey key) throws StoreException;
 
