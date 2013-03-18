@@ -41,9 +41,9 @@ public class BDBJEConfig extends StoreBackendConfig
      * JVM via GC overhead. So a few megs goes a long way; the most important
      * cache is probably OS block cache for the file system.
      *<p>
-     * Default value is 40 megs.
+     * Default value is 50 megs.
      */
-    public DataAmount cacheSize = new DataAmount("40MB");
+    public DataAmount cacheSize = new DataAmount("50MB");
 
     /**
      * Configuration setting BDB-JE uses for
@@ -55,6 +55,22 @@ public class BDBJEConfig extends StoreBackendConfig
      * @since 0.9.5
      */
     public int lockTableCount = 17;
+
+    /**
+     * Length of timeout setting, in milliseconds, for BDB-JE to try to obtain
+     * a lock on reading from store. This is per-environment setting so it
+     * affects both lookups and by-mod-time iteration.
+     *<p>
+     * Default value of 7 seconds tries to balance requirements between detecting
+     * and breaking deadlocks; failing "too slow" operations; and trying to prevent
+     * unnecessary failures.
+     * Current hypothesis is that this needs to be somewhat higher than what is
+     * estimated as the slowest OldGen GC collection; and given baseline of 5
+     * seconds max GC, adding bit of padding, 7 seems reasonable.
+     *
+     * @since 0.9.6
+     */
+    public int lockTimeoutMsecs = 7000;
     
     /*
     /**********************************************************************
@@ -102,6 +118,17 @@ public class BDBJEConfig extends StoreBackendConfig
             throw new IllegalArgumentException("Illegal lockTableCount value ("+count+"); should be between [1, 1000]");
         }
         lockTableCount = count;
+        return this;
+    }
+
+    /**
+     * @since 0.9.6
+     */
+    public BDBJEConfig overrideLockTimeoutMsecs(int timeoutMsecs) {
+        if (timeoutMsecs < 1) {
+            throw new IllegalArgumentException("Illegal timeoutMsecs value ("+timeoutMsecs+"); should be a non-zero positive value");
+        }
+        lockTimeoutMsecs = timeoutMsecs;
         return this;
     }
 }
