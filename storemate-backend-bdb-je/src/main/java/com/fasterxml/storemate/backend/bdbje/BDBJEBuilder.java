@@ -126,10 +126,8 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         config.setReadOnly(!writeAccess);
         config.setSharedCache(false);
         config.setCacheSize(_bdbConfig.cacheSize.getNumberOfBytes());
-        /* Default of 500 msec way too low, let's see if 5 seconds works
-         * better.
-         */
-        config.setLockTimeout(5000L, TimeUnit.MILLISECONDS);
+        // Default of 500 msec way too low; usually set to higher value:
+        config.setLockTimeout(_bdbConfig.lockTimeoutMsecs, TimeUnit.MILLISECONDS);
         // Default of 1 for lock count is not good; let's see what to use instead:
         config.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, String.valueOf(_bdbConfig.lockTableCount));
         return config;
