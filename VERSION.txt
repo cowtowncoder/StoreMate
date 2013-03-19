@@ -1,14 +1,14 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.6 (xx-Mar-2013)
+0.9.6 (18-Mar-2013)
 
 * Allow configuring of lock timeout: change default from 5 to 7 seconds, due
   to couple of observed cases of hitting the limit
 * Improve handling of BDB exceptions; now get converted to StoreExceptions for
   easier handling (wrt alternate backends)
 
-0.9.5 (xx-xxx-2013)
+0.9.5 (14-Mar-2013)
 
 * Optimized LZF/GZIP handling via Compressors a bit
 * Allow overriding default BDB-JE lockTable count; partitioned lock count
