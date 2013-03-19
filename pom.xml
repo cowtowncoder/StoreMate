@@ -17,6 +17,7 @@
     <module>storemate-shared</module>
     <module>storemate-store</module>
     <module>storemate-backend-bdb-je</module>
+    <module>storemate-backend-leveldb</module>
   </modules>
 
   <url>https://github.com/cowtowncoder/StoreMate</url>
@@ -40,7 +41,11 @@
   <properties>
     <javac.src.version>1.6</javac.src.version>
     <javac.target.version>1.6</javac.target.version>
+
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <version.leveldb>0.5</version.leveldb>
+    <version.bdb>5.0.34</version.bdb>
   </properties>
 
   <licenses>
@@ -95,14 +100,26 @@
       <artifactId>compress-lzf</artifactId>
       <version>0.9.8</version>
     </dependency>
-    <!-- only dependend on by BDB-JE backend, but declared here
-         to make importing of versions easier
-      -->
+
+    <!-- data stores for backends -->
+
+    <dependency>
+      <groupId>org.iq80.leveldb</groupId>
+      <artifactId>leveldb</artifactId>
+      <version>${version.leveldb}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.iq80.leveldb</groupId>
+      <artifactId>leveldb-api</artifactId>
+      <version>${version.leveldb}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
-      <version>5.0.34</version>
+      <version>${version.bdb}</version>
     </dependency>
+
    </dependencies>
   </dependencyManagement>
 
