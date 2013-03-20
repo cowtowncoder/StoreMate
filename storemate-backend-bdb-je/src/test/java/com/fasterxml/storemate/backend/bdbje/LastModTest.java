@@ -83,26 +83,35 @@ public class LastModTest extends BDBJETestBase
 
         // and verify order
         final ArrayList<Long> timestamps = new ArrayList<Long>();
+        final ArrayList<StorableKey> keys = new ArrayList<StorableKey>();
         store.iterateEntriesByModifiedTime(new StorableLastModIterationCallback() {
+            long lastTimestamp;
+
             @Override
             public IterationAction verifyTimestamp(long timestamp) {
                 timestamps.add(timestamp);
+                lastTimestamp = timestamp;
                 return IterationAction.PROCESS_ENTRY;
             }
 
             @Override
             public IterationAction verifyKey(StorableKey key) {
+                keys.add(key);
                 return IterationAction.PROCESS_ENTRY;
             }
 
             @Override
             public IterationAction processEntry(Storable entry) {
+                assertEquals(lastTimestamp, entry.getLastModified());
                 return IterationAction.PROCESS_ENTRY;
             }
         }, 0L);
         assertEquals(2, timestamps.size());
+        assertEquals(2, keys.size());
         assertEquals(Long.valueOf(time2), timestamps.get(0));
         assertEquals(Long.valueOf(startTime), timestamps.get(1));
+        assertEquals(KEY2, keys.get(0));
+        assertEquals(KEY1, keys.get(1));
 
         // finally, traverse partial:
         count.set(0);
@@ -132,5 +141,59 @@ public class LastModTest extends BDBJETestBase
         assertEquals(1, count.get());
         
         store.stop();
+   }
+
+   // Longer test to verify that ordering is retained, similar to production usage
+   public void testLongerSequence() throws IOException
+   {
+       final long startTime = _date(2012, 6, 6);
+       TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);
+       StorableStore store = createStore("bdb-lastmod-big", timeMaster);
+       final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
+
+       for (int i = 0; i < 100; ++i) {
+           final StorableKey KEY1 = storableKey("data/entry/"+i);
+           final byte[] SMALL_DATA = ("Data: "+i).getBytes("UTF-8");
+
+           timeMaster.setCurrentTimeMillis(startTime + i * 5000); // 5 seconds in-between
+           
+           // Ok: store a small entry:
+           StorableCreationMetadata metadata = new StorableCreationMetadata(
+                   /*existing compression*/ null,
+                   calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
+           StorableCreationResult resp = store.insert(
+                   KEY1, new ByteArrayInputStream(SMALL_DATA),
+                   metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+           assertTrue(resp.succeeded());
+           assertNull(resp.getPreviousEntry());
+           assertEquals(i+1, store.getEntryCount());
+           assertEquals(i+1, store.getIndexedCount());
+       }
+
+       // And then verify traversal order
+       store.iterateEntriesByModifiedTime(new StorableLastModIterationCallback() {
+           int index = 0;
+           
+           @Override
+           public IterationAction verifyTimestamp(long timestamp) {
+               assertEquals(startTime + index * 5000, timestamp);
+               return IterationAction.PROCESS_ENTRY;
+           }
+
+           @Override
+           public IterationAction verifyKey(StorableKey key) {
+               assertEquals(storableKey("data/entry/"+index), key);
+               return IterationAction.PROCESS_ENTRY;
+           }
+
+           @Override
+           public IterationAction processEntry(Storable entry) {
+               assertEquals(startTime + index * 5000, entry.getLastModified());
+               ++index;
+               return IterationAction.PROCESS_ENTRY;
+           }
+       }, startTime-50L);
+
+       store.stop();
    }
 }
