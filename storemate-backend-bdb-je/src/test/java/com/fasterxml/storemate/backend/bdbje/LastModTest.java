@@ -148,7 +148,7 @@ public class LastModTest extends BDBJETestBase
    {
        final long startTime = _date(2012, 6, 6);
        TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);
-       StorableStore store = createStore("bdb-lastmod-big", timeMaster);
+       final StorableStore store = createStore("bdb-lastmod-big", timeMaster);
        final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
 
        for (int i = 0; i < 100; ++i) {
@@ -183,12 +183,25 @@ public class LastModTest extends BDBJETestBase
            @Override
            public IterationAction verifyKey(StorableKey key) {
                assertEquals(storableKey("data/entry/"+index), key);
+               // also: we better see the entry
+               try {
+                   assertTrue(store.hasEntry(key));
+               } catch (StoreException e) {
+                   fail("Prob with store"+e);
+               }
                return IterationAction.PROCESS_ENTRY;
            }
 
            @Override
            public IterationAction processEntry(Storable entry) {
                assertEquals(startTime + index * 5000, entry.getLastModified());
+               // and still have the entry
+               try {
+                   assertTrue(store.hasEntry(entry.getKey()));
+               } catch (StoreException e) {
+                   fail("Prob with store"+e);
+               }
+
                ++index;
                return IterationAction.PROCESS_ENTRY;
            }
