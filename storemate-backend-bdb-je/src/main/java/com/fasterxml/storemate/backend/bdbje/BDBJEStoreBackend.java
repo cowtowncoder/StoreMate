@@ -120,7 +120,8 @@ public class BDBJEStoreBackend extends StoreBackend
             }
             return false;
         } catch (DatabaseException de) {
-            return _convertDBE(key, de);
+            _convertDBE(key, de);
+            return false; // stupid javac; some versions can coerce, others not
         }
     }
         
@@ -244,7 +245,8 @@ public class BDBJEStoreBackend extends StoreBackend
             }
             return true;
         } catch (DatabaseException de) {
-            return _convertDBE(key, de);
+            _convertDBE(key, de);
+            return false; // stupid javac; some versions can coerce, others not
         }
     }
     
@@ -270,7 +272,8 @@ public class BDBJEStoreBackend extends StoreBackend
                 throw new StoreException.Internal(key, "Internal error, failed to delete entry, OperationStatus="+status);
             }
         } catch (DatabaseException de) {
-            return _convertDBE(key, de);
+            _convertDBE(key, de);
+            return false; // stupid javac; some versions can coerce, others not
         }
     }
 

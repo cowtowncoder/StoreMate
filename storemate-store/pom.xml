@@ -24,10 +24,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+<!--
     <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
     </dependency>
+-->
 
     <!-- Joda for basic date/time stuff; config-magic for config values -->
     <dependency>
