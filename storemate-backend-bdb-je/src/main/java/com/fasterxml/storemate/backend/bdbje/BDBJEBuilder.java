@@ -3,8 +3,6 @@ package com.fasterxml.storemate.backend.bdbje;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.skife.config.DataAmount;
-
 import com.sleepycat.je.*;
 
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
@@ -82,7 +80,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
                 dbRoot, entryDB, index);
 
         try {
-        	physicalStore.start();
+            physicalStore.start();
         } catch (DatabaseException e) {
             throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
         }

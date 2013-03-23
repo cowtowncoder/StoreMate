@@ -259,6 +259,10 @@ public class Storable
     /**********************************************************************
      */
 
+    public byte[] asBytes() {
+        return _rawEntry.asBytes();
+    }
+    
     public <T> T withRaw(WithBytesCallback<T> cb) {
         return _rawEntry.withBytes(cb);
     }

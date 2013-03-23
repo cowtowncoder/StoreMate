@@ -39,7 +39,15 @@ public class LevelDBConfig extends StoreBackendConfig
      *<p>
      * Default value is 50 megs.
      */
-    public DataAmount cacheSize = new DataAmount("50MB");
+    public DataAmount dataCacheSize = new DataAmount("50MB");
+
+    /**
+     * Size of cache for last-modified index. Should typically be smaller than
+     * the main cache.
+     *<p>
+     * Default value is 20 megs.
+     */
+    public DataAmount indexCacheSize = new DataAmount("20MB");
     
     /*
     /**********************************************************************
@@ -49,20 +57,26 @@ public class LevelDBConfig extends StoreBackendConfig
 
     public LevelDBConfig() { }
     public LevelDBConfig(File dataRoot) {
-        this(dataRoot, -1L);
+        this(dataRoot, -1L, -1L);
     }
 
-    public LevelDBConfig(File dataRoot, DataAmount cacheSize) {
+    public LevelDBConfig(File dataRoot, DataAmount dataCacheSize, DataAmount indexCacheSize) {
         this.dataRoot = dataRoot;
-        if (cacheSize != null) {
-            this.cacheSize = cacheSize;
+        if (dataCacheSize != null) {
+            this.dataCacheSize = dataCacheSize;
+        }
+        if (indexCacheSize != null) {
+            this.indexCacheSize = indexCacheSize;
         }
     }
     
-    public LevelDBConfig(File dataRoot, long cacheSizeInBytes) {
+    public LevelDBConfig(File dataRoot, long dataCacheSizeInBytes, long indexCacheSizeInBytes) {
         this.dataRoot = dataRoot;
-        if (cacheSizeInBytes > 0L) {
-            cacheSize = new DataAmount(cacheSizeInBytes);
+        if (dataCacheSizeInBytes > 0L) {
+            dataCacheSize = new DataAmount(dataCacheSizeInBytes);
+        }
+        if (indexCacheSizeInBytes > 0L) {
+            indexCacheSize = new DataAmount(indexCacheSizeInBytes);
         }
     }
 
@@ -72,13 +86,23 @@ public class LevelDBConfig extends StoreBackendConfig
     /**********************************************************************
      */
 
-    public LevelDBConfig overrideCacheSize(long cacheSizeInBytes) {
-        cacheSize = new DataAmount(cacheSizeInBytes);
+    public LevelDBConfig overrideDataCacheSize(long cacheSizeInBytes) {
+        dataCacheSize = new DataAmount(cacheSizeInBytes);
         return this;
     }
 
-    public LevelDBConfig overrideCacheSize(String cacheSizeDesc) {
-        cacheSize = new DataAmount(cacheSizeDesc);
+    public LevelDBConfig overrideIndexCacheSize(long cacheSizeInBytes) {
+        indexCacheSize = new DataAmount(cacheSizeInBytes);
+        return this;
+    }
+
+    public LevelDBConfig overrideDataCacheSize(String cacheSizeDesc) {
+        dataCacheSize = new DataAmount(cacheSizeDesc);
+        return this;
+    }
+
+    public LevelDBConfig overrideIndexCacheSize(String cacheSizeDesc) {
+        indexCacheSize = new DataAmount(cacheSizeDesc);
         return this;
     }
 }

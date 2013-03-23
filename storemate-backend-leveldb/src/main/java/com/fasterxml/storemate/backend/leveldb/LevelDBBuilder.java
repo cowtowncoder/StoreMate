@@ -2,12 +2,11 @@ package com.fasterxml.storemate.backend.leveldb;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Logger;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.impl.Iq80DBFactory;
-import org.skife.config.DataAmount;
 
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
@@ -16,6 +15,14 @@ import com.fasterxml.storemate.store.impl.StorableConverter;
 
 public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
 {
+    /**
+     * For LevelDB we actually need two separate 'tables'; one for data,
+     * another for last-modified index. Hence sub-directories.
+     */
+    public final static String DATA_DIR = "entries";
+    
+    public final static String LAST_MOD_DIR = "lastmod";
+    
     protected StoreConfig _storeConfig;
     protected LevelDBConfig _levelDBConfig;
 
@@ -59,45 +66,50 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
         if (dbRoot == null) {
             throw new IllegalStateException("Missing LevelDBConfig.dataRoot");
         }
-        if (!dbRoot.exists() || !dbRoot.isDirectory()) {
-            if (!canCreate) {
-                throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
-            }
-            if (!dbRoot.mkdirs()) {
-                throw new IllegalArgumentException("Directory '"+dbRoot.getAbsolutePath()+"' did not exist: failed to create it");
-            }
-        }
+        _verifyDir(dbRoot, canCreate);
+        File dataDir = new File(dbRoot, DATA_DIR);
+        _verifyDir(dataDir, canCreate);
+        File lastModDir = new File(dbRoot, LAST_MOD_DIR);
+        _verifyDir(lastModDir, canCreate);
+        
         StorableConverter storableConv = _storeConfig.createStorableConverter();
-
-        /*
-        Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
-        Database entryDB = env.openDatabase(null, // no TX
-                "entryMetadata", dbConfig(env));
-        SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
-                indexConfig(env));
-        DataAmount cacheSize = _bdbConfig.cacheSize;
-        BDBJEStoreBackend physicalStore = new BDBJEStoreBackend(storableConv,
-                dbRoot, entryDB, index, cacheSize.getNumberOfBytes());
-
-        try {
-          physicalStore.start();
-        } catch (DatabaseException e) {
-            throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
-        }
-        return physicalStore;
-        */
 
         Iq80DBFactory factory = Iq80DBFactory.factory;
         Options options = new Options();
-        DB db;
+        options = options
+                .createIfMissing(canCreate)
+                .logger(new LdbLogger())
+                .verifyChecksums(false)
+                ;
+        DB dataDB;
         try {
-            db = factory.open(dbRoot, options);
+            options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
+            dataDB = factory.open(dbRoot, options);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
+            throw new IllegalStateException("Failed to open main data LevelDB: "+e.getMessage(), e);
         }
-        return new LevelDBStoreBackend(storableConv, dbRoot, db);
+        DB indexDB;
+        try {
+            options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
+            indexDB = factory.open(dbRoot, options);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to open last-mod index LevelDB: "+e.getMessage(), e);
+        }
+        return new LevelDBStoreBackend(storableConv, dbRoot, dataDB, indexDB);
     }
 
+    protected void _verifyDir(File dir, boolean canCreate)
+    {
+        if (!dir.exists() || !dir.isDirectory()) {
+            if (!canCreate) {
+                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
+            }
+            if (!dir.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' did not exist: failed to create it");
+            }
+        }
+    }
+    
     /*
     /**********************************************************************
     /* Fluent methods
@@ -126,4 +138,25 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     /* Internal methods
     /**********************************************************************
      */
+
+    /*
+    /**********************************************************************
+    /* Helper types
+    /**********************************************************************
+     */
+
+    static class LdbLogger implements Logger
+    {
+        protected final org.slf4j.Logger _slf4Logger;
+
+        public LdbLogger()
+        {
+            _slf4Logger = org.slf4j.LoggerFactory.getLogger(LevelDBBuilder.class);
+        }
+        
+        @Override
+        public void log(String msg) {
+            _slf4Logger.warn(msg);
+        }
+    }
 }

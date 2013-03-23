@@ -5,17 +5,13 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.iq80.leveldb.DB;
-import org.iq80.leveldb.impl.Iq80DBFactory;
+import org.iq80.leveldb.DBException;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
-import com.fasterxml.storemate.store.backend.IterationAction;
-import com.fasterxml.storemate.store.backend.IterationResult;
-import com.fasterxml.storemate.store.backend.StorableIterationCallback;
-import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
-import com.fasterxml.storemate.store.backend.StoreBackend;
+import com.fasterxml.storemate.store.backend.*;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 
@@ -27,6 +23,8 @@ import com.fasterxml.storemate.store.util.OverwriteChecker;
  */
 public class LevelDBStoreBackend extends StoreBackend
 {
+    private final static byte[] NO_BYTES = new byte[0];
+
     /*
     /**********************************************************************
     /* Simple config, location
@@ -34,14 +32,16 @@ public class LevelDBStoreBackend extends StoreBackend
      */
 
     protected final File _dataRoot;
-
-    protected final DB _db;
     
     /*
     /**********************************************************************
     /* LevelDB entities
     /**********************************************************************
      */
+
+    protected final DB _dataDB;
+
+    protected final DB _indexDB;
 
     /*
     /**********************************************************************
@@ -50,11 +50,12 @@ public class LevelDBStoreBackend extends StoreBackend
      */
     
     public LevelDBStoreBackend(StorableConverter conv,
-            File dbRoot, DB db)
+            File dbRoot, DB dataDB, DB indexDB)
     {
         super(conv);
         _dataRoot = dbRoot;
-        _db = db;
+        _dataDB = dataDB;
+        _indexDB = indexDB;
     }
 
     @Override
@@ -66,12 +67,13 @@ public class LevelDBStoreBackend extends StoreBackend
     @Override
     public void stop()
     {
-        /*
-        Environment env = _entries.getEnvironment();
-        _index.close();
-        _entries.close();
-        env.close();
-        */
+        
+        try {
+            _dataDB.close();
+        } catch (IOException e) { }
+        try {
+            _indexDB.close();
+        } catch (IOException e) { }
     }
     
     /*
@@ -82,14 +84,12 @@ public class LevelDBStoreBackend extends StoreBackend
 
     @Override
     public long getEntryCount() {
-        // !!! TODO
-        return 0L;
+        return -1L;
     }
 
     @Override
     public long getIndexedCount() {
-        // !!! TODO
-        return 0L;
+        return -1L;
     }
 
     /*
@@ -101,41 +101,22 @@ public class LevelDBStoreBackend extends StoreBackend
     @Override
     public boolean hasEntry(StorableKey key) throws StoreException
     {
-        /*
-        try {
-            OperationStatus status = _entries.get(null, dbKey(key), new DatabaseEntry(), null);
-            switch (status) {
-            case SUCCESS:
-            case KEYEXIST:
-                return true;
-            case KEYEMPTY: // was deleted during operation.. shouldn't be getting
-            case NOTFOUND:
-                // fall through
-            }
-            return false;
-        } catch (DatabaseException de) {
-            return _convertDBE(key, de);
-        }
-        */
-        return false;
+        // Bah. No efficient method for this...
+        return findEntry(key) != null;
     }
         
     @Override
     public Storable findEntry(StorableKey key) throws StoreException
     {
-        /*
-        DatabaseEntry result = new DatabaseEntry();
         try {
-            OperationStatus status = _entries.get(null, dbKey(key), result, null);
-            if (status != OperationStatus.SUCCESS) {
+            byte[] data = _dataDB.get(dbKey(key)); // default options fine
+            if (data == null) {
                 return null;
             }
-            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
-        } catch (DatabaseException de) {
+            return _storableConverter.decode(key, data);
+        } catch (DBException de) {
             return _convertDBE(key, de);
         }
-        */
-        return null;
     }
 
     /*
@@ -144,33 +125,31 @@ public class LevelDBStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
+    /* NOTE: all modification methods are protected by per-key partitioned
+     * lock; so modification methods are transaction wrt other modifications,
+     * although not wrt read methods. This has ramifications on ordering of
+     * data vs index mods.
+     */
+    
     @Override
     public Storable createEntry(StorableKey key, Storable storable)
         throws IOException, StoreException
     {
-        /*
-        DatabaseEntry dbKey = dbKey(key);
-
+        // NOTE: caller provides mutex for key (partitioned locks by key), hence transactional
+        byte[] dbKey = dbKey(key);
         try {
-            // first, try creating:
-            OperationStatus status = _entries.putNoOverwrite(null, dbKey, dbValue(storable));
-            if (status == OperationStatus.SUCCESS) { // the usual case:
-                return null;
+            // First things first: must check to see if an old entry exists; if so, return:
+            byte[] oldData = _dataDB.get(dbKey);
+            if (oldData != null) {
+                return _storableConverter.decode(key, oldData);
             }
-            if (status != OperationStatus.KEYEXIST) { // what?
-                throw new StoreException.Internal(key, "Internal error, strange return value for 'putNoOverwrite()': "+status);
-            }
-            // otherwise, ought to find existing entry, return it
-            DatabaseEntry result = new DatabaseEntry();
-            status = _entries.get(null, dbKey, result, null);
-            if (status != OperationStatus.SUCCESS) { // sanity check, should never occur:
-                throw new StoreException.Internal(key, "Internal error, failed to access old value, status: "+status);
-            }
-            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
-        } catch (DatabaseException de) {
+            // Then entry
+            _dataDB.put(dbKey, storable.asBytes());
+            // and index:
+            _indexDB.put(keyToLastModEntry(dbKey, storable), NO_BYTES);
+        } catch (DBException de) {
             return _convertDBE(key, de);
         }
-        */
         return null;
     }
 
@@ -269,23 +248,26 @@ public class LevelDBStoreBackend extends StoreBackend
     public boolean deleteEntry(StorableKey key)
         throws IOException, StoreException
     {
-        /*
         try {
-            OperationStatus status = _entries.delete(null, dbKey(key));
-            switch (status) {
-            case SUCCESS:
-                return true;
-            case NOTFOUND:
+            /* Ok: we must actually fetch the entry, first, since we must have
+             * lastmod timestamp to also delete index entry...
+             */
+            final byte[] dbKey = dbKey(key);
+            byte[] data = _dataDB.get(dbKey);
+            
+            // No entry?
+            if (data == null) {
                 return false;
-            default:
-                // should not be getting other choices so:
-                throw new StoreException.Internal(key, "Internal error, failed to delete entry, OperationStatus="+status);
             }
-        } catch (DatabaseException de) {
+            Storable value = _storableConverter.decode(key, data);
+            // First remove index entry so we won't have dangling entries
+            _indexDB.delete(keyToLastModEntry(dbKey, value));
+            // can only return Snapshot, if we wanted that... 
+            _dataDB.delete(dbKey);
+            return true;
+        } catch (DBException de) {
             return _convertDBE(key, de);
         }
-        */
-        return false;
     }
 
     /*
@@ -510,16 +492,48 @@ public class LevelDBStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
-    /*
-    protected <T> T _convertDBE(StorableKey key, DatabaseException bdbException)
+    protected byte[] dbKey(StorableKey key) {
+        return key.asBytes();
+    }
+
+    protected long timestamp(byte[] value) {
+        return _getLongBE(value, 0);
+    }
+
+    protected byte[] keyToLastModEntry(byte[] key, Storable value)
+    {
+        byte[] result = new byte[key.length + 8];
+        long ts = value.getLastModified();
+        _putIntBE(result, 0, (int) (ts >> 32));
+        _putIntBE(result, 4, (int) ts);
+        System.arraycopy(key, 0, result, 8, key.length);
+        return result;
+    }
+    
+    protected int appendTimestamp(byte[] from, byte[] to, int toIndex)
+    {
+        to[toIndex] = from[0];
+        to[++toIndex] = from[1];
+        to[++toIndex] = from[2];
+        to[++toIndex] = from[3];
+        to[++toIndex] = from[4];
+        to[++toIndex] = from[5];
+        to[++toIndex] = from[6];
+        to[++toIndex] = from[7];
+        return toIndex+1;
+    }
+    
+    protected <T> T _convertDBE(StorableKey key, DBException dbException)
         throws StoreException
     {
+        // any special types that require special handling... ?
+        /*
         if (bdbException instanceof LockTimeoutException) {
             throw new StoreException.ServerTimeout(key, bdbException);
         }
-        throw new StoreException.Internal(key, bdbException);
+        */
+        throw new StoreException.Internal(key, dbException);
     }
-    */
 
     private final static void _putIntBE(byte[] buffer, int offset, int value)
     {
