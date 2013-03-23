@@ -2,10 +2,10 @@ package com.fasterxml.storemate.backend.leveldb;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.DBException;
+import org.iq80.leveldb.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
@@ -310,25 +310,16 @@ public class LevelDBStoreBackend extends StoreBackend
             StorableKey firstKey)
         throws StoreException
     {
-        /*
         try {
-            CursorConfig config = new CursorConfig();
-            Cursor crsr = _entries.openCursor(null, config);
-            final DatabaseEntry keyEntry;
-            final DatabaseEntry data = new DatabaseEntry();
-    
-            OperationStatus status;
-            if (firstKey == null) { // from beginning (i.e. no ranges)
-                keyEntry = new DatabaseEntry();
-                status = crsr.getFirst(keyEntry, data, null);
-            } else {
-                keyEntry = dbKey(firstKey);
-                status = crsr.getSearchKeyRange(keyEntry, data, null);
-            }
+            DBIterator iter = _dataDB.iterator();
             try {
+                if (firstKey != null) {
+                    iter.seek(dbKey(firstKey));
+                }
                 main_loop:
-                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
-                    StorableKey key = storableKey(keyEntry);
+                while (iter.hasNext()) {
+                    Map.Entry<byte[], byte[]> entry = iter.next();
+                    StorableKey key = storableKey(entry.getKey());
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -337,20 +328,19 @@ public class LevelDBStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_KEY;
                     }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                    Storable dbValue = _storableConverter.decode(key, entry.getValue());
+                    if (cb.processEntry(dbValue) == IterationAction.TERMINATE_ITERATION) {
                         return IterationResult.TERMINATED_FOR_ENTRY;
                     }
                     
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
-                crsr.close();
+                iter.close();
             }
-        } catch (DatabaseException de) {
+        } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        */
         return null;
     }
 
@@ -359,29 +349,30 @@ public class LevelDBStoreBackend extends StoreBackend
             StorableKey lastSeen)
         throws StoreException
     {
-        /*
         try {
-            Cursor crsr = _entries.openCursor(null, new CursorConfig());
-    
+            final byte[] lastSeenKey = dbKey(lastSeen);
+            DBIterator iter = _dataDB.iterator();
             try {
-                final DatabaseEntry data = new DatabaseEntry();
-                final DatabaseEntry keyEntry = dbKey(lastSeen);
-                OperationStatus status = crsr.getSearchKeyRange(keyEntry, data, null);
+                iter.seek(lastSeenKey);
+                // First: if we are at end, we are done
+                if (!iter.hasNext()) { // last entry
+                    break;
+                }
+                Map.Entry<byte[], byte[]> entry = iter.next();
+                final byte[] keyEntry = dbKey(lastSeen);
                 do { // bogus loop so we can break
-                    if (status != OperationStatus.SUCCESS) { // if it was the very last entry in store?
-                        break;
-                    }
                     // First, did we find the entry (should, but better safe than sorry)
-                    byte[] b = keyEntry.getData();
-                    if (lastSeen.equals(b, keyEntry.getOffset(), keyEntry.getSize())) { // yes, same thingy
-                        status = crsr.getNext(keyEntry, data, null);
-                        if (status != OperationStatus.SUCCESS) {
+                    byte[] b = entry.getKey();
+                    if (lastSeen.equals(b)) { // yes, same thingy -- skip
+                        if (!iter.hasNext()) {
                             break;
                         }
+                        entry = iter.next();
+                        b = entry.getKey();
                     }
                     main_loop:
-                    for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
-                        StorableKey key = storableKey(keyEntry);
+                    while (true) {
+                        StorableKey key = storableKey(b);
                         switch (cb.verifyKey(key)) {
                         case SKIP_ENTRY: // nothing to do
                             continue main_loop;
@@ -390,21 +381,23 @@ public class LevelDBStoreBackend extends StoreBackend
                         case TERMINATE_ITERATION: // all done?
                             return IterationResult.TERMINATED_FOR_KEY;
                         }
-                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                        Storable dbEntry = _storableConverter.decode(key, entry.getValue());
+                        if (cb.processEntry(dbEntry) == IterationAction.TERMINATE_ITERATION) {
                             return IterationResult.TERMINATED_FOR_ENTRY;
                         }
-                        
+                        if (!iter.hasNext()) {
+                            break;
+                        }
+                        entry = iter.next();
                     }
                 } while (false);
                 return IterationResult.FULLY_ITERATED;
             } finally {
-                crsr.close();
+                iter.close();
             }
-        } catch (DatabaseException de) {
+        } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        */
         return null;
     }
     
@@ -483,6 +476,10 @@ public class LevelDBStoreBackend extends StoreBackend
 
     protected byte[] dbKey(StorableKey key) {
         return key.asBytes();
+    }
+
+    protected StorableKey storableKey(byte[] raw) {
+        return new StorableKey(raw);
     }
 
     protected long timestamp(byte[] value) {
