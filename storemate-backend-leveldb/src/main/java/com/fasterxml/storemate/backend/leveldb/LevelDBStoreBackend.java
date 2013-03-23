@@ -132,10 +132,9 @@ public class LevelDBStoreBackend extends StoreBackend
      */
     
     @Override
-    public Storable createEntry(StorableKey key, Storable storable)
+    public Storable createEntry(StorableKey key, Storable newEntry)
         throws IOException, StoreException
     {
-        // NOTE: caller provides mutex for key (partitioned locks by key), hence transactional
         byte[] dbKey = dbKey(key);
         try {
             // First things first: must check to see if an old entry exists; if so, return:
@@ -143,10 +142,9 @@ public class LevelDBStoreBackend extends StoreBackend
             if (oldData != null) {
                 return _storableConverter.decode(key, oldData);
             }
-            // Then entry
-            _dataDB.put(dbKey, storable.asBytes());
-            // and index:
-            _indexDB.put(keyToLastModEntry(dbKey, storable), NO_BYTES);
+            // If not, insert entry, add index
+            _dataDB.put(dbKey, newEntry.asBytes());
+            _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
         } catch (DBException de) {
             return _convertDBE(key, de);
         }
@@ -154,88 +152,79 @@ public class LevelDBStoreBackend extends StoreBackend
     }
 
     @Override
-    public Storable putEntry(StorableKey key, Storable storable)
+    public Storable putEntry(StorableKey key, Storable newEntry)
         throws IOException, StoreException
     {
-        /*
+        byte[] dbKey = dbKey(key);
         try {
-            DatabaseEntry dbKey = dbKey(key);
-            DatabaseEntry result = new DatabaseEntry();
-            // First: do we have an entry? If so, read to be returned
-            OperationStatus status = _entries.get(null, dbKey, result, null);
-            if (status != OperationStatus.SUCCESS) {
-                result = null;
+            // First things first: must check to see if an old entry exists
+            byte[] oldData = _dataDB.get(dbKey);
+            Storable oldEntry = (oldData == null) ? null : _storableConverter.decode(key, oldData);
+            // and if so, there's also index entry to remove, first
+            if (oldEntry != null) {
+                _indexDB.delete(keyToLastModEntry(dbKey, oldEntry));
             }
-            // if not, create
-            status = _entries.put(null, dbKey, dbValue(storable));
-            if (status != OperationStatus.SUCCESS) {
-                throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
-            }
-            if (result == null) {
-                return null;
-            }
-            return _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
-        } catch (DatabaseException de) {
+            // but then to actual business; insert new entry, index
+            _dataDB.put(dbKey, newEntry.asBytes());
+            // and index:
+            _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
+            return oldEntry;
+        } catch (DBException de) {
             return _convertDBE(key, de);
         }
-                */
-        return null;
-
     }
 
     @Override
-    public void ovewriteEntry(StorableKey key, Storable storable)
+    public void ovewriteEntry(StorableKey key, Storable newEntry)
         throws IOException, StoreException
     {
-        /*
+        byte[] dbKey = dbKey(key);
         try {
-            OperationStatus status = _entries.put(null, dbKey(key), dbValue(storable));
-            if (status != OperationStatus.SUCCESS) {
-                throw new StoreException.Internal(key, "Failed to overwrite entry, OperationStatus="+status);
+            // Must check if an entry exists even if we don't return it, to
+            // manage secondary index
+            byte[] oldData = _dataDB.get(dbKey);
+            if (oldData != null) {
+                _indexDB.delete(keyToLastModEntry(dbKey, oldData));
             }
-        } catch (DatabaseException de) {
+            _dataDB.put(dbKey, newEntry.asBytes());
+            _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
+        } catch (DBException de) {
             _convertDBE(key, de);
         }
-        */
     }
 
     @Override
-    public boolean upsertEntry(StorableKey key, Storable storable,
+    public boolean upsertEntry(StorableKey key, Storable newEntry,
             OverwriteChecker checker, AtomicReference<Storable> oldEntryRef)
         throws IOException, StoreException
     {
-        /*
+        byte[] dbKey = dbKey(key);
         try {
-            DatabaseEntry dbKey = dbKey(key);
-            DatabaseEntry result = new DatabaseEntry();
-            // First: do we have an entry?
-            OperationStatus status = _entries.get(null, dbKey, result, null);
-            if (status == OperationStatus.SUCCESS) {
+            byte[] oldData = _dataDB.get(dbKey);
+            if (oldData != null) {
+                Storable oldEntry = _storableConverter.decode(key, oldData);
                 // yes: is it ok to overwrite?
-                Storable old = _storableConverter.decode(key, result.getData(), result.getOffset(), result.getSize());
                 if (oldEntryRef != null) {
-                    oldEntryRef.set(old);
+                    oldEntryRef.set(oldEntry);
                 }
-                if (!checker.mayOverwrite(key, old, storable)) {
+                if (!checker.mayOverwrite(key, oldEntry, newEntry)) {
                     // no, return
                     return false;
                 }
+                // but need to delete index
+                _indexDB.delete(keyToLastModEntry(dbKey, oldEntry));
             } else {
                 if (oldEntryRef != null) {
                     oldEntryRef.set(null);
                 }
             }
             // Ok we are good, go ahead:
-            status = _entries.put(null, dbKey, dbValue(storable));
-            if (status != OperationStatus.SUCCESS) {
-                throw new StoreException.Internal(key, "Failed to put entry, OperationStatus="+status);
-            }
+            _dataDB.put(dbKey, newEntry.asBytes());
+            _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
             return true;
-        } catch (DatabaseException de) {
+        } catch (DBException de) {
             return _convertDBE(key, de);
         }
-        */
-        return false;
     }
     
     /*
@@ -506,6 +495,15 @@ public class LevelDBStoreBackend extends StoreBackend
         long ts = value.getLastModified();
         _putIntBE(result, 0, (int) (ts >> 32));
         _putIntBE(result, 4, (int) ts);
+        System.arraycopy(key, 0, result, 8, key.length);
+        return result;
+    }
+
+    protected byte[] keyToLastModEntry(byte[] key, byte[] rawStorable)
+    {
+        byte[] result = new byte[key.length + 8];
+        // Storable starts with timestamp, so just copy
+        appendTimestamp(rawStorable, result, 0);
         System.arraycopy(key, 0, result, 8, key.length);
         return result;
     }
