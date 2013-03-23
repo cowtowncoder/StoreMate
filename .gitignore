@@ -19,3 +19,6 @@ target
 *.iml
 *.ipr
 *.iws
+
+# tests
+.test-storage

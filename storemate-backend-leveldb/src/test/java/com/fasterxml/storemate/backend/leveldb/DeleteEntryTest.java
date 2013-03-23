@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.backend.bdbje;
+package com.fasterxml.storemate.backend.leveldb;
 
 import java.io.File;
 
@@ -10,6 +10,6 @@ public class DeleteEntryTest extends DeleteEntryTestBase
 {
     @Override
     protected StoreBackend createBackend(File testRoot, StoreConfig storeConfig) {
-        return new BDBJEBuilder(storeConfig, new BDBJEConfig(new File(testRoot, "bdb"))).buildCreateAndInit();
+        return new LevelDBBuilder(storeConfig, new LevelDBConfig(new File(testRoot, "ldb"))).buildCreateAndInit();
     }
 }

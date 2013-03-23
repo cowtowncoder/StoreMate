@@ -472,8 +472,6 @@ public class LevelDBStoreBackend extends StoreBackend
         } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        return null;
-        
     }
    
     /*

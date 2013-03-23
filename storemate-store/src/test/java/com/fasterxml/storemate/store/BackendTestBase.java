@@ -1,4 +1,4 @@
-package com.fasterxml.storemate.backend.bdbje;
+package com.fasterxml.storemate.store;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -7,33 +7,29 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
-//import ch.qos.logback.classic.Level;
-
-import com.fasterxml.storemate.backend.bdbje.BDBJEBuilder;
-
-import com.fasterxml.storemate.shared.*;
-
-import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.shared.TimeMaster;
+import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
+import com.fasterxml.storemate.shared.util.UTF8Encoder;
+import com.fasterxml.storemate.shared.util.WithBytesAsArray;
+import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.DefaultFilenameConverter;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileManagerConfig;
 import com.fasterxml.storemate.store.impl.StorableStoreImpl;
 
-import com.fasterxml.storemate.shared.SharedTestBase;
-import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
-import com.fasterxml.storemate.shared.util.UTF8Encoder;
-import com.fasterxml.storemate.shared.util.WithBytesAsArray;
-
-/**
- * Base class for unit tests of server sub-module
- */
-public abstract class BDBJETestBase extends SharedTestBase
+public abstract class BackendTestBase extends StoreTestBase
 {
     /**
      * Method to be called before tests, to ensure log4j does not whine.
      */
     protected void initTestLogging()
     {
+    }
+
+    @Override
+    public void setUp() {
+        initTestLogging();
     }
     
     /*
@@ -42,17 +38,16 @@ public abstract class BDBJETestBase extends SharedTestBase
     ///////////////////////////////////////////////////////////////////////
      */
 
-    public StorableKey storableKey(String str)
-    {
+    public StorableKey storableKey(String str) {
         return new StorableKey(UTF8Encoder.encodeAsUTF8(str));
     }
 
     protected StorableStore createStore(String nameSuffix) throws IOException {
-    	return createStore(nameSuffix, new TimeMasterForSimpleTesting(123));
+        return createStore(nameSuffix, new TimeMasterForSimpleTesting(123));
     }
 
     protected StorableStore createStore(String nameSuffix, long startTime) throws IOException {
-    	return createStore(nameSuffix, new TimeMasterForSimpleTesting(startTime));
+        return createStore(nameSuffix, new TimeMasterForSimpleTesting(startTime));
     }
 
     protected StorableStore createStore(String nameSuffix, TimeMaster timeMaster) throws IOException
@@ -60,14 +55,14 @@ public abstract class BDBJETestBase extends SharedTestBase
         File testRoot = getTestScratchDir(nameSuffix, true);
         File fileDir = new File(testRoot, "files");
         StoreConfig storeConfig = new StoreConfig();
-        BDBJEConfig bdbConfig = new BDBJEConfig(new File(testRoot, "bdb"));
-        BDBJEBuilder b = new BDBJEBuilder(storeConfig, bdbConfig);
-        BDBJEStoreBackend physicalStore = b.buildCreateAndInit();
         FileManagerConfig fmConfig = new FileManagerConfig(fileDir);
-        return new StorableStoreImpl(storeConfig, physicalStore, timeMaster,
+        StoreBackend backend = createBackend(testRoot, storeConfig);
+        return new StorableStoreImpl(storeConfig, backend, timeMaster,
                 new FileManager(fmConfig, timeMaster, new DefaultFilenameConverter()));
     }
 
+    protected abstract StoreBackend createBackend(File testRoot, StoreConfig storeConfig);
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Methods for file, directory handling
@@ -124,12 +119,12 @@ public abstract class BDBJETestBase extends SharedTestBase
 
     protected void _verifyHash(byte[] data, int exp, String msg)
     {
-    	int act = BlockMurmur3Hasher.instance.hash(data);
-    	if (act != exp) {
-    		assertEquals(msg, Integer.toHexString(exp), Integer.toHexString(act));
-    	}
+        int act = BlockMurmur3Hasher.instance.hash(data);
+        if (act != exp) {
+              assertEquals(msg, Integer.toHexString(exp), Integer.toHexString(act));
+        }
     }
-    
+
     /*
     ///////////////////////////////////////////////////////////////////////
     // Methods, other
@@ -148,5 +143,4 @@ public abstract class BDBJETestBase extends SharedTestBase
                 .withMillisOfDay(0)
                 .getMillis();
     }
-    
 }
