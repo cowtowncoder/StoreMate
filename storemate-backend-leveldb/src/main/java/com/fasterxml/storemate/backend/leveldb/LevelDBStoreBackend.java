@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.iq80.leveldb.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.*;
@@ -313,7 +312,9 @@ public class LevelDBStoreBackend extends StoreBackend
         try {
             DBIterator iter = _dataDB.iterator();
             try {
-                if (firstKey != null) {
+                if (firstKey == null) {
+                    iter.seekToFirst();
+                } else {
                     iter.seek(dbKey(firstKey));
                 }
                 main_loop:
@@ -332,16 +333,18 @@ public class LevelDBStoreBackend extends StoreBackend
                     if (cb.processEntry(dbValue) == IterationAction.TERMINATE_ITERATION) {
                         return IterationResult.TERMINATED_FOR_ENTRY;
                     }
-                    
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
-                iter.close();
+                try {
+                    iter.close();
+                } catch (IOException de) {
+                    return _convertIOE(null, de);
+                }
             }
         } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        return null;
     }
 
     @Override
@@ -356,49 +359,49 @@ public class LevelDBStoreBackend extends StoreBackend
                 iter.seek(lastSeenKey);
                 // First: if we are at end, we are done
                 if (!iter.hasNext()) { // last entry
-                    break;
+                    return IterationResult.FULLY_ITERATED;
                 }
                 Map.Entry<byte[], byte[]> entry = iter.next();
-                final byte[] keyEntry = dbKey(lastSeen);
-                do { // bogus loop so we can break
-                    // First, did we find the entry (should, but better safe than sorry)
-                    byte[] b = entry.getKey();
-                    if (lastSeen.equals(b)) { // yes, same thingy -- skip
-                        if (!iter.hasNext()) {
-                            break;
-                        }
-                        entry = iter.next();
-                        b = entry.getKey();
+                // First, did we find the entry (should, but better safe than sorry)
+                byte[] b = entry.getKey();
+                if (lastSeen.equals(b)) { // yes, same thingy -- skip
+                    if (!iter.hasNext()) {
+                        return IterationResult.FULLY_ITERATED;
                     }
-                    main_loop:
-                    while (true) {
-                        StorableKey key = storableKey(b);
-                        switch (cb.verifyKey(key)) {
-                        case SKIP_ENTRY: // nothing to do
-                            continue main_loop;
-                        case PROCESS_ENTRY: // bind, process
-                            break;
-                        case TERMINATE_ITERATION: // all done?
-                            return IterationResult.TERMINATED_FOR_KEY;
-                        }
-                        Storable dbEntry = _storableConverter.decode(key, entry.getValue());
-                        if (cb.processEntry(dbEntry) == IterationAction.TERMINATE_ITERATION) {
-                            return IterationResult.TERMINATED_FOR_ENTRY;
-                        }
-                        if (!iter.hasNext()) {
-                            break;
-                        }
-                        entry = iter.next();
+                    entry = iter.next();
+                    b = entry.getKey();
+                }
+                main_loop:
+                while (true) {
+                    StorableKey key = storableKey(b);
+                    switch (cb.verifyKey(key)) {
+                    case SKIP_ENTRY: // nothing to do
+                        continue main_loop;
+                    case TERMINATE_ITERATION: // all done?
+                        return IterationResult.TERMINATED_FOR_KEY;
+                    case PROCESS_ENTRY: // bind, process
                     }
-                } while (false);
+                    Storable dbEntry = _storableConverter.decode(key, entry.getValue());
+                    if (cb.processEntry(dbEntry) == IterationAction.TERMINATE_ITERATION) {
+                        return IterationResult.TERMINATED_FOR_ENTRY;
+                    }
+                    if (!iter.hasNext()) {
+                        break;
+                    }
+                    entry = iter.next();
+                    b = entry.getKey();
+                }
                 return IterationResult.FULLY_ITERATED;
             } finally {
-                iter.close();
+                try {
+                    iter.close();
+                } catch (IOException de) {
+                    return _convertIOE(null, de);
+                }
             }
         } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        return null;
     }
     
     @Override
@@ -410,28 +413,21 @@ public class LevelDBStoreBackend extends StoreBackend
             throw new IllegalArgumentException("Can not pass null 'cb' argument");
         }
 
-        /*
         try {
-            CursorConfig config = new CursorConfig();
-            SecondaryCursor crsr = _index.openCursor(null, config);
-            final DatabaseEntry keyEntry;
-            final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
-            final DatabaseEntry data = new DatabaseEntry();
-            
-            OperationStatus status;
+            DBIterator iter = _indexDB.iterator();
+
             if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
-                keyEntry = new DatabaseEntry();
-                status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
+                iter.seekToFirst();
             } else {
-                keyEntry = timestampKey(firstTimestamp);
-                status = crsr.getSearchKeyRange(keyEntry, primaryKeyEntry, data, null);
+                iter.seek(timestampKey(firstTimestamp));
             }
             
             try {
                 main_loop:
-                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
+                while (iter.hasNext()) {
                     // First things first: timestamp check
-                    long timestamp = _getLongBE(keyEntry.getData(), keyEntry.getOffset());
+                    byte[] rawKey = iter.next().getValue();
+                    long timestamp = timestamp(rawKey);
                     switch (cb.verifyTimestamp(timestamp)) {
                     case SKIP_ENTRY:
                         continue main_loop;
@@ -440,8 +436,8 @@ public class LevelDBStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_TIMESTAMP;
                     }
-                    
-                    StorableKey key = storableKey(primaryKeyEntry);
+
+                    StorableKey key = _extractPrimaryKey(rawKey);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -450,20 +446,32 @@ public class LevelDBStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_KEY;
                     }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                    // and then find it...
+                    byte[] rawEntry = _dataDB.get(dbKey(key));
+                    // unusual but possible due to race condition:
+                    IterationAction act;
+                    if (rawEntry == null) {
+                        act = cb.processMissingEntry(key);
+                    } else {
+                        // but more commonly:
+                        act = cb.processEntry(_storableConverter.decode(key, rawEntry));
+                    }
+                    if (act == IterationAction.TERMINATE_ITERATION) {
                         return IterationResult.TERMINATED_FOR_ENTRY;
                     }
                     
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
-                crsr.close();
+                try {
+                    iter.close();
+                } catch (IOException de) {
+                    return _convertIOE(null, de);
+                }
             }
-        } catch (DatabaseException de) {
+        } catch (DBException de) {
             return _convertDBE(null, de);
         }
-        */
         return null;
         
     }
@@ -486,6 +494,14 @@ public class LevelDBStoreBackend extends StoreBackend
         return _getLongBE(value, 0);
     }
 
+    protected byte[] timestampKey(long timestamp)
+    {
+        byte[] raw = new byte[8];
+        _putIntBE(raw, 0, (int) (timestamp >> 32));
+        _putIntBE(raw, 4, (int) timestamp);
+        return raw;
+    }
+    
     protected byte[] keyToLastModEntry(byte[] key, Storable value)
     {
         byte[] result = new byte[key.length + 8];
@@ -517,6 +533,11 @@ public class LevelDBStoreBackend extends StoreBackend
         to[++toIndex] = from[7];
         return toIndex+1;
     }
+
+    protected StorableKey _extractPrimaryKey(byte[] indexKey) {
+        // First 8 bytes are timestamp, rest is key
+        return new StorableKey(indexKey, 8, indexKey.length - 8);
+    }
     
     protected <T> T _convertDBE(StorableKey key, DBException dbException)
         throws StoreException
@@ -530,6 +551,13 @@ public class LevelDBStoreBackend extends StoreBackend
         throw new StoreException.Internal(key, dbException);
     }
 
+    protected <T> T _convertIOE(StorableKey key, IOException ioe)
+            throws StoreException
+        {
+            // any special types that require special handling... ?
+            throw new StoreException.Internal(key, ioe);
+        }
+    
     private final static void _putIntBE(byte[] buffer, int offset, int value)
     {
         buffer[offset] = (byte) (value >> 24);
@@ -553,11 +581,4 @@ public class LevelDBStoreBackend extends StoreBackend
             | (buffer[++offset] & 0xFF)
             ;
     }
-    
-    /*
-    /**********************************************************************
-    /* Helper classes
-    /**********************************************************************
-     */
-    
 }

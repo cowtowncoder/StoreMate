@@ -454,7 +454,6 @@ public class BDBJEStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_TIMESTAMP;
                     }
-                    
                     StorableKey key = storableKey(primaryKeyEntry);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
