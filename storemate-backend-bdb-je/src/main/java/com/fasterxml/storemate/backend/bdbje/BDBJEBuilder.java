@@ -78,9 +78,8 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
                 "entryMetadata", dbConfig(env));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
                 indexConfig(env));
-        DataAmount cacheSize = _bdbConfig.cacheSize;
         BDBJEStoreBackend physicalStore = new BDBJEStoreBackend(storableConv,
-                dbRoot, entryDB, index, cacheSize.getNumberOfBytes());
+                dbRoot, entryDB, index);
 
         try {
         	physicalStore.start();

@@ -59,8 +59,7 @@ public class BDBJEStoreBackend extends StoreBackend
      */
     
     public BDBJEStoreBackend(StorableConverter conv,
-            File dbRoot, Database entryDB, SecondaryDatabase lastModIndex,
-            long bdbCacheSize)
+            File dbRoot, Database entryDB, SecondaryDatabase lastModIndex)
     {
         super(conv);
         _dataRoot = dbRoot;

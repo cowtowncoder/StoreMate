@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.impl.Iq80DBFactory;
+
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
@@ -32,6 +35,8 @@ public class LevelDBStoreBackend extends StoreBackend
 
     protected final File _dataRoot;
 
+    protected final DB _db;
+    
     /*
     /**********************************************************************
     /* LevelDB entities
@@ -45,11 +50,11 @@ public class LevelDBStoreBackend extends StoreBackend
      */
     
     public LevelDBStoreBackend(StorableConverter conv,
-            File dbRoot,
-            long bdbCacheSize)
+            File dbRoot, DB db)
     {
         super(conv);
         _dataRoot = dbRoot;
+        _db = db;
     }
 
     @Override
