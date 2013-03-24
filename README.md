@@ -7,7 +7,9 @@ Check out [Project Wiki](../../wiki) for complete description; here are some of 
 * Key/Value storage with optional opaque metadata (stored along with std metadata), where values can range from tiny to huge: smallest entries inlined in local database, larger offlined to disk
 * Last-modified index for building Change List - based synchronization between stores
 * Automatic, configurable auto-negotiated on-the-fly compression, decompression (GZIP, LZF, depending on payload size)
-* Pluggable DB storage backends: current basic implementation based on [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB)
+* Pluggable DB storage backends. Current implementations include:
+    * [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB) based one: mature, default implementation
+    * [LevelDB/Java](https://github.com/dain/leveldb) based backend: experimental as of 0.9.7
 
 # License
 
@@ -33,7 +35,9 @@ Sub-modules are can be grouped in following categories:
  * `shared`: data structures and utility methods for dealing with things like compression and hash code calculation
 * Single-node store implementation
  * `store`: Backend-independent single-node data store implementation that uses a backend implementation
- * `backend-bdb-je`: Backend implementation that uses BDB-JE store (default choice)
+ * Backends:
+     * `backend-bdb-je`: Backend implementation that uses BDB-JE store (default choice)
+     * `backend-leveldb`: Backend implementation that uses `LevelDB` store (new in 0.9.7)
 
 More on design on [Wiki](../../wiki).
 
