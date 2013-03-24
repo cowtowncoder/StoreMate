@@ -474,7 +474,7 @@ public class LevelDBStoreBackend extends StoreBackend
                 main_loop:
                 while (iter.hasNext()) {
                     // First things first: timestamp check
-                    byte[] rawKey = iter.next().getValue();
+                    byte[] rawKey = iter.next().getKey();
                     long timestamp = timestamp(rawKey);
                     switch (cb.verifyTimestamp(timestamp)) {
                     case SKIP_ENTRY:

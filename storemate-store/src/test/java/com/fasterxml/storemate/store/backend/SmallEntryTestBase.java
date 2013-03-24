@@ -189,8 +189,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 8);
         StorableStore store = createStore("bdb-small-dups", startTime);
-        _verifyEntryCount(0L, store);
-        _verifyIndexCount(0L, store);
+        _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/1");
         final byte[] SMALL_DATA = "Some smallish data...".getBytes("UTF-8");
@@ -206,16 +205,14 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyCounts(1L, store);
 
         // Ok: first, is ok to try to PUT again
         StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());
-        _verifyEntryCount(1L, store);
-        _verifyIndexCount(1L, store);
+        _verifyCounts(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
@@ -239,8 +236,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzf", startTime);
-        _verifyEntryCount(0L, store);
-        _verifyIndexCount(0L, store);
+        _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/small-LZF-1");
         final byte[] SMALL_DATA_ORIG = biggerCompressibleData(400).getBytes("UTF-8");
@@ -258,8 +254,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        _verifyEntryCount(1L, store);
-        _verifyIndexCount(1L, store);
+        _verifyCounts(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
