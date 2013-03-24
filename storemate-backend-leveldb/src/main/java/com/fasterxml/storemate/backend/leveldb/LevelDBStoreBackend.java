@@ -394,17 +394,17 @@ public class LevelDBStoreBackend extends StoreBackend
             return _convertDBE(null, de);
         }
     }
-
+    
     @Override
     public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
             StorableKey lastSeen)
         throws StoreException
     {
         try {
-            final byte[] lastSeenKey = dbKey(lastSeen);
+            final byte[] lastSeenRaw = dbKey(lastSeen);
             DBIterator iter = _dataDB.iterator();
             try {
-                iter.seek(lastSeenKey);
+                iter.seek(lastSeenRaw);
                 // First: if we are at end, we are done
                 if (!iter.hasNext()) { // last entry
                     return IterationResult.FULLY_ITERATED;
@@ -412,7 +412,7 @@ public class LevelDBStoreBackend extends StoreBackend
                 Map.Entry<byte[], byte[]> entry = iter.next();
                 // First, did we find the entry (should, but better safe than sorry)
                 byte[] b = entry.getKey();
-                if (lastSeen.equals(b)) { // yes, same thingy -- skip
+                if (_equals(lastSeenRaw, b)) { // yes, same thingy -- skip
                     if (!iter.hasNext()) {
                         return IterationResult.FULLY_ITERATED;
                     }
@@ -626,5 +626,19 @@ public class LevelDBStoreBackend extends StoreBackend
             | ((buffer[++offset] & 0xFF) << 8)
             | (buffer[++offset] & 0xFF)
             ;
+    }
+
+    private final boolean _equals(byte[] b1, byte[] b2)
+    {
+        final int len = b1.length;
+        if (b2.length != len) {
+            return false;
+        }
+        for (int i = 0; i < len; ++i) {
+            if (b1[i] != b2[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

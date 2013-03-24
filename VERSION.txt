@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.7 (...)
+
+#3: Add LevelDB/Java - based backend
+
 0.9.6 (18-Mar-2013)
 
 * Allow configuring of lock timeout: change default from 5 to 7 seconds, due
