@@ -81,7 +81,23 @@ public class BDBJEStoreBackend extends StoreBackend
         _entries.close();
         env.close();
     }
-    
+
+    /*
+    /**********************************************************************
+    /* Capability introspection
+    /**********************************************************************
+     */
+
+    /**
+     * Yes, BDB-JE can produce efficient entry count.
+     */
+    public boolean hasEfficientEntryCount() { return true; }
+
+    /**
+     * Yes, BDB-JE can produce efficient index entry count.
+     */
+    public boolean hasEfficientIndexCount() { return true; }
+
     /*
     /**********************************************************************
     /* API Impl, metadata
@@ -96,6 +112,54 @@ public class BDBJEStoreBackend extends StoreBackend
     @Override
     public long getIndexedCount() {
         return _entries.count();
+    }
+
+    @Override
+    public long countEntries() throws StoreException
+    {
+        try {
+            DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
+            DiskOrderedCursor crsr = _entries.openCursor(config);
+    
+            final DatabaseEntry keyEntry = new DatabaseEntry();
+            final DatabaseEntry data = new DatabaseEntry();
+
+            long count = 0L;
+            try {
+                while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
+                    ++count;
+                }
+                return count;
+            } finally {
+                crsr.close();
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
+        }
+    }
+
+    @Override
+    public long countIndexed() throws StoreException
+    {
+        try {
+            SecondaryCursor crsr = _index.openCursor(null, new CursorConfig());
+            final DatabaseEntry keyEntry = new DatabaseEntry();
+            final DatabaseEntry primaryKeyEntry = new DatabaseEntry();
+            final DatabaseEntry data = new DatabaseEntry();
+
+            try {
+                long count = 0L;
+                OperationStatus status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
+                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
+                    ++count;
+                }
+                return count;
+            } finally {
+                crsr.close();
+            }
+        } catch (DatabaseException de) {
+            return _convertDBE(null, de);
+        }
     }
 
     /*

@@ -22,8 +22,8 @@ public abstract class MediumEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-medium-simple", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/1");
         int origSize = StoreConfig.DEFAULT_MAX_FOR_GZIP - 100;
@@ -42,8 +42,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyCounts(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
@@ -87,8 +86,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-medium-lzf", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/1");
         int origSize = StoreConfig.DEFAULT_MAX_FOR_GZIP + 2000;
@@ -107,8 +105,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyCounts(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
@@ -146,16 +143,5 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         assertArrayEquals(LZF_DATA, readFile(file));
 
         store.stop();
-    }
-    
-    /*
-    /**********************************************************************
-    /* Helper methods
-    /**********************************************************************
-     */
-
-    @Override
-    public void setUp() {
-        initTestLogging();
     }
 }

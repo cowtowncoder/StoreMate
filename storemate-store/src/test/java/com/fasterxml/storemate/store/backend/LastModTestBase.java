@@ -37,8 +37,7 @@ public abstract class LastModTestBase extends BackendTestBase
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
        assertTrue(resp.succeeded());
        assertNull(resp.getPreviousEntry());
-       assertEquals(1L, store.getEntryCount());
-       assertEquals(1L, store.getIndexedCount());
+       _verifyCounts(1L, store);
 
        // then verify we can see it via iteration
        final AtomicInteger count = new AtomicInteger(0);
@@ -80,8 +79,7 @@ public abstract class LastModTestBase extends BackendTestBase
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(2L, store.getEntryCount());
-        assertEquals(2L, store.getIndexedCount());
+        _verifyCounts(2L, store);
 
         // and verify order
         final ArrayList<Long> timestamps = new ArrayList<Long>();
@@ -168,8 +166,7 @@ public abstract class LastModTestBase extends BackendTestBase
                    metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
            assertTrue(resp.succeeded());
            assertNull(resp.getPreviousEntry());
-           assertEquals(i+1, store.getEntryCount());
-           assertEquals(i+1, store.getIndexedCount());
+           _verifyCounts(i+1, store);
        }
 
        // And then verify traversal order

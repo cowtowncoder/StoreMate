@@ -74,7 +74,22 @@ public class LevelDBStoreBackend extends StoreBackend
             _indexDB.close();
         } catch (IOException e) { }
     }
-    
+    /*
+    /**********************************************************************
+    /* Capability introspection
+    /**********************************************************************
+     */
+
+    /**
+     * No, LevelDB does not have means to produce efficient entry count.
+     */
+    public boolean hasEfficientEntryCount() { return false; }
+
+    /**
+     * No, LevelDB does not have means to produce efficient index entry count.
+     */
+    public boolean hasEfficientIndexCount() { return false; }
+
     /*
     /**********************************************************************
     /* API Impl, metadata
@@ -91,6 +106,39 @@ public class LevelDBStoreBackend extends StoreBackend
         return -1L;
     }
 
+    public long countEntries() throws StoreException {
+        return _count(_dataDB);
+    }
+
+    @Override
+    public long countIndexed() throws StoreException {
+        return _count(_indexDB);
+    }
+
+    private final long _count(DB db) throws StoreException
+    {
+        try {
+            DBIterator iter = db.iterator();
+            try {
+                iter.seekToFirst();
+                long count = 0L;
+                while (iter.hasNext()) {
+                    ++count;
+                    iter.next();
+                }
+                return count;
+            } finally {
+                try {
+                    iter.close();
+                } catch (IOException de) {
+                    return _convertIOE(null, de);
+                }
+            }
+        } catch (DBException de) {
+            return _convertDBE(null, de);
+        }
+    }
+    
     /*
     /**********************************************************************
     /* API Impl, read

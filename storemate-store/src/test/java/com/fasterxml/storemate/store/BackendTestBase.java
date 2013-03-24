@@ -101,12 +101,40 @@ public abstract class BackendTestBase extends StoreTestBase
             throw new IOException("Failed to delete test file/directory '"+fileOrDir.getAbsolutePath()+"'");
         }
     }
-
+    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Methods, verifying data
     ///////////////////////////////////////////////////////////////////////
      */
+
+    protected void _verifyCounts(long exp, StorableStore store) throws StoreException
+    {
+        _verifyEntryCount(exp, store);
+        _verifyIndexCount(exp, store);
+    }
+    
+    protected void _verifyEntryCount(long exp, StorableStore store)
+        throws StoreException
+    {
+        StoreBackend backend = store.getBackend();
+        if (backend.hasEfficientEntryCount()) {
+            assertEquals(exp, backend.getEntryCount());
+        }
+        // but let's also verify via actual iteration?
+        assertEquals(exp, backend.countEntries());
+    }
+
+    protected void _verifyIndexCount(long exp, StorableStore store)
+        throws StoreException
+    {
+        StoreBackend backend = store.getBackend();
+        if (backend.hasEfficientIndexCount()) {
+            assertEquals(exp, backend.getIndexedCount());
+        }
+        // but let's also verify via actual iteration?
+        assertEquals(exp, backend.countIndexed());
+    }
     
     protected void _verifyMetadata(Storable entry, byte[] inputMetadata)
     {

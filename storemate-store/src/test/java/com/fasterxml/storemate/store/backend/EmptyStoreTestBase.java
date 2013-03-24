@@ -20,8 +20,7 @@ public abstract class EmptyStoreTestBase extends BackendTestBase
         StorableStore store = createStore("bdb-empty-1");
 
         // should be... empty.
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
 
         StorableKey testKey = storableKey("bogus");
         

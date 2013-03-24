@@ -34,6 +34,30 @@ public abstract class StoreBackend
 
     /*
     /**********************************************************************
+    /* Backend capabilities
+    /**********************************************************************
+     */
+
+    /**
+     * Method for checking whether link {@link #getEntryCount} has a method
+     * to produce entry count using a method that is more efficient than
+     * explicitly iterating over entries.
+     * Note that even if true is returned, some amount of iteration may be
+     * required, and operation may still be more expensive than per-entry access.
+     */
+    public abstract boolean hasEfficientEntryCount();
+
+    /**
+     * Method for checking whether link {@link #getIndexedCount} has a method
+     * to produce index entry count using a method that is more efficient than
+     * explicitly iterating over index entries.
+     * Note that even if true is returned, some amount of iteration may be
+     * required, and operation may still be more expensive than per-entry access.
+     */
+    public abstract boolean hasEfficientIndexCount();
+
+    /*
+    /**********************************************************************
     /* API, accessors
     /**********************************************************************
      */
@@ -50,24 +74,43 @@ public abstract class StoreBackend
     
     /**
      * Accessor for getting approximate count of entries in the underlying
-     * main BDB database
+     * main entry database,
+     * if (but only if) it can be accessed in
+     * constant time without actually iterating over data.
      */
     public abstract long getEntryCount();
 
     /**
      * Accessor for getting approximate count of entries accessible
-     * via last-modifed index.
+     * via last-modifed index,
+     * if (but only if) it can be accessed in
+     * constant time without actually iterating over data.
      */
     public abstract long getIndexedCount();
 
+    /**
+     * Method that will iterate over entries and produce exact
+     * count of entries. This should only be called from diagnostics
+     * systems, and typically only if
+     * {@link #getEntryCount} is not available (as per {@link #hasEfficientEntryCount}).
+     */
+    public abstract long countEntries() throws StoreException;
+
+    /**
+     * Method that will iterate over entries and produce exact
+     * count of entries. This should only be called from diagnostics
+     * systems, and typically only if
+     * {@link #getIndexCount} is not available (as per {@link #hasEfficientIndexCount}).
+     */
+    public abstract long countIndexed() throws StoreException;
+    
     /*
     /**********************************************************************
-    /* API Impl, read
+    /* API, per-entry access, read
     /**********************************************************************
      */
 
     public abstract boolean hasEntry(StorableKey key) throws StoreException;
-
 
     public abstract Storable findEntry(StorableKey key) throws StoreException;
 

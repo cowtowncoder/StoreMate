@@ -81,17 +81,18 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
                 .logger(new LdbLogger())
                 .verifyChecksums(false)
                 ;
+        
         DB dataDB;
         try {
             options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
-            dataDB = factory.open(dbRoot, options);
+            dataDB = factory.open(dataDir, options);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to open main data LevelDB: "+e.getMessage(), e);
         }
         DB indexDB;
         try {
             options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
-            indexDB = factory.open(dbRoot, options);
+            indexDB = factory.open(lastModDir, options);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to open last-mod index LevelDB: "+e.getMessage(), e);
         }

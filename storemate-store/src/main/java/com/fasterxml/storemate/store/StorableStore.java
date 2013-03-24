@@ -8,6 +8,7 @@ import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
+import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 
@@ -39,6 +40,8 @@ public abstract class StorableStore
     public abstract FileManager getFileManager();
 
     public abstract TimeMaster getTimeMaster();
+
+    public abstract StoreBackend getBackend();
     
     /*
     /**********************************************************************

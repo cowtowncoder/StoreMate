@@ -26,8 +26,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 6, 6);
         StorableStore store = createStore("bdb-small-simple", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/1");
         final String SMALL_STRING = "Some data that we want to store -- small, gets inlined...";
@@ -47,8 +47,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         assertNull(resp.getPreviousEntry());
 
         // can we count on this getting updated? Seems to be, FWIW
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyEntryCount(1L, store);
+        _verifyIndexCount(1L, store);
 
         // Ok. Then, we should also be able to fetch it, right?
         Storable entry = store.findEntry(KEY1);
@@ -82,8 +82,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 6, 6);
         StorableStore store = createStore("bdb-small-empty", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/0");
         final byte[] NO_DATA = new byte[0];
@@ -100,8 +100,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
 
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyEntryCount(1L, store);
+        _verifyIndexCount(1L, store);
 
         Storable entry = store.findEntry(KEY1);
         assertNotNull(entry);
@@ -137,8 +137,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 7);
         StorableStore store = createStore("bdb-small-gzip", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/2");
         final String SMALL_STRING = this.biggerCompressibleData(400); // about 400 bytes
@@ -155,8 +155,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyEntryCount(1L, store);
+        _verifyIndexCount(1L, store);
 
         // Ok. Then, we should also be able to fetch it, right?
         Storable entry = store.findEntry(KEY1);
@@ -189,8 +189,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 8);
         StorableStore store = createStore("bdb-small-dups", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/1");
         final byte[] SMALL_DATA = "Some smallish data...".getBytes("UTF-8");
@@ -214,8 +214,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyEntryCount(1L, store);
+        _verifyIndexCount(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
@@ -239,8 +239,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzf", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyEntryCount(0L, store);
+        _verifyIndexCount(0L, store);
 
         final StorableKey KEY1 = storableKey("data/small-LZF-1");
         final byte[] SMALL_DATA_ORIG = biggerCompressibleData(400).getBytes("UTF-8");
@@ -258,8 +258,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyEntryCount(1L, store);
+        _verifyIndexCount(1L, store);
 
         // and then verify entry
         Storable entry = store.findEntry(KEY1);
@@ -287,8 +287,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzffail", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/small-LZF-invalid");
         final byte[] SMALL_DATA = "ZV but not really LZF".getBytes("UTF-8");
@@ -307,20 +306,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         } catch (StoreException e) {
             verifyException(e, "Invalid compression");
         }
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
 
         store.stop();
-    }
-    
-    /*
-    /**********************************************************************
-    /* Helper methods
-    /**********************************************************************
-     */
-
-    @Override
-    public void setUp() {
-        initTestLogging();
     }
 }

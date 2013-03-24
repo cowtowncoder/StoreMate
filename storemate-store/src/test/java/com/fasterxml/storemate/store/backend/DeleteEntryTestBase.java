@@ -22,8 +22,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-delete-small", startTime);
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/1");
         final StorableKey KEY2 = storableKey("data/entry/2");
@@ -46,15 +45,13 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
         
-        assertEquals(2L, store.getEntryCount());
-        assertEquals(2L, store.getIndexedCount());
+        _verifyCounts(2L, store);
 
         // Then deletions. First soft deletion, leaving inlined data intact
         StorableDeletionResult result = store.softDelete(KEY1, false, false);
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
-        assertEquals(2L, store.getEntryCount());
-        assertEquals(2L, store.getIndexedCount());
+        _verifyCounts(2L, store);
         // with soft deletion, we get modified instance, not original
         assertTrue(result.getEntry().isDeleted());
         assertTrue(result.getEntry().hasInlineData());
@@ -70,8 +67,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         result = store.softDelete(KEY2, true, true);
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
-        assertEquals(2L, store.getEntryCount());
-        assertEquals(2L, store.getIndexedCount());
+        _verifyCounts(2L, store);
         assertEquals(0, result.getEntry().getInlineDataLength());
         assertArrayEquals(new byte[0], result.getEntry().withInlinedData(WithBytesAsArray.instance));
 
@@ -86,14 +82,12 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         // so far so good. Then let's hard delete the second entry
         result = store.hardDelete(KEY2, true);
         assertTrue(result.hadEntry());
-        assertEquals(1L, store.getEntryCount());
-        assertEquals(1L, store.getIndexedCount());
+        _verifyCounts(1L, store);
         assertFalse(store.hasEntry(KEY2));
 
         result = store.hardDelete(KEY1, false); // second arg irrelevant, as we have no ext data
         assertTrue(result.hadEntry());
-        assertEquals(0L, store.getEntryCount());
-        assertEquals(0L, store.getIndexedCount());
+        _verifyCounts(0L, store);
         assertFalse(store.hasEntry(KEY2));
         
         store.stop();

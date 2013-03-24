@@ -67,8 +67,7 @@ public abstract class ListByNameTestBase extends BackendTestBase
         }
 
         // and verify invariants:
-        assertEquals(4L, store.getEntryCount());
-        assertEquals(4L, store.getIndexedCount());
+        _verifyCounts(4L, store);
 
         // then verify we can see them via various kinds of iteration
         Callback cb = new Callback(KEY1, KEY2, KEY3, KEY4);

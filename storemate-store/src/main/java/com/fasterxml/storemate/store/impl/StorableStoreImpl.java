@@ -178,6 +178,11 @@ public class StorableStoreImpl extends AdminStorableStore
     public TimeMaster getTimeMaster() {
         return _timeMaster;
     }
+
+    @Override
+    public StoreBackend getBackend() {
+        return _backend;
+    }
     
     /*
     /**********************************************************************
