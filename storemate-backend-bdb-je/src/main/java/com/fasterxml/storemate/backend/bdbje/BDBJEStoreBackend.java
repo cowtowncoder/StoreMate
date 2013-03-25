@@ -117,14 +117,13 @@ public class BDBJEStoreBackend extends StoreBackend
     @Override
     public long countEntries() throws StoreException
     {
+	long count = 0L;
         try {
             DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
             DiskOrderedCursor crsr = _entries.openCursor(config);
     
             final DatabaseEntry keyEntry = new DatabaseEntry();
             final DatabaseEntry data = new DatabaseEntry();
-
-            long count = 0L;
             try {
                 while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
                     ++count;
@@ -134,13 +133,15 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            _convertDBE(null, de);
+	    return count;
         }
     }
 
     @Override
     public long countIndexed() throws StoreException
     {
+	long count = 0L;
         try {
             SecondaryCursor crsr = _index.openCursor(null, new CursorConfig());
             final DatabaseEntry keyEntry = new DatabaseEntry();
@@ -148,7 +149,6 @@ public class BDBJEStoreBackend extends StoreBackend
             final DatabaseEntry data = new DatabaseEntry();
 
             try {
-                long count = 0L;
                 OperationStatus status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
                 for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
                     ++count;
@@ -158,7 +158,8 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            _convertDBE(null, de);
+	    return count;
         }
     }
 

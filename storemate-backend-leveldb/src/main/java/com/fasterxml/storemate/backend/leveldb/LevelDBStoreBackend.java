@@ -117,11 +117,11 @@ public class LevelDBStoreBackend extends StoreBackend
 
     private final long _count(DB db) throws StoreException
     {
+	long count = 0L;
         try {
             DBIterator iter = db.iterator();
             try {
                 iter.seekToFirst();
-                long count = 0L;
                 while (iter.hasNext()) {
                     ++count;
                     iter.next();
@@ -131,12 +131,13 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(null, de);
+                    _convertIOE(null, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(null, de);
+            _convertDBE(null, de);
         }
+	return count; // never gets here
     }
     
     /*
@@ -270,7 +271,8 @@ public class LevelDBStoreBackend extends StoreBackend
             _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
             return true;
         } catch (DBException de) {
-            return _convertDBE(key, de);
+             _convertDBE(key, de);
+	     return false;
         }
     }
     
@@ -302,7 +304,8 @@ public class LevelDBStoreBackend extends StoreBackend
             _dataDB.delete(dbKey);
             return true;
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            _convertDBE(key, de);
+	    return false;
         }
     }
 
