@@ -29,8 +29,9 @@ public abstract class StoreBackend
         _storableConverter = storableConverter;
     }
 
-    public abstract void start();
-    public abstract void stop();
+    public abstract void start() throws Exception;
+    public abstract void prepareForStop() throws Exception;
+    public abstract void stop() throws Exception;
 
     /*
     /**********************************************************************

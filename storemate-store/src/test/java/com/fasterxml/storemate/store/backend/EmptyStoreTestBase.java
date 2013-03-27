@@ -1,7 +1,5 @@
 package com.fasterxml.storemate.store.backend;
 
-import java.io.*;
-
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.*;
 
@@ -13,7 +11,7 @@ public abstract class EmptyStoreTestBase extends BackendTestBase
      * Simple verification of basic invariants of a newly created
      * empty store
      */
-    public void testVerifyEmpty() throws IOException
+    public void testVerifyEmpty() throws Exception
     {
         initTestLogging();
         

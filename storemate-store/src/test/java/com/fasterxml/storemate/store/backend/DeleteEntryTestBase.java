@@ -3,7 +3,6 @@ package com.fasterxml.storemate.store.backend;
 import static org.junit.Assert.assertArrayEquals;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
@@ -18,7 +17,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
     /**
      * Test to check that deletion of small entries works as expected
      */
-    public void testInlinedDeletion() throws IOException
+    public void testInlinedDeletion() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-delete-small", startTime);

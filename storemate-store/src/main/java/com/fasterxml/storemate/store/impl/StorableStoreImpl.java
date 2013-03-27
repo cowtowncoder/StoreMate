@@ -145,13 +145,17 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public void start()
-    {
+    public void start() throws Exception {
         _backend.start();
+    }
+
+    @Override
+    public void prepareForStop() throws Exception {
+        _backend.prepareForStop();
     }
     
     @Override
-    public void stop()
+    public void stop() throws Exception
     {
         if (!_closed.getAndSet(true)) {
             _backend.stop();

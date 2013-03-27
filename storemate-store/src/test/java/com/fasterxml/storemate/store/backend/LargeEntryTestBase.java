@@ -3,7 +3,6 @@ package com.fasterxml.storemate.store.backend;
 import static org.junit.Assert.assertArrayEquals;
 
 import java.io.File;
-import java.io.IOException;
 
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
@@ -22,7 +21,7 @@ public abstract class LargeEntryTestBase extends BackendTestBase
      * Simple unit test to verify handling of off-lined ("streaming")
      * insertion of entries.
      */
-    public void testSimpleLarge() throws IOException
+    public void testSimpleLarge() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-medium-simple", startTime);

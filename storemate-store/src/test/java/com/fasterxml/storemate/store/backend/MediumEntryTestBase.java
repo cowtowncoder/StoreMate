@@ -2,7 +2,6 @@ package com.fasterxml.storemate.store.backend;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -18,7 +17,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
 //    protected StoreBackend createBackend(File testRoot, StoreConfig storeConfig) {
 
     // Test to use GZIP
-    public void testMediumFileWithGZIP() throws IOException
+    public void testMediumFileWithGZIP() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-medium-simple", startTime);
@@ -82,7 +81,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         store.stop();
     }
 
-    public void testMediumFileWithLZF() throws IOException
+    public void testMediumFileWithLZF() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-medium-lzf", startTime);

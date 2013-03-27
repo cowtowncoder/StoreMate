@@ -25,9 +25,17 @@ public abstract class StorableStore
     /**********************************************************************
      */
 
-    public abstract void start();
-    
-    public abstract void stop();
+    public abstract void start() throws Exception;
+
+    /**
+     * Method that is called before {@link #stop}, to give an advance warning
+     * (if possible) about impending shutdown.
+     * 
+     * @since 0.9.7
+     */
+    public abstract void prepareForStop() throws Exception;
+
+    public abstract void stop() throws Exception;
     
     /*
     /**********************************************************************

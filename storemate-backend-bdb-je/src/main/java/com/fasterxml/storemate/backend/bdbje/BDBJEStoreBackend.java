@@ -68,11 +68,18 @@ public class BDBJEStoreBackend extends StoreBackend
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         // nothing to do, yet
     }
-    
+
+    @Override
+    public void prepareForStop() {
+        // We don't have to do much, but it might be good idea to sync() changes
+        // at this point
+        _entries.sync();
+        _index.sync();
+    }
+
     @Override
     public void stop()
     {

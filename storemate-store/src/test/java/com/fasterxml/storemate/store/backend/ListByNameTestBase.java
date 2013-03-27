@@ -1,7 +1,6 @@
 package com.fasterxml.storemate.store.backend;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.*;
 
 import com.fasterxml.storemate.shared.ByteContainer;
@@ -40,7 +39,7 @@ public abstract class ListByNameTestBase extends BackendTestBase
         }
     }
 
-    public void testSimpleSmall() throws IOException
+    public void testSimpleSmall() throws Exception
     {
         final long startTime = _date(2012, 6, 6);
         TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);

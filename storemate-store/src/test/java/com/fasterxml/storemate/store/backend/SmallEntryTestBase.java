@@ -1,7 +1,6 @@
 package com.fasterxml.storemate.store.backend;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -22,7 +21,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
      * Basic unit test that inserts a tiny entry (small enough not to
      * be compressed), verifies it can be read successfully.
      */
-    public void testSimpleSmall() throws IOException
+    public void testSimpleSmall() throws Exception
     {
         final long startTime = _date(2012, 6, 6);
         StorableStore store = createStore("bdb-small-simple", startTime);
@@ -78,7 +77,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     /**
      * Test to verify that "empty" content entries are handled correctly
      */
-    public void testZeroLengthEntry() throws IOException
+    public void testZeroLengthEntry() throws Exception
     {
         final long startTime = _date(2012, 6, 6);
         StorableStore store = createStore("bdb-small-empty", startTime);
@@ -133,7 +132,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
      * Slight variation of basic test: let's accept compressed
      * contents; verify that we are served compressed thing
      */
-    public void testSmallAcceptGzip() throws IOException
+    public void testSmallAcceptGzip() throws Exception
     {
         final long startTime = _date(2012, 7, 7);
         StorableStore store = createStore("bdb-small-gzip", startTime);
@@ -185,7 +184,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     /**
      * Test to verify handling of duplicate entry
      */
-    public void testDuplicates() throws IOException
+    public void testDuplicates() throws Exception
     {
         final long startTime = _date(2012, 7, 8);
         StorableStore store = createStore("bdb-small-dups", startTime);
@@ -232,7 +231,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
     /**
      * Test to check that if we already have LZF, we don't even try to re-compress it
      */
-    public void testSmallTextAlreadyLZF() throws IOException
+    public void testSmallTextAlreadyLZF() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzf", startTime);
@@ -278,7 +277,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
      * Test to verify that trying to send non-LZF content, claiming to be LZF,
      * fails.
      */
-    public void testSmallTextAllegedLZF() throws IOException
+    public void testSmallTextAllegedLZF() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
         StorableStore store = createStore("bdb-small-lzffail", startTime);

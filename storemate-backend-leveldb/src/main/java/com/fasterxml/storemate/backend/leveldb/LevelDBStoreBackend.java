@@ -58,9 +58,13 @@ public class LevelDBStoreBackend extends StoreBackend
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         // nothing to do, yet
+    }
+
+    @Override
+    public void prepareForStop() {
+        // anything we can do? Could stop compactions but...
     }
     
     @Override

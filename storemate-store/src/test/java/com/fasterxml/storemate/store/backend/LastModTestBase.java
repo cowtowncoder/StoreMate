@@ -1,7 +1,6 @@
 package com.fasterxml.storemate.store.backend;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,7 +18,7 @@ public abstract class LastModTestBase extends BackendTestBase
     * Basic unit test that inserts a tiny entry (small enough not to
     * be compressed), verifies it can be read successfully.
     */
-   public void testSimpleSmall() throws IOException
+   public void testSimpleSmall() throws Exception
    {
        final long startTime = _date(2012, 6, 6);
        TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);
@@ -144,7 +143,7 @@ public abstract class LastModTestBase extends BackendTestBase
    }
 
    // Longer test to verify that ordering is retained, similar to production usage
-   public void testLongerSequence() throws IOException
+   public void testLongerSequence() throws Exception
    {
        final long startTime = _date(2012, 6, 6);
        TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);
