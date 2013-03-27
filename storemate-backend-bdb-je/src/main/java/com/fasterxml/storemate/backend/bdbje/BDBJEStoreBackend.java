@@ -74,10 +74,11 @@ public class BDBJEStoreBackend extends StoreBackend
 
     @Override
     public void prepareForStop() {
-        // We don't have to do much, but it might be good idea to sync() changes
-        // at this point
-        _entries.sync();
-        _index.sync();
+        // We don't have to do much; esp. since sync() can not be used when writes
+        // are not deferred...
+        // TODO: allow defer()ed writes?
+//        _entries.sync();
+//        _index.sync();
     }
 
     @Override
