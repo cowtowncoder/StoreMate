@@ -61,10 +61,7 @@ public abstract class StoreBackend
      * Accessor for backend-specific statistics information regarding
      * primary entry storage.
      * 
-     * @param onlyFastStats If true, will avoid obtaining most expensive
-     *   statistics (and returning a subset of full stats); if false, will
-     *   try to get all statistics backend exposes.
-     * @param 
+     * @param config Settings to use for collecting statistics
      * 
      * @since 0.9.7
      */
@@ -74,9 +71,7 @@ public abstract class StoreBackend
      * Accessor for backend-specific statistics information regarding
      * primary entry storage.
      * 
-     * @param onlyFastStats If true, will avoid obtaining most expensive
-     *   statistics (and returning a subset of full stats); if false, will
-     *   try to get all statistics backend exposes.
+     * @param config Settings to use for collecting statistics
      * 
      * @since 0.9.7
      */
