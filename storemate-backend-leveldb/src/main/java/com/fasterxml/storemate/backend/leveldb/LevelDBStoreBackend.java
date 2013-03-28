@@ -2,7 +2,7 @@ package com.fasterxml.storemate.backend.leveldb;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.iq80.leveldb.*;
@@ -94,6 +94,27 @@ public class LevelDBStoreBackend extends StoreBackend
      */
     public boolean hasEfficientIndexCount() { return false; }
 
+    @Override
+    public Map<String,Object> getEntryStatistics(BackendStatsConfig config) {
+        return _getStats(_dataDB, config);
+    }
+
+    @Override
+    public Map<String,Object> getIndexStatistics(BackendStatsConfig config) {
+        return _getStats(_indexDB, config);
+    }
+
+    protected Map<String,Object> _getStats(DB db, BackendStatsConfig config) {
+        Map<String,Object> stats = new LinkedHashMap<String,Object>();
+        // JNI-version apparently exposes this; not sure about Java version:
+        final String JNI_STATS = "leveldb.stats";
+        String value = db.getProperty(JNI_STATS);
+        if (value != null) {
+            stats.put(JNI_STATS, value);
+        }
+        return stats;
+    }
+    
     /*
     /**********************************************************************
     /* API Impl, metadata

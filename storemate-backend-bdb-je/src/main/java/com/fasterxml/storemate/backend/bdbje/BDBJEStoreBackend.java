@@ -10,6 +10,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
+import com.fasterxml.storemate.store.backend.BackendStatsConfig;
 import com.fasterxml.storemate.store.backend.IterationAction;
 import com.fasterxml.storemate.store.backend.IterationResult;
 import com.fasterxml.storemate.store.backend.StorableIterationCallback;
@@ -92,7 +93,7 @@ public class BDBJEStoreBackend extends StoreBackend
 
     /*
     /**********************************************************************
-    /* Capability introspection
+    /* Capability, statistics introspection
     /**********************************************************************
      */
 
@@ -105,6 +106,24 @@ public class BDBJEStoreBackend extends StoreBackend
      * Yes, BDB-JE can produce efficient index entry count.
      */
     public boolean hasEfficientIndexCount() { return true; }
+
+    @Override
+    public DatabaseStats getEntryStatistics(BackendStatsConfig config) {
+        return _getStats(_entries, config);
+    }
+
+    @Override
+    public DatabaseStats getIndexStatistics(BackendStatsConfig config) {
+        return _getStats(_entries, config);
+    }
+
+    protected DatabaseStats _getStats(Database db, BackendStatsConfig config) {
+        StatsConfig statsConfig = new StatsConfig()
+            .setFast(config.onlyCollectFast())
+            .setClear(config.resetStatsAfterCollection())
+            ;
+        return db.getStats(statsConfig);
+    }
 
     /*
     /**********************************************************************

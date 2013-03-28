@@ -35,7 +35,7 @@ public abstract class StoreBackend
 
     /*
     /**********************************************************************
-    /* Backend capabilities
+    /* Backend capabilities, metadata
     /**********************************************************************
      */
 
@@ -57,6 +57,31 @@ public abstract class StoreBackend
      */
     public abstract boolean hasEfficientIndexCount();
 
+    /**
+     * Accessor for backend-specific statistics information regarding
+     * primary entry storage.
+     * 
+     * @param onlyFastStats If true, will avoid obtaining most expensive
+     *   statistics (and returning a subset of full stats); if false, will
+     *   try to get all statistics backend exposes.
+     * @param 
+     * 
+     * @since 0.9.7
+     */
+    public abstract Object getEntryStatistics(BackendStatsConfig config);
+
+    /**
+     * Accessor for backend-specific statistics information regarding
+     * primary entry storage.
+     * 
+     * @param onlyFastStats If true, will avoid obtaining most expensive
+     *   statistics (and returning a subset of full stats); if false, will
+     *   try to get all statistics backend exposes.
+     * 
+     * @since 0.9.7
+     */
+    public abstract Object getIndexStatistics(BackendStatsConfig config);
+    
     /*
     /**********************************************************************
     /* API, accessors

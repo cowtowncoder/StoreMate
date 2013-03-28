@@ -4,6 +4,8 @@ License: Apache License 2.0
 0.9.7 (...)
 
 #3: Add LevelDB/Java - based backend
+* Add 'StoreBackend.getEntryStatistics()', 'getIndexStatistics()' for bit
+  more access to statistics backend exposes (if any)
 
 0.9.6 (18-Mar-2013)
 
