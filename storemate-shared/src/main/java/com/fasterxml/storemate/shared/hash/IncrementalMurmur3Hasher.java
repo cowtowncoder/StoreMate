@@ -178,15 +178,15 @@ public final class IncrementalMurmur3Hasher extends IncrementalHasher32
         // good: got a full int32, process:
         _partialByteCount = 0;
         int k1 = _partialBytes;
-    	k1 *= c1;
-    	k1 = Integer.rotateLeft(k1, 15);
-    	k1 *= c2;
-    	int h1 = _currentHash;
-    	h1 ^= k1;
-    	h1 = Integer.rotateLeft(h1, 13);
-    	h1 = h1*5 + c3;
-    	_currentHash = h1;
-    	return (ptr - offset);
+        k1 *= c1;
+        k1 = Integer.rotateLeft(k1, 15);
+        k1 *= c2;
+        int h1 = _currentHash;
+        h1 ^= k1;
+        h1 = Integer.rotateLeft(h1, 13);
+        h1 = h1*5 + c3;
+        _currentHash = h1;
+        return (ptr - offset);
     }
 	
     /**
