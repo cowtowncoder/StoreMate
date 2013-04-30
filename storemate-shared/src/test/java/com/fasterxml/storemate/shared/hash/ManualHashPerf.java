@@ -35,7 +35,7 @@ public class ManualHashPerf
                 hash = testMurmurBlock(REPS, input);
                 break;
             case 1:
-                msg = "Murmur3/Incremental";
+                msg = "Murmur3/Incr";
                 hash = testMurmurIncr(REPS, input);
                 break;
             case 2:
@@ -61,8 +61,8 @@ public class ManualHashPerf
         int result = 0;
         Adler32 adler = new Adler32();
         while (--REPS >= 0) {
-        	adler.reset();
-        	adler.update(input, 0, input.length);
+            adler.reset();
+            adler.update(input, 0, input.length);
             result = (int) adler.getValue();
         }
         return result;
@@ -74,16 +74,16 @@ public class ManualHashPerf
         final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(0);
         final int end = input.length;
         while (--REPS >= 0) {
-        	hasher.reset();
+            hasher.reset();
 
-        	// calculate in chunks of 64k, to emulate real usage
-        	int offset = 0;
-        	while (offset < end) {
-        	    int count = Math.min(64000, end - offset);
-        	    hasher.update(input, offset, count);
-        	    offset += count;
-        	}
-        	result = hasher.calculateHash();
+            // calculate in chunks of 64k, to emulate real usage
+            int offset = 0;
+            while (offset < end) {
+                int count = Math.min(64000, end - offset);
+                hasher.update(input, offset, count);
+                offset += count;
+            }
+            result = hasher.calculateHash();
         }
         return result;
     }
