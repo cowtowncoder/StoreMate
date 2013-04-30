@@ -12,6 +12,7 @@ public class ManualHashPerf
     {
         // Let's try to guestimate suitable size... to get to 50 megs to process
         final int REPS = (int) ((double) (50 * 1000 * 1000) / (double) input.length);
+        final double DATA_LEN = REPS * input.length;
 
         System.out.println("Read "+input.length+" bytes to hash; will do "+REPS+" repetitions");
 
@@ -20,6 +21,7 @@ public class ManualHashPerf
         while (true) {
             try {  Thread.sleep(100L); } catch (InterruptedException ie) { }
             int round = (i++ % 3);
+//round = 0;  
 
             String msg;
             boolean lf = (round == 0);
@@ -29,7 +31,7 @@ public class ManualHashPerf
             final long start = System.currentTimeMillis();
             switch (round) {
             case 0:
-                msg = "Adler32";
+                msg = "Murmur3/FULL";
                 hash = testMurmurBlock(REPS, input);
                 break;
             case 1:
@@ -37,7 +39,7 @@ public class ManualHashPerf
                 hash = testMurmurIncr(REPS, input);
                 break;
             case 2:
-                msg = "Murmur3/FULL";
+                msg = "Adler32";
                 hash = testAdler32(REPS, input);
                 break;
             default:
@@ -48,7 +50,9 @@ public class ManualHashPerf
             if (lf) {
                 System.out.println();
             }
-            System.out.printf("Test '%s' [hash: 0x%s] -> %d msecs\n", msg, Integer.toHexString(this.hash), msecs);
+            double rate = DATA_LEN / msecs; // -> kB/s
+            System.out.printf("Test '%s' [hash: 0x%s] -> %d msecs (rate: %.1f MB/s).\n",
+                    msg, Integer.toHexString(this.hash), msecs, rate/1000.0);
         }
     }
 
@@ -68,9 +72,17 @@ public class ManualHashPerf
     {
         int result = 0;
         final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(0);
+        final int end = input.length;
         while (--REPS >= 0) {
         	hasher.reset();
-        	hasher.update(input, 0, input.length);
+
+        	// calculate in chunks of 64k, to emulate real usage
+        	int offset = 0;
+        	while (offset < end) {
+        	    int count = Math.min(64000, end - offset);
+        	    hasher.update(input, offset, count);
+        	    offset += count;
+        	}
         	result = hasher.calculateHash();
         }
         return result;
