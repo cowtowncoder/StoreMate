@@ -1,7 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.7 (...)
+0.9.8:
+
+No changes yet
+
+0.9.7 (25-Mar-2013)
 
 #3: Add LevelDB/Java - based backend
 * Add 'StoreBackend.getEntryStatistics()', 'getIndexStatistics()' for bit
