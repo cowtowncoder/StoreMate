@@ -137,6 +137,8 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         dbConfig.setReadOnly(econfig.getReadOnly());
         dbConfig.setAllowCreate(econfig.getAllowCreate());
         dbConfig.setSortedDuplicates(false);
+        // since 0.9.8, we can opt to use deferred writes if we dare:
+        dbConfig.setDeferredWrite(_bdbConfig.useDeferredWritesForEntries());
         return dbConfig;
     }
 
@@ -152,6 +154,8 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         config.setSortedDuplicates(true);
         // no, it is not immutable (entries will be updated with new timestamps)
         config.setImmutableSecondaryKey(false);
+        // since 0.9.8, we can opt to use deferred writes if we dare:
+        config.setDeferredWrite(_bdbConfig.useDeferredWritesForEntries());
         return config;
     }
 }

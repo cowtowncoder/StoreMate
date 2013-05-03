@@ -3,7 +3,7 @@ License: Apache License 2.0
 
 0.9.8:
 
-No changes yet
+#4: Add option to enable 'deferred writes' for BDB backend
 
 0.9.7 (25-Mar-2013)
 

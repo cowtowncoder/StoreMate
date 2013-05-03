@@ -25,7 +25,7 @@ public class BDBJEConfig extends StoreBackendConfig
      * (nor the main deployment directory)
      */
     public File dataRoot;
-    
+
     /*
     /**********************************************************************
     /* Simple config properties, size thresholds
@@ -71,6 +71,25 @@ public class BDBJEConfig extends StoreBackendConfig
      * @since 0.9.6
      */
     public int lockTimeoutMsecs = 7000;
+
+    /*
+    /**********************************************************************
+    /* Simple config properties, on/off features
+    /**********************************************************************
+     */
+
+    /**
+     * Should we use deferred writes for entry metadata?
+     * Note that use of deferred writes can cause data loss if system
+     * crashes; during normal shutdown, <code>sync()</code> will be called
+     * if deferred writes are enabled.
+     *<p>
+     * Default (of no value) is same as <code>false</code>, meaning that
+     * defe
+     * 
+     * @since 0.9.8
+     */
+    public Boolean deferredWritesForEntries = null;
     
     /*
     /**********************************************************************
@@ -97,6 +116,18 @@ public class BDBJEConfig extends StoreBackendConfig
         }
     }
 
+    /*
+    /**********************************************************************
+    /* Convenience accessors
+    /**********************************************************************
+     */
+
+    public boolean useDeferredWritesForEntries()
+    {
+        Boolean b = deferredWritesForEntries;
+        return (b != null) && b.booleanValue();
+    }
+    
     /*
     /**********************************************************************
     /* Convenience stuff for overriding

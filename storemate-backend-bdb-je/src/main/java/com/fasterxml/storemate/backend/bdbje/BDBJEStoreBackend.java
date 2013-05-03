@@ -10,12 +10,7 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 import com.fasterxml.storemate.store.*;
-import com.fasterxml.storemate.store.backend.BackendStatsConfig;
-import com.fasterxml.storemate.store.backend.IterationAction;
-import com.fasterxml.storemate.store.backend.IterationResult;
-import com.fasterxml.storemate.store.backend.StorableIterationCallback;
-import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
-import com.fasterxml.storemate.store.backend.StoreBackend;
+import com.fasterxml.storemate.store.backend.*;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 
@@ -74,12 +69,15 @@ public class BDBJEStoreBackend extends StoreBackend
     }
 
     @Override
-    public void prepareForStop() {
-        // We don't have to do much; esp. since sync() can not be used when writes
-        // are not deferred...
-        // TODO: allow defer()ed writes?
-//        _entries.sync();
-//        _index.sync();
+    public void prepareForStop()
+    {
+        // If using deferred writes, better do sync() at this point
+        if (_entries.getConfig().getDeferredWrite()) {
+            _entries.sync();
+        }
+        if (_index.getConfig().getDeferredWrite()) {
+            _index.sync();
+        }
     }
 
     @Override
