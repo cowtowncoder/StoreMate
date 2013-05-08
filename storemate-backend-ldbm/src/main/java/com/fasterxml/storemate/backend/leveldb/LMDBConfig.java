@@ -9,7 +9,7 @@ import org.skife.config.DataAmount;
 /**
  * Simple configuration class for LDBM - based backend.
  */
-public class LDBMConfig extends StoreBackendConfig
+public class LMDBConfig extends StoreBackendConfig
 {
     /*
     /**********************************************************************
@@ -55,12 +55,12 @@ public class LDBMConfig extends StoreBackendConfig
     /**********************************************************************
      */
 
-    public LDBMConfig() { }
-    public LDBMConfig(File dataRoot) {
+    public LMDBConfig() { }
+    public LMDBConfig(File dataRoot) {
         this(dataRoot, -1L, -1L);
     }
 
-    public LDBMConfig(File dataRoot, DataAmount dataCacheSize, DataAmount indexCacheSize) {
+    public LMDBConfig(File dataRoot, DataAmount dataCacheSize, DataAmount indexCacheSize) {
         this.dataRoot = dataRoot;
         if (dataCacheSize != null) {
             this.dataCacheSize = dataCacheSize;
@@ -70,7 +70,7 @@ public class LDBMConfig extends StoreBackendConfig
         }
     }
     
-    public LDBMConfig(File dataRoot, long dataCacheSizeInBytes, long indexCacheSizeInBytes) {
+    public LMDBConfig(File dataRoot, long dataCacheSizeInBytes, long indexCacheSizeInBytes) {
         this.dataRoot = dataRoot;
         if (dataCacheSizeInBytes > 0L) {
             dataCacheSize = new DataAmount(dataCacheSizeInBytes);
@@ -86,22 +86,22 @@ public class LDBMConfig extends StoreBackendConfig
     /**********************************************************************
      */
 
-    public LDBMConfig overrideDataCacheSize(long cacheSizeInBytes) {
+    public LMDBConfig overrideDataCacheSize(long cacheSizeInBytes) {
         dataCacheSize = new DataAmount(cacheSizeInBytes);
         return this;
     }
 
-    public LDBMConfig overrideIndexCacheSize(long cacheSizeInBytes) {
+    public LMDBConfig overrideIndexCacheSize(long cacheSizeInBytes) {
         indexCacheSize = new DataAmount(cacheSizeInBytes);
         return this;
     }
 
-    public LDBMConfig overrideDataCacheSize(String cacheSizeDesc) {
+    public LMDBConfig overrideDataCacheSize(String cacheSizeDesc) {
         dataCacheSize = new DataAmount(cacheSizeDesc);
         return this;
     }
 
-    public LDBMConfig overrideIndexCacheSize(String cacheSizeDesc) {
+    public LMDBConfig overrideIndexCacheSize(String cacheSizeDesc) {
         indexCacheSize = new DataAmount(cacheSizeDesc);
         return this;
     }

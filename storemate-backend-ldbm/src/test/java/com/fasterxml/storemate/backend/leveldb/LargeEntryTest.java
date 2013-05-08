@@ -10,6 +10,6 @@ public class LargeEntryTest extends LargeEntryTestBase
 {
     @Override
     protected StoreBackend createBackend(File testRoot, StoreConfig storeConfig) {
-        return new LDBMBuilder(storeConfig, new LDBMConfig(new File(testRoot, "ldb"))).buildCreateAndInit();
+        return new LMDBBuilder(storeConfig, new LMDBConfig(new File(testRoot, "ldb"))).buildCreateAndInit();
     }
 }

@@ -1,40 +1,38 @@
 package com.fasterxml.storemate.backend.leveldb;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.fusesource.lmdbjni.*;
-import static org.fusesource.lmdbjni.Constants.*;
 
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
-public class LDBMBuilder extends StoreBackendBuilder<LDBMConfig>
+public class LMDBBuilder extends StoreBackendBuilder<LMDBConfig>
 {
     /**
      * For LevelDB we actually need two separate 'tables'; one for data,
      * another for last-modified index. Hence sub-directories.
      */
-    public final static String DATA_DIR = "entries";
+    public final static String NAME_DATA = "entries";
     
-    public final static String LAST_MOD_DIR = "lastmod";
+    public final static String NAME_LAST_MOD = "lastmod";
     
     protected StoreConfig _storeConfig;
-    protected LDBMConfig _levelDBConfig;
+    protected LMDBConfig _levelDBConfig;
 
-    public LDBMBuilder() { this(null, null); }
+    public LMDBBuilder() { this(null, null); }
 
-    public LDBMBuilder(StoreConfig storeConfig, LDBMConfig levelDBConfig)
+    public LMDBBuilder(StoreConfig storeConfig, LMDBConfig levelDBConfig)
     {
-        super(LDBMConfig.class);
+        super(LMDBConfig.class);
         _storeConfig = storeConfig;
         _levelDBConfig = levelDBConfig;
     }
 
     @Override
-    public LDBMStoreBackend build() {
+    public LMDBStoreBackend build() {
         return buildCreateAndInit();
     }
 
@@ -43,19 +41,20 @@ public class LDBMBuilder extends StoreBackendBuilder<LDBMConfig>
      * one if not, and create a store with that BDB. Underlying data storage
      * can do reads and writes.
      */
-    public LDBMStoreBackend buildCreateAndInit() {
+    public LMDBStoreBackend buildCreateAndInit() {
         return _buildAndInit(true, true);
     }
 
-    public LDBMStoreBackend buildAndInitReadOnly() {
+    public LMDBStoreBackend buildAndInitReadOnly() {
         return _buildAndInit(false, false);
     }
 
-    public LDBMStoreBackend buildAndInitReadWrite() {
+    public LMDBStoreBackend buildAndInitReadWrite() {
         return _buildAndInit(false, true);
     }
     
-    protected LDBMStoreBackend _buildAndInit(boolean canCreate, boolean canWrite)
+    protected LMDBStoreBackend _buildAndInit(boolean canCreate,
+            boolean canWrite)
     {
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_levelDBConfig == null) throw new IllegalStateException("Missing LevelDBConfig");
@@ -65,35 +64,29 @@ public class LDBMBuilder extends StoreBackendBuilder<LDBMConfig>
             throw new IllegalStateException("Missing LevelDBConfig.dataRoot");
         }
         _verifyDir(dbRoot, canCreate);
-        File dataDir = new File(dbRoot, DATA_DIR);
-        _verifyDir(dataDir, canCreate);
-        File lastModDir = new File(dbRoot, LAST_MOD_DIR);
-        _verifyDir(lastModDir, canCreate);
         
         StorableConverter storableConv = _storeConfig.createStorableConverter();
 
-        Iq80DBFactory factory = Iq80DBFactory.factory;
-        Options options = new Options();
-        options = options
-                .createIfMissing(canCreate)
-                .verifyChecksums(false)
-                ;
+        Env env = new Env();
         
         Database dataDB;
+        int flags = canCreate ? Constants.CREATE : 0;
+        if (!canWrite) {
+            flags |= Constants.RDONLY;
+        }
         try {
-            options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
-            dataDB = factory.open(dataDir, options);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to open main data LevelDB: "+e.getMessage(), e);
+            dataDB = env.openDatabase(NAME_DATA, flags);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to open main data LMDB: "+e.getMessage(), e);
         }
         Database indexDB;
         try {
-            options = options.cacheSize(_levelDBConfig.dataCacheSize.getNumberOfBytes());
-            indexDB = factory.open(lastModDir, options);
-        } catch (IOException e) {
+            indexDB = env.openDatabase(NAME_LAST_MOD, flags);
+        } catch (Exception e) {
             throw new IllegalStateException("Failed to open last-mod index LevelDB: "+e.getMessage(), e);
         }
-        return new LDBMStoreBackend(storableConv, dbRoot, dataDB, indexDB);
+        return new LMDBStoreBackend(storableConv, dbRoot, env,
+                dataDB, indexDB);
     }
 
     protected void _verifyDir(File dir, boolean canCreate)
@@ -115,19 +108,19 @@ public class LDBMBuilder extends StoreBackendBuilder<LDBMConfig>
      */
     
     @Override
-    public LDBMBuilder with(StoreConfig config) {
+    public LMDBBuilder with(StoreConfig config) {
         _storeConfig = config;
         return this;
     }
 
     @Override
-    public LDBMBuilder with(StoreBackendConfig config) {
-        if (!(config instanceof LDBMConfig)) {
+    public LMDBBuilder with(StoreBackendConfig config) {
+        if (!(config instanceof LMDBConfig)) {
             String desc = (config == null) ? "NULL" : config.getClass().getName();
             throw new IllegalArgumentException("BDB-JE must be configured with a BDBJEConfig instance, not "
                     +desc);
         }
-        _levelDBConfig = (LDBMConfig) config;
+        _levelDBConfig = (LMDBConfig) config;
         return this;
     }
 }

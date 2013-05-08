@@ -21,7 +21,7 @@ import com.fasterxml.storemate.store.util.OverwriteChecker;
  * caller; no attempt is made to synchronize individual operations
  * at store level.
  */
-public class LDBMStoreBackend extends StoreBackend
+public class LMDBStoreBackend extends StoreBackend
 {
     private final static byte[] NO_BYTES = new byte[0];
 
@@ -39,6 +39,8 @@ public class LDBMStoreBackend extends StoreBackend
     /**********************************************************************
      */
 
+    protected final Env _env;
+
     protected final Database _dataDB;
 
     protected final Database _indexDB;
@@ -49,11 +51,12 @@ public class LDBMStoreBackend extends StoreBackend
     /**********************************************************************
      */
     
-    public LDBMStoreBackend(StorableConverter conv,
-            File dbRoot, Database dataDB, Database indexDB)
+    public LMDBStoreBackend(StorableConverter conv,
+            File dbRoot, Env env, Database dataDB, Database indexDB)
     {
         super(conv);
         _dataRoot = dbRoot;
+        _env = env;
         _dataDB = dataDB;
         _indexDB = indexDB;
     }
@@ -65,13 +68,13 @@ public class LDBMStoreBackend extends StoreBackend
 
     @Override
     public void prepareForStop() {
-        // anything we can do? Could stop compactions but...
+        // anything we can do?
     }
     
     @Override
     public void stop()
     {
-        
+        // First, close databases
         try {
             _dataDB.close();
         } catch (/*LMDB*/Exception e) {
@@ -80,6 +83,8 @@ public class LDBMStoreBackend extends StoreBackend
             _indexDB.close();
         } catch (/*LMDB*/Exception e) {
         }
+        // and then, very importantly, environment as well
+        _env.close();
     }
 
     /*
@@ -148,7 +153,7 @@ public class LDBMStoreBackend extends StoreBackend
     {
         long count = 0L;
         try {
-            DBIterator iter = db.iterator();
+            Cursor iter = db.openCursor(null);
             try {
                 iter.seekToFirst();
                 while (iter.hasNext()) {
