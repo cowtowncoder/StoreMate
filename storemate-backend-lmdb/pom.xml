@@ -5,10 +5,10 @@
     <artifactId>storemate-parent</artifactId>
     <version>0.9.8-SNAPSHOT</version>
   </parent>
-  <artifactId>storemate-backend-ldbm</artifactId>
-  <name>StoreMate-backend-ldbm</name>
+  <artifactId>storemate-backend-lmdb</artifactId>
+  <name>StoreMate-backend-lmdb</name>
   <packaging>jar</packaging>
-  <description>Physical store backend using Java/JNI wrapper for LDBM
+  <description>Physical store backend using Java/JNI wrapper for LMDB
   </description>
 
   <dependencies>
