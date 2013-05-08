@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.fusesource.lmdbjni.*;
+
 import static org.fusesource.lmdbjni.Constants.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
@@ -113,10 +114,13 @@ public class LMDBStoreBackend extends StoreBackend
         return _getStats(_indexDB, config);
     }
 
-    protected Map<String,Object> _getStats(Database db, BackendStatsConfig config) {
+    protected Map<String,Object> _getStats(Database db, BackendStatsConfig config)
+    {
         Map<String,Object> stats = new LinkedHashMap<String,Object>();
-        // JNI-version apparently exposes this; not sure about Java version:
-        final String JNI_STATS = "leveldb.stats";
+        // actually of (private) type import org.fusesource.lmdbjni.JNI.MDB_stat
+        // with public fields -- should be convertible with Jackson
+        // or such... but here, expose as is:
+        MDB_stat rawStats = db.stat();
         String value = db.getProperty(JNI_STATS);
         if (value != null) {
             stats.put(JNI_STATS, value);
@@ -395,7 +399,7 @@ public class LMDBStoreBackend extends StoreBackend
         throws StoreException
     {
         try {
-            DBIterator iter = _dataDB.iterator();
+            Cursor iter = _dataDB.iterator();
             try {
                 if (firstKey == null) {
                     iter.seekToFirst();
