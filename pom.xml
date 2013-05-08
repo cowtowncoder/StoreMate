@@ -18,6 +18,7 @@
     <module>storemate-store</module>
     <module>storemate-backend-bdb-je</module>
     <module>storemate-backend-leveldb</module>
+    <module>storemate-backend-ldbm</module>
   </modules>
 
   <url>https://github.com/cowtowncoder/StoreMate</url>

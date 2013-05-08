@@ -1,0 +1,70 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion> 
+  <parent>
+    <groupId>com.fasterxml.storemate</groupId>
+    <artifactId>storemate-parent</artifactId>
+    <version>0.9.8-SNAPSHOT</version>
+  </parent>
+  <artifactId>storemate-backend-ldbm</artifactId>
+  <name>StoreMate-backend-ldbm</name>
+  <packaging>jar</packaging>
+  <description>Physical store backend using Java/JNI wrapper for LDBM
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-store</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- for config, use config-magic for convenience (units) -->
+    <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fusesource.lmdbjni</groupId>
+      <artifactId>lmdbjni-all</artifactId>
+      <version>99-master-SNAPSHOT</version>
+    </dependency>
+    <!-- Joda for basic date/time stuff -->
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+    </dependency>
+
+    <!--  and we need base test stuff -->
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-shared</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.storemate</groupId>
+      <artifactId>storemate-store</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+<!-- 07-May-2013, tatu: Not yet released to central Maven repo, so:
+  -->
+<repositories>
+    <repository>
+      <id>fusesource.nexus.snapshot</id>
+      <name>FuseSource Community Snapshot Repository</name>
+      <url>http://repo.fusesource.com/nexus/content/groups/public-snapshots</url>
+    </repository>
+</repositories>
+
+</project>
