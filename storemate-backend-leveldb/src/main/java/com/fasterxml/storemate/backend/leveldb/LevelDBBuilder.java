@@ -127,7 +127,7 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     public LevelDBBuilder with(StoreBackendConfig config) {
         if (!(config instanceof LevelDBConfig)) {
             String desc = (config == null) ? "NULL" : config.getClass().getName();
-            throw new IllegalArgumentException("BDB-JE must be configured with a BDBJEConfig instance, not "
+            throw new IllegalArgumentException("LevelDB must be configured with a LevelDBConfig instance, not "
                     +desc);
         }
         _levelDBConfig = (LevelDBConfig) config;

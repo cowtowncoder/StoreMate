@@ -4,13 +4,25 @@ import java.io.File;
 
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 
-import org.skife.config.DataAmount;
-
 /**
  * Simple configuration class for LDBM - based backend.
  */
 public class LMDBConfig extends StoreBackendConfig
 {
+    /*
+    /**********************************************************************
+    /* Simple config properties, sizes
+    /**********************************************************************
+     */
+
+    /**
+     * This is the "mapSize" parameter given to underlying LMDB implementation.
+     * Exact semantics are up to LMDB, so make sure you know what you are doing
+     * if changing it.
+     * Default value is 100 gigs just for lolz.
+     */
+    public long mapSize = 100L * 1024 * 1024 * 1024;
+    
     /*
     /**********************************************************************
     /* Simple config properties, paths

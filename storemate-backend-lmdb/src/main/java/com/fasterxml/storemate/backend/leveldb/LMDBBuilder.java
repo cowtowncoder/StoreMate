@@ -1,5 +1,8 @@
 package com.fasterxml.storemate.backend.leveldb;
 
+import static org.fusesource.lmdbjni.Constants.NOMETASYNC;
+import static org.fusesource.lmdbjni.Constants.NOSYNC;
+
 import java.io.File;
 
 import org.fusesource.lmdbjni.*;
@@ -20,15 +23,15 @@ public class LMDBBuilder extends StoreBackendBuilder<LMDBConfig>
     public final static String NAME_LAST_MOD = "lastmod";
     
     protected StoreConfig _storeConfig;
-    protected LMDBConfig _levelDBConfig;
+    protected LMDBConfig _lmdbConfig;
 
     public LMDBBuilder() { this(null, null); }
 
-    public LMDBBuilder(StoreConfig storeConfig, LMDBConfig levelDBConfig)
+    public LMDBBuilder(StoreConfig storeConfig, LMDBConfig lmdbConfig)
     {
         super(LMDBConfig.class);
         _storeConfig = storeConfig;
-        _levelDBConfig = levelDBConfig;
+        _lmdbConfig = lmdbConfig;
     }
 
     @Override
@@ -53,13 +56,14 @@ public class LMDBBuilder extends StoreBackendBuilder<LMDBConfig>
         return _buildAndInit(false, true);
     }
     
+    @SuppressWarnings("resource")
     protected LMDBStoreBackend _buildAndInit(boolean canCreate,
             boolean canWrite)
     {
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
-        if (_levelDBConfig == null) throw new IllegalStateException("Missing LevelDBConfig");
+        if (_lmdbConfig == null) throw new IllegalStateException("Missing LMDBConfig");
 
-        File dbRoot = _levelDBConfig.dataRoot;
+        File dbRoot = _lmdbConfig.dataRoot;
         if (dbRoot == null) {
             throw new IllegalStateException("Missing LevelDBConfig.dataRoot");
         }
@@ -68,7 +72,15 @@ public class LMDBBuilder extends StoreBackendBuilder<LMDBConfig>
         StorableConverter storableConv = _storeConfig.createStorableConverter();
 
         Env env = new Env();
-        
+        /* 08-May-2013, tatu: Not 100% sure what the meaning is, but
+         *   guessing it might be the size of underlying memory-mapped
+         *   file?
+         */
+        env.setMapSize(_lmdbConfig.mapSize);
+        //env.setMaxReaders(o.maxReaders());
+        // 08-May-2013, tatu: Need to know more about flags here as well
+        env.addFlags(NOSYNC| NOMETASYNC);
+
         Database dataDB;
         int flags = canCreate ? Constants.CREATE : 0;
         if (!canWrite) {
@@ -114,13 +126,14 @@ public class LMDBBuilder extends StoreBackendBuilder<LMDBConfig>
     }
 
     @Override
-    public LMDBBuilder with(StoreBackendConfig config) {
+    public LMDBBuilder with(StoreBackendConfig config)
+    {
         if (!(config instanceof LMDBConfig)) {
             String desc = (config == null) ? "NULL" : config.getClass().getName();
-            throw new IllegalArgumentException("BDB-JE must be configured with a BDBJEConfig instance, not "
+            throw new IllegalArgumentException("LMDB must be configured with a LMDBConfig instance, not "
                     +desc);
         }
-        _levelDBConfig = (LMDBConfig) config;
+        _lmdbConfig = (LMDBConfig) config;
         return this;
     }
 }

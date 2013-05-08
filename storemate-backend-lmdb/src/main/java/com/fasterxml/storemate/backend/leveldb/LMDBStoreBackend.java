@@ -7,8 +7,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.fusesource.lmdbjni.*;
 
-import static org.fusesource.lmdbjni.Constants.*;
-
 import com.fasterxml.storemate.shared.StorableKey;
 
 import com.fasterxml.storemate.store.*;
@@ -120,10 +118,9 @@ public class LMDBStoreBackend extends StoreBackend
         // actually of (private) type import org.fusesource.lmdbjni.JNI.MDB_stat
         // with public fields -- should be convertible with Jackson
         // or such... but here, expose as is:
-        MDB_stat rawStats = db.stat();
-        String value = db.getProperty(JNI_STATS);
-        if (value != null) {
-            stats.put(JNI_STATS, value);
+        /*MDB_stat*/ Object rawStats = db.stat();
+        if (rawStats != null) {
+            stats.put("stats", rawStats);
         }
         return stats;
     }
@@ -157,18 +154,24 @@ public class LMDBStoreBackend extends StoreBackend
     {
         long count = 0L;
         try {
-            Cursor iter = db.openCursor(null);
+            Transaction tx = _env.createTransaction(true);
+            Cursor iter = db.openCursor(tx);
             try {
-                iter.seekToFirst();
-                while (iter.hasNext()) {
+                Entry entry = iter.get(GetOp.FIRST);
+                while (entry != null) {
                     ++count;
-                    iter.next();
+                    entry = iter.get(GetOp.NEXT);
                 }
                 return count;
             } finally {
                 try {
                     iter.close();
-                } catch (IOException de) {
+                } catch (LMDBException de) {
+                    _convertIOE(null, de);
+                }
+                try {
+                    tx.commit();
+                } catch (LMDBException de) {
                     _convertIOE(null, de);
                 }
             }
@@ -399,16 +402,17 @@ public class LMDBStoreBackend extends StoreBackend
         throws StoreException
     {
         try {
-            Cursor iter = _dataDB.iterator();
+            Transaction tx = _env.createTransaction(true);
+            Cursor iter = _dataDB.openCursor(tx);
             try {
+                Entry entry;
                 if (firstKey == null) {
-                    iter.seekToFirst();
+                    entry = iter.get(GetOp.FIRST);
                 } else {
-                    iter.seek(dbKey(firstKey));
+                    entry = iter.seek(SeekOp.RANGE, dbKey(firstKey));
                 }
                 main_loop:
-                while (iter.hasNext()) {
-                    Map.Entry<byte[], byte[]> entry = iter.next();
+                for (; entry != null; entry = iter.get(GetOp.NEXT)) {
                     StorableKey key = storableKey(entry.getKey());
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
@@ -427,8 +431,13 @@ public class LMDBStoreBackend extends StoreBackend
             } finally {
                 try {
                     iter.close();
-                } catch (IOException de) {
+                } catch (LMDBException de) {
                     return _convertIOE(null, de);
+                }
+                try {
+                    tx.commit();
+                } catch (LMDBException de) {
+                    _convertIOE(null, de);
                 }
             }
         } catch (LMDBException de) {
@@ -443,21 +452,21 @@ public class LMDBStoreBackend extends StoreBackend
     {
         try {
             final byte[] lastSeenRaw = dbKey(lastSeen);
-            DBIterator iter = _dataDB.iterator();
+            Transaction tx = _env.createTransaction(true);
+            Cursor iter = _dataDB.openCursor(tx);
             try {
-                iter.seek(lastSeenRaw);
+                Entry entry = iter.seek(SeekOp.RANGE, lastSeenRaw);
                 // First: if we are at end, we are done
-                if (!iter.hasNext()) { // last entry
+                if (entry == null) { // was last entry
                     return IterationResult.FULLY_ITERATED;
                 }
-                Map.Entry<byte[], byte[]> entry = iter.next();
                 // First, did we find the entry (should, but better safe than sorry)
                 byte[] b = entry.getKey();
                 if (_equals(lastSeenRaw, b)) { // yes, same thingy -- skip
-                    if (!iter.hasNext()) {
+                    entry = iter.get(GetOp.NEXT);
+                    if (entry == null) {
                         return IterationResult.FULLY_ITERATED;
                     }
-                    entry = iter.next();
                     b = entry.getKey();
                 }
                 main_loop:
@@ -474,18 +483,23 @@ public class LMDBStoreBackend extends StoreBackend
                     if (cb.processEntry(dbEntry) == IterationAction.TERMINATE_ITERATION) {
                         return IterationResult.TERMINATED_FOR_ENTRY;
                     }
-                    if (!iter.hasNext()) {
+                    entry = iter.get(GetOp.NEXT);
+                    if (entry == null) {
                         break;
                     }
-                    entry = iter.next();
                     b = entry.getKey();
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
                 try {
                     iter.close();
-                } catch (IOException de) {
+                } catch (LMDBException de) {
                     return _convertIOE(null, de);
+                }
+                try {
+                    tx.commit();
+                } catch (LMDBException de) {
+                    _convertIOE(null, de);
                 }
             }
         } catch (LMDBException de) {
@@ -503,19 +517,21 @@ public class LMDBStoreBackend extends StoreBackend
         }
 
         try {
-            DBIterator iter = _indexDB.iterator();
+            Transaction tx = _env.createTransaction(true);
+            Cursor iter = _indexDB.openCursor(tx);
 
+            Entry entry;
             if (firstTimestamp <= 0L) { // from beginning (i.e. no ranges)
-                iter.seekToFirst();
+                entry = iter.get(GetOp.FIRST);
             } else {
-                iter.seek(timestampKey(firstTimestamp));
+                entry = iter.seek(SeekOp.RANGE, timestampKey(firstTimestamp));
             }
             
             try {
                 main_loop:
-                while (iter.hasNext()) {
+                for (; entry != null; entry = iter.get(GetOp.NEXT)) {
                     // First things first: timestamp check
-                    byte[] rawKey = iter.next().getKey();
+                    byte[] rawKey = entry.getKey();
                     long timestamp = timestamp(rawKey);
                     switch (cb.verifyTimestamp(timestamp)) {
                     case SKIP_ENTRY:
@@ -554,7 +570,7 @@ public class LMDBStoreBackend extends StoreBackend
             } finally {
                 try {
                     iter.close();
-                } catch (IOException de) {
+                } catch (LMDBException de) {
                     return _convertIOE(null, de);
                 }
             }
@@ -638,7 +654,7 @@ public class LMDBStoreBackend extends StoreBackend
         throw new StoreException.Internal(key, dbException);
     }
 
-    protected <T> T _convertIOE(StorableKey key, IOException ioe)
+    protected <T> T _convertIOE(StorableKey key, LMDBException ioe)
             throws StoreException
         {
             // any special types that require special handling... ?
