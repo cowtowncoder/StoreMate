@@ -65,7 +65,7 @@ public abstract class StoreBackend
      * 
      * @since 0.9.7
      */
-    public abstract Object getEntryStatistics(BackendStatsConfig config);
+    public abstract BackendStats getEntryStatistics(BackendStatsConfig config);
 
     /**
      * Accessor for backend-specific statistics information regarding
@@ -75,7 +75,7 @@ public abstract class StoreBackend
      * 
      * @since 0.9.7
      */
-    public abstract Object getIndexStatistics(BackendStatsConfig config);
+    public abstract BackendStats getIndexStatistics(BackendStatsConfig config);
     
     /*
     /**********************************************************************
@@ -86,7 +86,7 @@ public abstract class StoreBackend
     public final StorableConverter getStorableConverter() {
         return _storableConverter;
     }
-    
+
     /*
     /**********************************************************************
     /* API, metadata access

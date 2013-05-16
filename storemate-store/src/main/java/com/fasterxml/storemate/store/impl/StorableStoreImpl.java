@@ -786,6 +786,38 @@ public class StorableStoreImpl extends AdminStorableStore
         return new StorableDeletionResult(key, entry);
     }
 
+    protected Storable _softDelete(StorableKey key, Storable entry, final long currentTime,
+            final boolean removeInlinedData, final boolean removeExternalData)
+        throws IOException, StoreException
+    {
+        // Ok now... need to delete some data?
+        boolean hasExternalToDelete = removeExternalData && entry.hasExternalData();
+        if (!entry.isDeleted() || hasExternalToDelete
+                || (removeInlinedData && entry.hasInlineData())) {
+            File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
+            Storable modEntry = _storableConverter.softDeletedCopy(key, entry, currentTime,
+                    removeInlinedData, removeExternalData);
+            _backend.ovewriteEntry(key, modEntry);
+            if (extFile != null) {
+                _deleteBackingFile(key, extFile);
+            }
+            return modEntry;
+        }
+        return entry;
+    }
+
+    protected Storable _hardDelete(StorableKey key, Storable entry,
+            final boolean removeExternalData)
+        throws IOException, StoreException
+    {
+        // Hard deletion is not hard at all (pun attack!)...
+        if (removeExternalData && entry.hasExternalData()) {
+            _deleteBackingFile(key, entry.getExternalFile(_fileManager));
+        }
+        _backend.deleteEntry(key);
+        return entry;
+    }    
+ 
     /*
     /**********************************************************************
     /* API, public entry iteration methods
@@ -963,44 +995,6 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         }
         return removed;
-    }
-    
-    /*
-    /**********************************************************************
-    /* Internal methods for entry deletion
-    /**********************************************************************
-     */
-    
-    protected Storable _softDelete(StorableKey key, Storable entry, final long currentTime,
-            final boolean removeInlinedData, final boolean removeExternalData)
-        throws IOException, StoreException
-    {
-        // Ok now... need to delete some data?
-        boolean hasExternalToDelete = removeExternalData && entry.hasExternalData();
-        if (!entry.isDeleted() || hasExternalToDelete
-                || (removeInlinedData && entry.hasInlineData())) {
-            File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
-            Storable modEntry = _storableConverter.softDeletedCopy(key, entry, currentTime,
-                    removeInlinedData, removeExternalData);
-            _backend.ovewriteEntry(key, modEntry);
-            if (extFile != null) {
-                _deleteBackingFile(key, extFile);
-            }
-            return modEntry;
-        }
-        return entry;
-    }
-
-    protected Storable _hardDelete(StorableKey key, Storable entry,
-            final boolean removeExternalData)
-        throws IOException, StoreException
-    {
-        // Hard deletion is not hard at all (pun attack!)...
-        if (removeExternalData && entry.hasExternalData()) {
-            _deleteBackingFile(key, entry.getExternalFile(_fileManager));
-        }
-        _backend.deleteEntry(key);
-        return entry;
     }
     
     /*

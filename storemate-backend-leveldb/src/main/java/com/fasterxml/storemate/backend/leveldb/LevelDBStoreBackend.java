@@ -95,16 +95,17 @@ public class LevelDBStoreBackend extends StoreBackend
     public boolean hasEfficientIndexCount() { return false; }
 
     @Override
-    public Map<String,Object> getEntryStatistics(BackendStatsConfig config) {
+    public LevelDBBackendStats getEntryStatistics(BackendStatsConfig config) {
         return _getStats(_dataDB, config);
     }
 
     @Override
-    public Map<String,Object> getIndexStatistics(BackendStatsConfig config) {
+    public LevelDBBackendStats getIndexStatistics(BackendStatsConfig config) {
         return _getStats(_indexDB, config);
     }
 
-    protected Map<String,Object> _getStats(DB db, BackendStatsConfig config) {
+    protected LevelDBBackendStats _getStats(DB db, BackendStatsConfig config)
+    {
         Map<String,Object> stats = new LinkedHashMap<String,Object>();
         // JNI-version apparently exposes this; not sure about Java version:
         final String JNI_STATS = "leveldb.stats";
@@ -112,7 +113,7 @@ public class LevelDBStoreBackend extends StoreBackend
         if (value != null) {
             stats.put(JNI_STATS, value);
         }
-        return stats;
+        return new LevelDBBackendStats(stats);
     }
     
     /*

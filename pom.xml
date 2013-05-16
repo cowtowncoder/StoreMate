@@ -18,7 +18,10 @@
     <module>storemate-store</module>
     <module>storemate-backend-bdb-je</module>
     <module>storemate-backend-leveldb</module>
+<!-- 16-May-2013, tatu: does not really work yet, comment out for now -->
+<!--
     <module>storemate-backend-lmdb</module>
+-->
   </modules>
 
   <url>https://github.com/cowtowncoder/StoreMate</url>

@@ -106,21 +106,31 @@ public class BDBJEStoreBackend extends StoreBackend
     public boolean hasEfficientIndexCount() { return true; }
 
     @Override
-    public DatabaseStats getEntryStatistics(BackendStatsConfig config) {
-        return _getStats(_entries, config);
+    public BackendStats getEntryStatistics(BackendStatsConfig config) {
+        return _getStats(_entries, config, true);
     }
 
     @Override
-    public DatabaseStats getIndexStatistics(BackendStatsConfig config) {
-        return _getStats(_entries, config);
+    public BackendStats getIndexStatistics(BackendStatsConfig config) {
+        return _getStats(_entries, config, false);
     }
 
-    protected DatabaseStats _getStats(Database db, BackendStatsConfig config) {
+    protected BackendStats _getStats(Database db, BackendStatsConfig config,
+            boolean includeEnvStats) {
         StatsConfig statsConfig = new StatsConfig()
             .setFast(config.onlyCollectFast())
             .setClear(config.resetStatsAfterCollection())
             ;
-        return db.getStats(statsConfig);
+        /* 16-May-2013, tatu: Would be great to be able to remove/clear depracted
+         *   entries here... alas, no mutators, so need to leave them as is,
+         *   for now.
+         */
+        BDBBackendStats stats = new BDBBackendStats();
+        stats.db = db.getStats(statsConfig);
+        if (includeEnvStats) {
+            stats.env = db.getEnvironment().getStats(statsConfig);
+        }
+        return stats;
     }
 
     /*
