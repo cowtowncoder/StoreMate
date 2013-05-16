@@ -1,0 +1,12 @@
+com.fasterxml.storemate.backend.bdbje
+com.fasterxml.storemate.backend.bdbje.util
+com.fasterxml.storemate.backend.leveldb
+com.fasterxml.storemate.shared
+com.fasterxml.storemate.shared.compress
+com.fasterxml.storemate.shared.hash
+com.fasterxml.storemate.shared.util
+com.fasterxml.storemate.store
+com.fasterxml.storemate.store.backend
+com.fasterxml.storemate.store.file
+com.fasterxml.storemate.store.impl
+com.fasterxml.storemate.store.util
