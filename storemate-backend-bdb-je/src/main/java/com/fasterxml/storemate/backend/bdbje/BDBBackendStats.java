@@ -14,4 +14,9 @@ public class BDBBackendStats
     public BDBBackendStats() {
         super("bdb");
     }
+
+    public BDBBackendStats(BDBBackendStats src) {
+        env = src.env;
+        db = src.db;
+    }
 }
