@@ -8,7 +8,7 @@
   <groupId>com.fasterxml.storemate</groupId>
   <artifactId>storemate-parent</artifactId>
   <name>StoreMate-parent</name>
-  <version>0.9.8</version>
+  <version>0.9.9-SNAPSHOT</version>
   <packaging>pom</packaging>
   <description>Parent pom for shared settings for project sub-modules
   </description>
@@ -29,7 +29,7 @@
     <connection>scm:git:git@github.com:cowtowncoder/StoreMate.git</connection>
     <developerConnection>scm:git:git@github.com:cowtowncoder/StoreMate.git</developerConnection>
     <url>http://github.com/cowtowncoder/StoreMate</url>    
-    <tag>storemate-parent-0.9.8</tag>
+    <tag>HEAD</tag>
   </scm>
   <developers>
         <developer>
