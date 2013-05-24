@@ -26,4 +26,56 @@ public class StorableKeyTest extends SharedTestBase
         StorableKey s2 = s1.range(1, 3);
         assertEquals(3, s2.length());
     }
+
+    public void testSortingWithoutOffsets()
+    {
+        StorableKey s1 = new StorableKey(new byte[] { 1, 2, 3, 4, 5 });
+        StorableKey s2 = new StorableKey(new byte[] { 1, 2, 5, 4, 5 });
+
+        // we happen to report the difference...
+        assertEquals(-2, s1.compareTo(s2));
+        assertEquals(2, s2.compareTo(s1));
+
+        s1 = new StorableKey(new byte[] { 1, 2, 3, 4 });
+        s2 = new StorableKey(new byte[] { 1, 2, 3, 4, 5 });
+
+        assertEquals(-1, s1.compareTo(s2));
+        assertEquals(1, s2.compareTo(s1));
+
+        s1 = new StorableKey(new byte[] { 1, 2, 3, 4, 5 });
+        s2 = new StorableKey(new byte[] { 1, 2, 3, 4, 5 });
+        assertEquals(0, s1.compareTo(s2));
+        assertEquals(0, s2.compareTo(s1));
+    }
+
+    public void testSortingWithOffsets()
+    {
+        StorableKey s1 = new StorableKey(new byte[] { 0, 0, 1, 2, 3, 4, 5 }, 2, 5);
+        StorableKey s2 = new StorableKey(new byte[] { 1, 2, 5, 4, 5 });
+
+        assertEquals(-2, s1.compareTo(s2));
+        assertEquals(2, s2.compareTo(s1));
+
+        s1 = new StorableKey(new byte[] { 1, 2, 3, 4 });
+        s2 = new StorableKey(new byte[] { 0, 1, 2, 3, 4, 5 }, 1, 5);
+
+        assertEquals(-1, s1.compareTo(s2));
+        assertEquals(1, s2.compareTo(s1));
+
+        // equals within context (ignore trailing)
+        s1 = new StorableKey(new byte[] { 0, 1, 2, 3, 4, 5 }, 1, 4);
+        s2 = new StorableKey(new byte[] { 0, 1, 2, 3, 4, 6 }, 1, 4);
+        assertEquals(0, s1.compareTo(s2));
+        assertEquals(0, s2.compareTo(s1));
+    }
+
+    public void testSortingWithSignedValues()
+    {
+        StorableKey s1 = new StorableKey(new byte[] { 1 });
+        StorableKey s2 = new StorableKey(new byte[] { -1 }); // 0xFF taken in bigger than 0
+
+        assertEquals(-254, s1.compareTo(s2));
+        assertEquals(254, s2.compareTo(s1));
+    }
+
 }

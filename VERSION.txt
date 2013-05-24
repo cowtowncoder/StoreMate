@@ -1,9 +1,14 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.9:
+
+- Make `StorableKey` comparable
+
 0.9.8:
 
-#4: Add option to enable 'deferred writes' for BDB backend
+#4: Add option to enable 'deferred writes' for BDB backend (NOTE: not used, up
+  to implemeting stores)
 - Improve handling of backend stats a bit; expose env-stats for BDB-JE
 
 0.9.7 (25-Mar-2013)

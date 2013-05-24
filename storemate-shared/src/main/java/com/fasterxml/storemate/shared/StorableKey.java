@@ -7,6 +7,7 @@ import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
 public class StorableKey
+    implements Comparable<StorableKey>
 {
     protected final byte[] _buffer;
     protected final int _offset, _length;
@@ -223,22 +224,22 @@ public class StorableKey
     @Override
     public boolean equals(Object o)
     {
-    	if (o == this) return true;
-    	if (o == null) return false;
-    	if (o.getClass() != getClass()) return false;
+        if (o == this) return true;
+        if (o == null) return false;
+        if (o.getClass() != getClass()) return false;
 
-    	StorableKey other = (StorableKey) o;
-    	if (other._length != _length) return false;
+        StorableKey other = (StorableKey) o;
+        if (other._length != _length) return false;
 
-    	final int end = _offset + _length;
-    	final byte[] thisB = _buffer;
-    	final byte[] thatB = other._buffer;
-    	for (int i1 = _offset, i2 = other._offset; i1 < end; ) {
-    	    if (thisB[i1++] != thatB[i2++]) {
-    	        return false;
-    	    }
-    	}
-    	return true;
+        final int end = _offset + _length;
+        final byte[] thisB = _buffer;
+        final byte[] thatB = other._buffer;
+        for (int i1 = _offset, i2 = other._offset; i1 < end; ) {
+            if (thisB[i1++] != thatB[i2++]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -251,5 +252,46 @@ public class StorableKey
         // TODO: add head/tail of key?
         sb.append(']');
         return sb.toString();
+    }
+
+    @Override
+    public int compareTo(StorableKey other)
+    {
+        if (other == null) return 1;
+
+        final byte[] b1  = _buffer;
+        final byte[] b2  = other._buffer;
+
+        if ((_offset + other._offset) > 0) {
+            return _compareWithOffsets(b1, b2, _offset, other._offset, _length, other._length);
+        }
+        final int end = Math.min(_length, other._length);
+        for (int i = 0; i < end; ++i) {
+            if (b1[i] != b2[i]) {
+                return _unsignedDiff(b1[i], b2[i]);
+            }
+        }
+        return _length - other._length;
+    }
+    
+    private final static int _compareWithOffsets(byte[] b1, byte[] b2, int off1, int off2,
+            int len1, int len2)
+    {
+        final int end = off1 + Math.min(len1, len2);
+        for (int i1 = off1, i2 = off2; i1 < end; ++i1, ++i2) {
+            if (b1[i1] != b2[i2]) {
+                return _unsignedDiff(b1[i1], b2[i2]);
+            }
+        }
+        // longer should be sorted after shorter so:
+        return len1 - len2;
+    }
+
+    private final static int _unsignedDiff(byte b1, byte b2)
+    {
+        int i1 = b1 & 0xFF;
+        int i2 = b2 & 0xFF;
+        
+        return i1 - i2;
     }
 }
