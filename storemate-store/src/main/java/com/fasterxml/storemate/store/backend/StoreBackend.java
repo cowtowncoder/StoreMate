@@ -121,7 +121,7 @@ public abstract class StoreBackend
      * Method that will iterate over entries and produce exact
      * count of entries. This should only be called from diagnostics
      * systems, and typically only if
-     * {@link #getIndexCount} is not available (as per {@link #hasEfficientIndexCount}).
+     * {@link #getIndexedCount} is not available (as per {@link #hasEfficientIndexCount}).
      */
     public abstract long countIndexed() throws StoreException;
     
