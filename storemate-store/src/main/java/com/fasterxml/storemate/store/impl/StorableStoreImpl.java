@@ -141,6 +141,10 @@ public class StorableStoreImpl extends AdminStorableStore
 
         // May want to make this configurable in future...
         // 'true' means "fair", minor overhead, prevents potential starvation
+        /* 02-Jun-2013, tatu: Unless we have true concurrency, may NOT want
+         *   fairness as it is not needed (if we serialize calls anyway) but
+         *   still incurs overhead.
+         */
         _partitions = new StorePartitions(_backend, config.lockPartitions, true);
     }
 
@@ -690,32 +694,31 @@ public class StorableStoreImpl extends AdminStorableStore
         StorableCreationResult result = _partitions.withLockedPartition(key, operationTime,
                 new StoreOperationCallback<Storable,StorableCreationResult>() {
                     @Override
-                    public StorableCreationResult perform(StorableKey k0,
-                            StoreBackend backend, Storable s0)
+                    public StorableCreationResult perform(StorableKey key, Storable s0)
                         throws IOException, StoreException
                     {
                         // blind update, insert-only are easy
-                        Boolean defaultOk = allowOverwrites.mayOverwrite(k0);
+                        Boolean defaultOk = allowOverwrites.mayOverwrite(key);
                         if (defaultOk != null) { // depends on entry in question...
                             if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
-                                Storable old = backend.putEntry(k0, s0);
-                                return new StorableCreationResult(k0, true, s0, old);
+                                Storable old = _backend.putEntry(key, s0);
+                                return new StorableCreationResult(key, true, s0, old);
                             }
                             // strict "insert"
-                            Storable old = backend.createEntry(k0, s0);
+                            Storable old = _backend.createEntry(key, s0);
                             if (old == null) { // ok, succeeded
-                                return new StorableCreationResult(k0, true, s0, null);
+                                return new StorableCreationResult(key, true, s0, null);
                             }
                             // fail: caller may need to clean up the underlying file
-                            return new StorableCreationResult(k0, false, s0, old);
+                            return new StorableCreationResult(key, false, s0, old);
                         }
                         // But if things depend on existence of old entry, or entries, trickier:
                         AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
-                        if (!backend.upsertEntry(k0, s0, allowOverwrites, oldEntryRef)) {
+                        if (!_backend.upsertEntry(key, s0, allowOverwrites, oldEntryRef)) {
                             // fail due to existing entry
-                            return new StorableCreationResult(k0, false, s0, oldEntryRef.get());
+                            return new StorableCreationResult(key, false, s0, oldEntryRef.get());
                         }
-                        return new StorableCreationResult(k0, true, s0, oldEntryRef.get());
+                        return new StorableCreationResult(key, true, s0, oldEntryRef.get());
                     }
                 },
                 storable);
@@ -747,17 +750,16 @@ public class StorableStoreImpl extends AdminStorableStore
         _checkClosed();
         final long currentTime = _timeMaster.currentTimeMillis();
         Storable entry = _partitions.withLockedPartition(key, currentTime,
-            new ReadModifyOperationCallback<Object,Storable>() {
+            new ReadModifyOperationCallback<Object,Storable>(_backend) {
                 @Override
-                protected Storable perform(StorableKey k0,
-                        StoreBackend backend, Object arg, Storable e0)
+                protected Storable perform(StorableKey key, Object arg, Storable value)
                     throws IOException, StoreException
                 {
                     // First things first: if no entry, nothing to do
-                    if (e0 == null) {
+                    if (value == null) {
                         return null;
                     }
-                    return _softDelete(k0, e0, currentTime, removeInlinedData, removeExternalData);
+                    return _softDelete(key, value, currentTime, removeInlinedData, removeExternalData);
                 }
         }, null);
         return new StorableDeletionResult(key, entry);
@@ -771,18 +773,17 @@ public class StorableStoreImpl extends AdminStorableStore
         _checkClosed();
         final long currentTime = _timeMaster.currentTimeMillis();
         Storable entry = _partitions.withLockedPartition(key, currentTime,
-            new ReadModifyOperationCallback<Object,Storable>() {
+            new ReadModifyOperationCallback<Object,Storable>(_backend) {
 
                 @Override
-                protected Storable perform(StorableKey k0,
-                        StoreBackend backend, Object arg, Storable e0)
+                protected Storable perform(StorableKey key, Object arg, Storable value)
                     throws IOException, StoreException
                 {                
                     // First things first: if no entry, nothing to do
-                    if (e0 == null) {
+                    if (value == null) {
                         return null;
                     }
-                    return _hardDelete(k0, e0, removeExternalData);
+                    return _hardDelete(key, value, removeExternalData);
                 }
         }, null);
         return new StorableDeletionResult(key, entry);

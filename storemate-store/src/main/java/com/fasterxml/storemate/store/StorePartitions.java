@@ -15,7 +15,7 @@ public class StorePartitions
 {
     private final static int MIN_PARTITIONS = 4;
     private final static int MAX_PARTITIONS = 256;
-
+    
     /**
      * Actual underlying data store
      */
@@ -39,7 +39,7 @@ public class StorePartitions
     /* Construction
     /**********************************************************************
      */
-    
+
     /**
      * 
      * @param n Minimum number of partitions (rounded up to next power of 2)
@@ -53,7 +53,7 @@ public class StorePartitions
         _modulo = n-1;
         _semaphores = new Semaphore[n];
         for (int i = 0; i < n; ++i) {
-            _semaphores[i] = new Semaphore(1, true);
+            _semaphores[i] = new Semaphore(1, fair);
         }
         _inFlightStartTimes = new AtomicLongArray(n);
     }
@@ -102,7 +102,7 @@ public class StorePartitions
         }
         _inFlightStartTimes.set(partition, startTime);
         try {
-            return cb.perform(key, _store, arg);
+            return cb.perform(key, arg);
         } finally {
             _inFlightStartTimes.set(partition, 0L);
             semaphore.release();

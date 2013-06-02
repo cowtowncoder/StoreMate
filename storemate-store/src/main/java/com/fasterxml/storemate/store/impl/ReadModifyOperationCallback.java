@@ -15,12 +15,17 @@ import com.fasterxml.storemate.store.backend.StoreBackend;
 public abstract class ReadModifyOperationCallback<IN,OUT> 
     implements StoreOperationCallback<IN,OUT>
 {
+    protected final StoreBackend _backend;
+
+    public ReadModifyOperationCallback(StoreBackend backend) {
+        _backend = backend;
+    }
+    
     @Override
-    public OUT perform(StorableKey key, StoreBackend backend, IN arg)
+    public OUT perform(StorableKey key, IN arg)
             throws IOException, StoreException
     {
-        Storable entry = backend.findEntry(key);
-        return perform(key, backend, arg, entry);
+        return perform(key, arg, _backend.findEntry(key));
     }
 
     /**
@@ -28,7 +33,6 @@ public abstract class ReadModifyOperationCallback<IN,OUT>
      * 
      * @param entry NOTE: may be null if no entry exists in the store
      */
-    protected abstract OUT perform(StorableKey key, StoreBackend backend, IN arg,
-            Storable entry)
+    protected abstract OUT perform(StorableKey key, IN arg, Storable entry)
         throws IOException, StoreException;
 }
