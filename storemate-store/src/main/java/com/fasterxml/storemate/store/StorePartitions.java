@@ -14,7 +14,7 @@ import com.fasterxml.storemate.store.backend.StoreBackend;
 public class StorePartitions
 {
     private final static int MIN_PARTITIONS = 4;
-    private final static int MAX_PARTITIONS = 1024;
+    private final static int MAX_PARTITIONS = 256;
 
     /**
      * Actual underlying data store

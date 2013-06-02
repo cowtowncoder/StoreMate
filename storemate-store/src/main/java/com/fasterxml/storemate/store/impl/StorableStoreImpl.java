@@ -676,6 +676,8 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     /**
+     * Method called to actually write the entry metadata in local database.
+     * 
      * @param operationTime Timestamp used as the "last-modified" timestamp in metadata;
      *   important as it determines last-modified traversal order for synchronization
      */
@@ -795,13 +797,12 @@ public class StorableStoreImpl extends AdminStorableStore
         if (!entry.isDeleted() || hasExternalToDelete
                 || (removeInlinedData && entry.hasInlineData())) {
             File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
-            Storable modEntry = _storableConverter.softDeletedCopy(key, entry, currentTime,
+            entry = _storableConverter.softDeletedCopy(key, entry, currentTime,
                     removeInlinedData, removeExternalData);
-            _backend.ovewriteEntry(key, modEntry);
+            _backend.ovewriteEntry(key, entry);
             if (extFile != null) {
                 _deleteBackingFile(key, extFile);
             }
-            return modEntry;
         }
         return entry;
     }
@@ -810,11 +811,11 @@ public class StorableStoreImpl extends AdminStorableStore
             final boolean removeExternalData)
         throws IOException, StoreException
     {
+        _backend.deleteEntry(key);
         // Hard deletion is not hard at all (pun attack!)...
         if (removeExternalData && entry.hasExternalData()) {
             _deleteBackingFile(key, entry.getExternalFile(_fileManager));
         }
-        _backend.deleteEntry(key);
         return entry;
     }    
  

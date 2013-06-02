@@ -20,12 +20,12 @@ public class StoreConfig
      * Default number of partitions in which local keyspace is sliced, for
      * purpose of locking per-entry access; balanced between granularity
      * of access (to minimize lock contention) and overhead of managing
-     * locks. 128 seems like a reasonable initial guess.
+     * locks. 64 seems like a reasonable initial guess.
      *<p>
      * Note that in addition to memory overhead, there is additional overhead
      * for finding latest in-flight timestamp, which is a linear operation.
      */
-    public final static int DEFAULT_LOCK_PARTITIONS = 128;
+    public final static int DEFAULT_LOCK_PARTITIONS = 64;
     
     /*
     /**********************************************************************

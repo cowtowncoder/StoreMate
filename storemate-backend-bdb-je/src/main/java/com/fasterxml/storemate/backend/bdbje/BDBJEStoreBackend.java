@@ -23,7 +23,7 @@ import com.fasterxml.storemate.store.util.OverwriteChecker;
 public class BDBJEStoreBackend extends StoreBackend
 {
     private final BDBConverter BDB_CONV = new BDBConverter();
-    
+
     /*
     /**********************************************************************
     /* Simple config, location
@@ -595,7 +595,7 @@ public class BDBJEStoreBackend extends StoreBackend
         }
         throw new StoreException.Internal(key, bdbException);
     }
-    
+
     protected DatabaseEntry dbKey(StorableKey key) {
         return key.with(BDB_CONV);
     }
@@ -603,7 +603,7 @@ public class BDBJEStoreBackend extends StoreBackend
     protected DatabaseEntry dbValue(Storable storable) {
         return storable.withRaw(BDB_CONV);
     }
-    
+
     protected StorableKey storableKey(DatabaseEntry entry) {
         return new StorableKey(entry.getData(), entry.getOffset(), entry.getSize());
     }
@@ -639,7 +639,7 @@ public class BDBJEStoreBackend extends StoreBackend
             | (buffer[++offset] & 0xFF)
             ;
     }
-    
+
     /*
     /**********************************************************************
     /* Helper classes
