@@ -38,6 +38,7 @@ public abstract class BackendTestBase extends StoreTestBase
     ///////////////////////////////////////////////////////////////////////
      */
 
+    @Override
     public StorableKey storableKey(String str) {
         return new StorableKey(UTF8Encoder.encodeAsUTF8(str));
     }
