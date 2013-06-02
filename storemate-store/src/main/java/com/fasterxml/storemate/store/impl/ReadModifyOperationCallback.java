@@ -12,8 +12,8 @@ import com.fasterxml.storemate.store.backend.StoreBackend;
  * Helper class used for operations that do "GET, modify, PUT" style operation
  * that needs to be atomic.
  */
-public abstract class ReadModifyOperationCallback<IN,OUT> 
-    implements StoreOperationCallback<IN,OUT>
+public abstract class ReadModifyOperationCallback
+    implements StoreOperationCallback
 {
     protected final StoreBackend _backend;
 
@@ -22,10 +22,10 @@ public abstract class ReadModifyOperationCallback<IN,OUT>
     }
     
     @Override
-    public OUT perform(StorableKey key, IN arg)
-            throws IOException, StoreException
+    public final Storable perform(long time, StorableKey key, Storable value)
+        throws IOException, StoreException
     {
-        return perform(key, arg, _backend.findEntry(key));
+        return modify(time, key, _backend.findEntry(key));
     }
 
     /**
@@ -33,6 +33,6 @@ public abstract class ReadModifyOperationCallback<IN,OUT>
      * 
      * @param entry NOTE: may be null if no entry exists in the store
      */
-    protected abstract OUT perform(StorableKey key, IN arg, Storable entry)
+    protected abstract Storable modify(long time, StorableKey key,  Storable entry)
         throws IOException, StoreException;
 }

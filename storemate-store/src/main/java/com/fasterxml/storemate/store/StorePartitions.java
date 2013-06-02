@@ -88,8 +88,9 @@ public class StorePartitions
      * @param cb Callback to call from locked context
      * @param arg Optional argument
      */
-    public <IN,OUT> OUT withLockedPartition(StorableKey key, long startTime,
-            StoreOperationCallback<IN,OUT> cb, IN arg)
+    public Storable withLockedPartition(long startTime,
+            StorableKey key, Storable value,
+            StoreOperationCallback cb)
         throws IOException, StoreException
     {
         final int partition = _partitionFor(key);
@@ -102,7 +103,7 @@ public class StorePartitions
         }
         _inFlightStartTimes.set(partition, startTime);
         try {
-            return cb.perform(key, arg);
+            return cb.perform(startTime, key, value);
         } finally {
             _inFlightStartTimes.set(partition, 0L);
             semaphore.release();

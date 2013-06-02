@@ -16,20 +16,20 @@ import com.fasterxml.storemate.shared.StorableKey;
  */
 public abstract class StoreOperationThrottler
 {
-    public abstract <IN,OUT> OUT performGet(StoreOperationCallback<IN,OUT> cb,
-            long operationTime, StorableKey key, IN arg)
+    public abstract Storable performGet(StoreOperationCallback cb,
+            long operationTime, StorableKey key)
         throws IOException, StoreException;
 
-    public abstract <IN,OUT> OUT performPut(StoreOperationCallback<IN,OUT> cb,
-            long operationTime, StorableKey key, IN arg)
+    public abstract Storable performPut(StoreOperationCallback cb,
+            long operationTime, StorableKey key, Storable value)
         throws IOException, StoreException;
 
-    public abstract <IN,OUT> OUT performSoftDelete(StoreOperationCallback<IN,OUT> cb,
-            long operationTime, StorableKey key, IN arg)
+    public abstract Storable performSoftDelete(StoreOperationCallback cb,
+            long operationTime, StorableKey key)
         throws IOException, StoreException;
 
-    public abstract <IN,OUT> OUT performHardDelete(StoreOperationCallback<IN,OUT> cb,
-            long operationTime, StorableKey key, IN arg)
+    public abstract Storable performHardDelete(StoreOperationCallback cb,
+            long operationTime, StorableKey key)
         throws IOException, StoreException;
 
     /*
@@ -40,41 +40,88 @@ public abstract class StoreOperationThrottler
     /**
      * Default non-throttling pass-through implementation: useful as a building block
      */
-    public abstract static class Base
+    public static class Base
         extends StoreOperationThrottler
     {
         @Override
-        public <IN, OUT> OUT performGet(StoreOperationCallback<IN, OUT> cb,
-                long operationTime, StorableKey key, IN arg)
+        public Storable performGet(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
             throws IOException, StoreException
         {
-            return cb.perform(key, arg);
+            return cb.perform(operationTime, key, null);
         }
 
         @Override
-        public <IN, OUT> OUT performPut(StoreOperationCallback<IN, OUT> cb,
-                long operationTime, StorableKey key, IN arg)
+        public Storable performPut(StoreOperationCallback cb,
+                long operationTime, StorableKey key, Storable value)
             throws IOException, StoreException
         {
-            return cb.perform(key, arg);
+            return cb.perform(operationTime, key, value);
         }
 
         @Override
-        public <IN, OUT> OUT performSoftDelete(StoreOperationCallback<IN, OUT> cb,
-                long operationTime, StorableKey key, IN arg)
+        public Storable performSoftDelete(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
             throws IOException, StoreException
         {
-            return cb.perform(key, arg);
+            return cb.perform(operationTime, key, null);
         }
             
 
         @Override
-        public <IN, OUT> OUT performHardDelete(StoreOperationCallback<IN, OUT> cb,
-                long operationTime, StorableKey key, IN arg)
+        public Storable performHardDelete(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
             throws IOException, StoreException
         {
-            return cb.perform(key, arg);
+            return cb.perform(operationTime, key, null);
         }
     }
 
+    /**
+     * Implementation that by default simply forwards requests: useful for
+     * adding throttling chains.
+     */
+    public abstract static class Delegating
+        extends StoreOperationThrottler
+    {
+        protected final StoreOperationThrottler _throttler;
+
+        public Delegating(StoreOperationThrottler t)
+        {
+            _throttler = t;
+        }
+
+        @Override
+        public Storable performGet(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
+            throws IOException, StoreException
+        {
+            return _throttler.performGet(cb, operationTime, key);
+        }
+
+        @Override
+        public Storable performPut(StoreOperationCallback cb,
+                long operationTime, StorableKey key, Storable value)
+            throws IOException, StoreException
+        {
+            return _throttler.performPut(cb, operationTime, key, value);
+        }
+
+        @Override
+        public Storable performSoftDelete(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
+            throws IOException, StoreException
+        {
+            return _throttler.performSoftDelete(cb, operationTime, key);
+        }
+            
+
+        @Override
+        public Storable performHardDelete(StoreOperationCallback cb,
+                long operationTime, StorableKey key)
+            throws IOException, StoreException
+        {
+            return _throttler.performHardDelete(cb, operationTime, key);
+        }
+    }    
 }

@@ -691,10 +691,11 @@ public class StorableStoreImpl extends AdminStorableStore
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
-        StorableCreationResult result = _partitions.withLockedPartition(key, operationTime,
-                new StoreOperationCallback<Storable,StorableCreationResult>() {
+        final StorableCreationResult[] resultRef = new StorableCreationResult[1];
+        _partitions.withLockedPartition(operationTime, key, storable,
+                new StoreOperationCallback() {
                     @Override
-                    public StorableCreationResult perform(StorableKey key, Storable s0)
+                    public Storable perform(long time, StorableKey key, Storable s0)
                         throws IOException, StoreException
                     {
                         // blind update, insert-only are easy
@@ -702,27 +703,33 @@ public class StorableStoreImpl extends AdminStorableStore
                         if (defaultOk != null) { // depends on entry in question...
                             if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
                                 Storable old = _backend.putEntry(key, s0);
-                                return new StorableCreationResult(key, true, s0, old);
+                                resultRef[0] = new StorableCreationResult(key, true, s0, old);
+                            } else {
+                                // strict "insert"
+                                Storable old = _backend.createEntry(key, s0);
+                                if (old == null) { // ok, succeeded
+                                    resultRef[0] = new StorableCreationResult(key, true, s0, null);
+                                } else {
+                                    // fail: caller may need to clean up the underlying file
+                                    resultRef[0] = new StorableCreationResult(key, false, s0, old);
+                                }
                             }
-                            // strict "insert"
-                            Storable old = _backend.createEntry(key, s0);
-                            if (old == null) { // ok, succeeded
-                                return new StorableCreationResult(key, true, s0, null);
+                        } else {
+                            // But if things depend on existence of old entry, or entries, trickier:
+                            AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
+                            if (!_backend.upsertEntry(key, s0, allowOverwrites, oldEntryRef)) {
+                                // fail due to existing entry
+                                resultRef[0] = new StorableCreationResult(key, false, s0, oldEntryRef.get());
+                            } else {
+                                resultRef[0] = new StorableCreationResult(key, true, s0, oldEntryRef.get());
                             }
-                            // fail: caller may need to clean up the underlying file
-                            return new StorableCreationResult(key, false, s0, old);
                         }
-                        // But if things depend on existence of old entry, or entries, trickier:
-                        AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
-                        if (!_backend.upsertEntry(key, s0, allowOverwrites, oldEntryRef)) {
-                            // fail due to existing entry
-                            return new StorableCreationResult(key, false, s0, oldEntryRef.get());
-                        }
-                        return new StorableCreationResult(key, true, s0, oldEntryRef.get());
+                        return null;
                     }
-                },
-                storable);
+                });
 
+        StorableCreationResult result = resultRef[0];
+        
         //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
             // One piece of clean up: for failed insert, delete backing file, if any
@@ -748,20 +755,20 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        final long currentTime = _timeMaster.currentTimeMillis();
-        Storable entry = _partitions.withLockedPartition(key, currentTime,
-            new ReadModifyOperationCallback<Object,Storable>(_backend) {
+        Storable entry = _partitions.withLockedPartition(_timeMaster.currentTimeMillis(),
+                key, null,
+            new ReadModifyOperationCallback(_backend) {
                 @Override
-                protected Storable perform(StorableKey key, Object arg, Storable value)
+                protected Storable modify(long time, StorableKey key, Storable value)
                     throws IOException, StoreException
                 {
                     // First things first: if no entry, nothing to do
                     if (value == null) {
                         return null;
                     }
-                    return _softDelete(key, value, currentTime, removeInlinedData, removeExternalData);
+                    return _softDelete(key, value, time, removeInlinedData, removeExternalData);
                 }
-        }, null);
+        });
         return new StorableDeletionResult(key, entry);
     }
     
@@ -771,12 +778,12 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        final long currentTime = _timeMaster.currentTimeMillis();
-        Storable entry = _partitions.withLockedPartition(key, currentTime,
-            new ReadModifyOperationCallback<Object,Storable>(_backend) {
+        Storable entry = _partitions.withLockedPartition(_timeMaster.currentTimeMillis(),
+                key, null,
+            new ReadModifyOperationCallback(_backend) {
 
                 @Override
-                protected Storable perform(StorableKey key, Object arg, Storable value)
+                protected Storable modify(long time, StorableKey key, Storable value)
                     throws IOException, StoreException
                 {                
                     // First things first: if no entry, nothing to do
@@ -785,7 +792,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _hardDelete(key, value, removeExternalData);
                 }
-        }, null);
+        });
         return new StorableDeletionResult(key, entry);
     }
 
