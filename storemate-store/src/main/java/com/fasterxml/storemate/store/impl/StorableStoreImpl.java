@@ -692,7 +692,8 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         final StorableCreationResult[] resultRef = new StorableCreationResult[1];
-        _partitions.withCallback(new StoreOperationCallback() {
+        /*Storable entry =*/ _partitions.performPut(
+                new StoreOperationCallback() {
             @Override
             public Storable perform(long time, StorableKey key, Storable s0)
                 throws IOException, StoreException
@@ -725,8 +726,8 @@ public class StorableStoreImpl extends AdminStorableStore
                         }
                         return null;
                     }
-            }
-        ).perform(operationTime, key, storable);
+            },
+        operationTime, key, storable);
 
         StorableCreationResult result = resultRef[0];
         
@@ -755,7 +756,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.withCallback(
+        Storable entry = _partitions.performSoftDelete(
             new ReadModifyOperationCallback(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
@@ -767,7 +768,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _softDelete(key, value, time, removeInlinedData, removeExternalData);
                 }
-        }).perform(_timeMaster.currentTimeMillis(), key, null);
+        }, _timeMaster.currentTimeMillis(), key);
         return new StorableDeletionResult(key, entry);
     }
     
@@ -777,7 +778,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.withCallback(
+        Storable entry = _partitions.performHardDelete(
             new ReadModifyOperationCallback(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
@@ -789,7 +790,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _hardDelete(key, value, removeExternalData);
                 }
-        }).perform(_timeMaster.currentTimeMillis(), key, null);
+        }, _timeMaster.currentTimeMillis(), key);
         return new StorableDeletionResult(key, entry);
     }
 

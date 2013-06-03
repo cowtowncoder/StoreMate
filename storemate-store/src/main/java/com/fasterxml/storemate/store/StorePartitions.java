@@ -12,7 +12,7 @@ import com.fasterxml.storemate.shared.StorableKey;
  * DELETEs).
  */
 public class StorePartitions
-    implements StoreOperationCallback
+    extends StoreOperationThrottler
 {
     private final static int MIN_PARTITIONS = 4;
     private final static int MAX_PARTITIONS = 256;
@@ -86,39 +86,37 @@ public class StorePartitions
     /**********************************************************************
      */
 
-    /**
-     * Method to call to perform arbitrary multi-part atomic operations, guarded
-     * by partitioned lock.
-     * Note that since this method is essentially synchronized on N-way partitioned
-     * mutex, it is essential that execution time is minimized to the critical
-     * section.
-     * 
-     * @param key Entry being operated on
-     * @param startTime Timestamp operation may use as "last-modified" timestamp; must not
-     *    be greater than the current system time (virtual or real)
-     * @param cb Callback to call from locked context
-     * @param arg Optional argument
-     */
     @Override
-    public Storable perform(long startTime, StorableKey key, Storable value)
-            throws IOException, StoreException
-//            StoreOperationCallback cb)
+    public Storable performGet(StoreOperationCallback cb, long operationTime,
+            StorableKey key)
+    throws IOException, StoreException
     {
-        final int partition = _partitionFor(key);
-        final Semaphore semaphore = _semaphores[partition];
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) { // could this ever occur?
-            semaphore.release();
-            throw new StoreException.Internal(key, e);
-        }
-        _inFlightStartTimes.set(partition, startTime);
-        try {
-            return _callbackDelegatee.perform(startTime, key, value);
-        } finally {
-            _inFlightStartTimes.set(partition, 0L);
-            semaphore.release();
-        }
+        // Not to be throttled, so:
+        return cb.perform(operationTime, key, null);
+    }
+
+    @Override
+    public Storable performPut(StoreOperationCallback cb, long operationTime,
+            StorableKey key, Storable value)
+    throws IOException, StoreException
+    {
+        return _callThrottled(cb, operationTime, key, value);
+    }
+
+    @Override
+    public Storable performSoftDelete(StoreOperationCallback cb,
+            long operationTime, StorableKey key)
+        throws IOException, StoreException
+    {
+        return _callThrottled(cb, operationTime, key, null);
+    }
+
+    @Override
+    public Storable performHardDelete(StoreOperationCallback cb,
+            long operationTime, StorableKey key)
+        throws IOException, StoreException
+    {
+        return _callThrottled(cb, operationTime, key, null);
     }
 
     /**
@@ -167,6 +165,27 @@ public class StorePartitions
     /* Internal methods
     /**********************************************************************
      */
+
+    protected Storable _callThrottled(StoreOperationCallback cb,
+            long startTime, StorableKey key, Storable value)
+        throws IOException, StoreException
+    {
+        final int partition = _partitionFor(key);
+        final Semaphore semaphore = _semaphores[partition];
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) { // could this ever occur?
+            semaphore.release();
+            throw new StoreException.Internal(key, e);
+        }
+        _inFlightStartTimes.set(partition, startTime);
+        try {
+            return cb.perform(startTime, key, value);
+        } finally {
+            _inFlightStartTimes.set(partition, 0L);
+            semaphore.release();
+        }
+    }
     
     private final int _partitionFor(StorableKey key)
     {
