@@ -5,21 +5,17 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.fasterxml.storemate.shared.StorableKey;
-import com.fasterxml.storemate.store.backend.StoreBackend;
 
 /**
- * Helper class for partitioning keyspace into single-access 'slices'
- * 
+ * Helper class for partitioning keyspace into single-access 'slices';
+ * used for guaranteeing atomicity of single-entry modifying operations (PUTs,
+ * DELETEs).
  */
 public class StorePartitions
+    implements StoreOperationCallback
 {
     private final static int MIN_PARTITIONS = 4;
     private final static int MAX_PARTITIONS = 256;
-    
-    /**
-     * Actual underlying data store
-     */
-    protected final StoreBackend _store;
     
     protected final int _modulo;
 
@@ -33,6 +29,8 @@ public class StorePartitions
      * safe synchronization ranges.
      */
     protected final AtomicLongArray _inFlightStartTimes;
+
+    protected final StoreOperationCallback _callbackDelegatee;
     
     /*
     /**********************************************************************
@@ -41,14 +39,13 @@ public class StorePartitions
      */
 
     /**
-     * 
+     * @param delegatee Object to which we forward actual 
      * @param n Minimum number of partitions (rounded up to next power of 2)
      * @param fair Whether underlying semaphores should be fair or not; fair ones have
      *   more overhead, but mostly (only?) for contested access, not uncontested
      */
-    public StorePartitions(StoreBackend store, int n, boolean fair)
+    public StorePartitions(int n, boolean fair)
     {
-        _store = store;
         n = powerOf2(n);
         _modulo = n-1;
         _semaphores = new Semaphore[n];
@@ -56,6 +53,20 @@ public class StorePartitions
             _semaphores[i] = new Semaphore(1, fair);
         }
         _inFlightStartTimes = new AtomicLongArray(n);
+        _callbackDelegatee = null;
+    }
+
+    protected StorePartitions(StorePartitions base,
+            StoreOperationCallback delegatee)
+    {
+        _modulo = base._modulo;
+        _semaphores = base._semaphores;
+        _inFlightStartTimes = base._inFlightStartTimes;
+        _callbackDelegatee = delegatee;
+    }
+
+    public StorePartitions withCallback(StoreOperationCallback delegatee) {
+        return new StorePartitions(this, delegatee);
     }
 
     private final static int powerOf2(int n)
@@ -88,10 +99,10 @@ public class StorePartitions
      * @param cb Callback to call from locked context
      * @param arg Optional argument
      */
-    public Storable withLockedPartition(long startTime,
-            StorableKey key, Storable value,
-            StoreOperationCallback cb)
-        throws IOException, StoreException
+    @Override
+    public Storable perform(long startTime, StorableKey key, Storable value)
+            throws IOException, StoreException
+//            StoreOperationCallback cb)
     {
         final int partition = _partitionFor(key);
         final Semaphore semaphore = _semaphores[partition];
@@ -103,7 +114,7 @@ public class StorePartitions
         }
         _inFlightStartTimes.set(partition, startTime);
         try {
-            return cb.perform(startTime, key, value);
+            return _callbackDelegatee.perform(startTime, key, value);
         } finally {
             _inFlightStartTimes.set(partition, 0L);
             semaphore.release();

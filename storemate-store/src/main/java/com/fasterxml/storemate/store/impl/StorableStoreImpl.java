@@ -145,7 +145,7 @@ public class StorableStoreImpl extends AdminStorableStore
          *   fairness as it is not needed (if we serialize calls anyway) but
          *   still incurs overhead.
          */
-        _partitions = new StorePartitions(_backend, config.lockPartitions, true);
+        _partitions = new StorePartitions(config.lockPartitions, true);
     }
 
     @Override
@@ -692,12 +692,11 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         final StorableCreationResult[] resultRef = new StorableCreationResult[1];
-        _partitions.withLockedPartition(operationTime, key, storable,
-                new StoreOperationCallback() {
-                    @Override
-                    public Storable perform(long time, StorableKey key, Storable s0)
-                        throws IOException, StoreException
-                    {
+        _partitions.withCallback(new StoreOperationCallback() {
+            @Override
+            public Storable perform(long time, StorableKey key, Storable s0)
+                throws IOException, StoreException
+            {
                         // blind update, insert-only are easy
                         Boolean defaultOk = allowOverwrites.mayOverwrite(key);
                         if (defaultOk != null) { // depends on entry in question...
@@ -726,7 +725,8 @@ public class StorableStoreImpl extends AdminStorableStore
                         }
                         return null;
                     }
-                });
+            }
+        ).perform(operationTime, key, storable);
 
         StorableCreationResult result = resultRef[0];
         
@@ -755,8 +755,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.withLockedPartition(_timeMaster.currentTimeMillis(),
-                key, null,
+        Storable entry = _partitions.withCallback(
             new ReadModifyOperationCallback(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
@@ -768,7 +767,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _softDelete(key, value, time, removeInlinedData, removeExternalData);
                 }
-        });
+        }).perform(_timeMaster.currentTimeMillis(), key, null);
         return new StorableDeletionResult(key, entry);
     }
     
@@ -778,10 +777,8 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.withLockedPartition(_timeMaster.currentTimeMillis(),
-                key, null,
+        Storable entry = _partitions.withCallback(
             new ReadModifyOperationCallback(_backend) {
-
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
                     throws IOException, StoreException
@@ -792,7 +789,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _hardDelete(key, value, removeExternalData);
                 }
-        });
+        }).perform(_timeMaster.currentTimeMillis(), key, null);
         return new StorableDeletionResult(key, entry);
     }
 
