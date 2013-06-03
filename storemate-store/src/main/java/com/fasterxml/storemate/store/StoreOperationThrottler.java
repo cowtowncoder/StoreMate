@@ -16,19 +16,56 @@ import com.fasterxml.storemate.shared.StorableKey;
  */
 public abstract class StoreOperationThrottler
 {
-    public abstract Storable performGet(StoreOperationCallback cb,
+    /*
+    /**********************************************************************
+    /* Metadata, life-cycle
+    /**********************************************************************
+     */
+
+    /**
+     * Factory method for constructing an instance that will delegate to given
+     * throttler, instead of directly calling callback.
+     */
+    public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
+
+    /**
+     * Method that can be called to find if there are operations in-flight,
+     * and if so, get the oldest timestamp from those operations.
+     * This can be used to calculate high-water marks for traversing last-modified
+     * index (to avoid accessing things modified after start of traversal).
+     * Note that this only establishes conservative lower bound: due to race condition,
+     * the oldest operation may finish before this method returns.
+     * 
+     * @return Timestamp of the "oldest" operation still being performed, if any,
+     *      or 0L if none
+     */
+    public abstract long getOldestInFlightTimestamp();
+
+    /**
+     * Method that will count number of write operations in-flight
+     * currently.
+     */
+    public abstract int getInFlightWritesCount();
+    
+    /*
+    /**********************************************************************
+    /* API, actual throttle methods
+    /**********************************************************************
+     */
+    
+    public abstract Storable performGet(StoreOperationCallback<Storable> cb,
             long operationTime, StorableKey key)
         throws IOException, StoreException;
 
-    public abstract Storable performPut(StoreOperationCallback cb,
+    public abstract StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
             long operationTime, StorableKey key, Storable value)
         throws IOException, StoreException;
 
-    public abstract Storable performSoftDelete(StoreOperationCallback cb,
+    public abstract Storable performSoftDelete(StoreOperationCallback<Storable> cb,
             long operationTime, StorableKey key)
         throws IOException, StoreException;
 
-    public abstract Storable performHardDelete(StoreOperationCallback cb,
+    public abstract Storable performHardDelete(StoreOperationCallback<Storable> cb,
             long operationTime, StorableKey key)
         throws IOException, StoreException;
 
@@ -37,14 +74,29 @@ public abstract class StoreOperationThrottler
     public abstract void performScan();
     */
 
+    /*
+    /**********************************************************************
+    /* Standard implementation(s)
+    /**********************************************************************
+     */
+    
     /**
      * Default non-throttling pass-through implementation: useful as a building block
      */
-    public static class Base
+    public abstract static class Base
         extends StoreOperationThrottler
     {
         @Override
-        public Storable performGet(StoreOperationCallback cb,
+        public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
+        
+        @Override
+        public long getOldestInFlightTimestamp() { return 0L; }
+
+        @Override
+        public int getInFlightWritesCount() { return 0; }
+        
+        @Override
+        public Storable performGet(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
@@ -52,7 +104,7 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public Storable performPut(StoreOperationCallback cb,
+        public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
                 long operationTime, StorableKey key, Storable value)
             throws IOException, StoreException
         {
@@ -60,16 +112,15 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public Storable performSoftDelete(StoreOperationCallback cb,
+        public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, key, null);
         }
-            
 
         @Override
-        public Storable performHardDelete(StoreOperationCallback cb,
+        public Storable performHardDelete(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
@@ -81,7 +132,7 @@ public abstract class StoreOperationThrottler
      * Implementation that by default simply forwards requests: useful for
      * adding throttling chains.
      */
-    public abstract static class Delegating
+    public static abstract class Delegating
         extends StoreOperationThrottler
     {
         protected final StoreOperationThrottler _throttler;
@@ -92,7 +143,20 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public Storable performGet(StoreOperationCallback cb,
+        public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
+        
+        @Override
+        public long getOldestInFlightTimestamp() {
+            return _throttler.getOldestInFlightTimestamp();
+        }
+
+        @Override
+        public int getInFlightWritesCount() {
+            return _throttler.getInFlightWritesCount();
+        }
+
+        @Override
+        public Storable performGet(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
@@ -100,7 +164,7 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public Storable performPut(StoreOperationCallback cb,
+        public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
                 long operationTime, StorableKey key, Storable value)
             throws IOException, StoreException
         {
@@ -108,7 +172,7 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public Storable performSoftDelete(StoreOperationCallback cb,
+        public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
@@ -117,7 +181,7 @@ public abstract class StoreOperationThrottler
             
 
         @Override
-        public Storable performHardDelete(StoreOperationCallback cb,
+        public Storable performHardDelete(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {

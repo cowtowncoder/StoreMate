@@ -20,6 +20,12 @@ public class StorePartitions
     protected final int _modulo;
 
     /**
+     * If we are delegating to another throttler (instead of directly
+     * calling callback), this is the throttler to delegate to.
+     */
+    protected final StoreOperationThrottler _delegatee;
+    
+    /**
      * Underlying semaphores used for locking
      */
     protected final Semaphore[] _semaphores;
@@ -29,8 +35,6 @@ public class StorePartitions
      * safe synchronization ranges.
      */
     protected final AtomicLongArray _inFlightStartTimes;
-
-    protected final StoreOperationCallback _callbackDelegatee;
     
     /*
     /**********************************************************************
@@ -53,20 +57,16 @@ public class StorePartitions
             _semaphores[i] = new Semaphore(1, fair);
         }
         _inFlightStartTimes = new AtomicLongArray(n);
-        _callbackDelegatee = null;
+        _delegatee = null;
     }
 
     protected StorePartitions(StorePartitions base,
-            StoreOperationCallback delegatee)
+            StoreOperationThrottler delegatee)
     {
         _modulo = base._modulo;
         _semaphores = base._semaphores;
         _inFlightStartTimes = base._inFlightStartTimes;
-        _callbackDelegatee = delegatee;
-    }
-
-    public StorePartitions withCallback(StoreOperationCallback delegatee) {
-        return new StorePartitions(this, delegatee);
+        _delegatee = delegatee;
     }
 
     private final static int powerOf2(int n)
@@ -82,54 +82,17 @@ public class StorePartitions
 
     /*
     /**********************************************************************
-    /* Public API
+    /* Public API, metadata etc
     /**********************************************************************
      */
-
+    
     @Override
-    public Storable performGet(StoreOperationCallback cb, long operationTime,
-            StorableKey key)
-    throws IOException, StoreException
+    public StoreOperationThrottler chainedInstance(StoreOperationThrottler delegatee)
     {
-        // Not to be throttled, so:
-        return cb.perform(operationTime, key, null);
+        return new StorePartitions(this, delegatee);
     }
 
     @Override
-    public Storable performPut(StoreOperationCallback cb, long operationTime,
-            StorableKey key, Storable value)
-    throws IOException, StoreException
-    {
-        return _callThrottled(cb, operationTime, key, value);
-    }
-
-    @Override
-    public Storable performSoftDelete(StoreOperationCallback cb,
-            long operationTime, StorableKey key)
-        throws IOException, StoreException
-    {
-        return _callThrottled(cb, operationTime, key, null);
-    }
-
-    @Override
-    public Storable performHardDelete(StoreOperationCallback cb,
-            long operationTime, StorableKey key)
-        throws IOException, StoreException
-    {
-        return _callThrottled(cb, operationTime, key, null);
-    }
-
-    /**
-     * Method that can be called to find if there are operations in-flight,
-     * and if so, get the oldest timestamp from those operations.
-     * This can be used to calculate high-water marks for traversing last-modified
-     * index (to avoid accessing things modified after start of traversal).
-     * Note that this only establishes conservative lower bound: due to race condition,
-     * the oldest operation may finish before this method returns.
-     * 
-     * @return Timestamp of the "oldest" operation still being performed, if any,
-     *      or 0L if none
-     */
     public long getOldestInFlightTimestamp()
     {
         long lowest = Long.MAX_VALUE;
@@ -144,11 +107,8 @@ public class StorePartitions
         return (lowest == Long.MAX_VALUE) ? 0L : lowest;
     }
 
-    /**
-     * Method that will count number of operations in-flight
-     * currently.
-     */
-    public int getInFlightCount()
+    @Override
+    public int getInFlightWritesCount()
     {
         int count = 0;
         for (int i = 0, last = _modulo; i <= last; ++i) {
@@ -159,15 +119,53 @@ public class StorePartitions
         }
         return count;
     }
-
+    
     /*
     /**********************************************************************
-    /* Internal methods
+    /* Public API
     /**********************************************************************
      */
 
-    protected Storable _callThrottled(StoreOperationCallback cb,
-            long startTime, StorableKey key, Storable value)
+    @Override
+    public Storable performGet(StoreOperationCallback<Storable> cb, long operationTime,
+            StorableKey key)
+    throws IOException, StoreException
+    {
+        if (_delegatee != null) {
+            return _delegatee.performGet(cb, operationTime, key);
+        }
+        // Not to be throttled, so:
+        return cb.perform(operationTime, key, null);
+    }
+
+    @Override
+    public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
+            long operationTime, StorableKey key, Storable value)
+    throws IOException, StoreException
+    {
+        final int partition = _partitionFor(key);
+        final Semaphore semaphore = _semaphores[partition];
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) { // could this ever occur?
+            semaphore.release();
+            throw new StoreException.Internal(key, e);
+        }
+        _inFlightStartTimes.set(partition, operationTime);
+        try {
+            if (_delegatee != null) {
+                return _delegatee.performPut(cb, operationTime, key, value);
+            }
+            return cb.perform(operationTime, key, value);
+        } finally {
+            _inFlightStartTimes.set(partition, 0L);
+            semaphore.release();
+        }
+    }
+
+    @Override
+    public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
+            long operationTime, StorableKey key)
         throws IOException, StoreException
     {
         final int partition = _partitionFor(key);
@@ -178,15 +176,49 @@ public class StorePartitions
             semaphore.release();
             throw new StoreException.Internal(key, e);
         }
-        _inFlightStartTimes.set(partition, startTime);
+        _inFlightStartTimes.set(partition, operationTime);
         try {
-            return cb.perform(startTime, key, value);
+            if (_delegatee != null) {
+                return _delegatee.performSoftDelete(cb, operationTime, key);
+            }
+            return cb.perform(operationTime, key, null);
         } finally {
             _inFlightStartTimes.set(partition, 0L);
             semaphore.release();
         }
     }
-    
+
+    @Override
+    public Storable performHardDelete(StoreOperationCallback<Storable> cb,
+            long operationTime, StorableKey key)
+        throws IOException, StoreException
+    {
+        final int partition = _partitionFor(key);
+        final Semaphore semaphore = _semaphores[partition];
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) { // could this ever occur?
+            semaphore.release();
+            throw new StoreException.Internal(key, e);
+        }
+        _inFlightStartTimes.set(partition, operationTime);
+        try {
+            if (_delegatee != null) {
+                return _delegatee.performHardDelete(cb, operationTime, key);
+            }
+            return cb.perform(operationTime, key, null);
+        } finally {
+            _inFlightStartTimes.set(partition, 0L);
+            semaphore.release();
+        }
+    }
+
+    /*
+    /**********************************************************************
+    /* Internal methods
+    /**********************************************************************
+     */
+
     private final int _partitionFor(StorableKey key)
     {
         /* NOTE: must shuffle key a bit, because lowest bits may also

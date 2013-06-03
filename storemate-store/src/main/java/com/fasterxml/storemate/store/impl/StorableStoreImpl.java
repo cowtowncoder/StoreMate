@@ -98,7 +98,7 @@ public class StorableStoreImpl extends AdminStorableStore
      * and the problem to resolve: it is not a general replacement for
      * real transactions.
      */
-    protected final StorePartitions _partitions;
+    protected final StoreOperationThrottler _partitions;
     
     /**
      * We can reuse read buffers as they are somewhat costly to
@@ -123,8 +123,16 @@ public class StorableStoreImpl extends AdminStorableStore
     /**********************************************************************
      */
 
+    @Deprecated
     public StorableStoreImpl(StoreConfig config, StoreBackend physicalStore,
             TimeMaster timeMaster, FileManager fileManager)
+    {
+        this(config, physicalStore, timeMaster, fileManager, null);
+    }
+
+    public StorableStoreImpl(StoreConfig config, StoreBackend physicalStore,
+            TimeMaster timeMaster, FileManager fileManager,
+            StoreOperationThrottler throttler)
     {
         _compressionEnabled = config.compressionEnabled;
         _minCompressibleSize = config.minUncompressedSizeForCompression;
@@ -139,13 +147,21 @@ public class StorableStoreImpl extends AdminStorableStore
         _timeMaster = timeMaster;
         _storableConverter = physicalStore.getStorableConverter();
 
+        if (throttler == null) {
+            throttler = buildDefaultThrottler(config);
+        }
+        _partitions = throttler;
+    }
+
+    protected StoreOperationThrottler buildDefaultThrottler(StoreConfig config)
+    {
         // May want to make this configurable in future...
         // 'true' means "fair", minor overhead, prevents potential starvation
         /* 02-Jun-2013, tatu: Unless we have true concurrency, may NOT want
          *   fairness as it is not needed (if we serialize calls anyway) but
          *   still incurs overhead.
          */
-        _partitions = new StorePartitions(config.lockPartitions, true);
+        return new StorePartitions(config.lockPartitions, true);
     }
 
     @Override
@@ -216,7 +232,7 @@ public class StorableStoreImpl extends AdminStorableStore
     public long getOldestInFlightTimestamp() {
         return _partitions.getOldestInFlightTimestamp();
     }
-    
+
     /*
     /**********************************************************************
     /* API, data reads
@@ -691,46 +707,38 @@ public class StorableStoreImpl extends AdminStorableStore
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
-        final StorableCreationResult[] resultRef = new StorableCreationResult[1];
-        /*Storable entry =*/ _partitions.performPut(
-                new StoreOperationCallback() {
+        final StorableCreationResult result = _partitions.performPut(
+                new StoreOperationCallback<StorableCreationResult>() {
             @Override
-            public Storable perform(long time, StorableKey key, Storable s0)
+            public StorableCreationResult perform(long time, StorableKey key, Storable s0)
                 throws IOException, StoreException
             {
-                        // blind update, insert-only are easy
-                        Boolean defaultOk = allowOverwrites.mayOverwrite(key);
-                        if (defaultOk != null) { // depends on entry in question...
-                            if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
-                                Storable old = _backend.putEntry(key, s0);
-                                resultRef[0] = new StorableCreationResult(key, true, s0, old);
-                            } else {
-                                // strict "insert"
-                                Storable old = _backend.createEntry(key, s0);
-                                if (old == null) { // ok, succeeded
-                                    resultRef[0] = new StorableCreationResult(key, true, s0, null);
-                                } else {
-                                    // fail: caller may need to clean up the underlying file
-                                    resultRef[0] = new StorableCreationResult(key, false, s0, old);
-                                }
-                            }
-                        } else {
-                            // But if things depend on existence of old entry, or entries, trickier:
-                            AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
-                            if (!_backend.upsertEntry(key, s0, allowOverwrites, oldEntryRef)) {
-                                // fail due to existing entry
-                                resultRef[0] = new StorableCreationResult(key, false, s0, oldEntryRef.get());
-                            } else {
-                                resultRef[0] = new StorableCreationResult(key, true, s0, oldEntryRef.get());
-                            }
-                        }
-                        return null;
+                // blind update, insert-only are easy
+                Boolean defaultOk = allowOverwrites.mayOverwrite(key);
+                if (defaultOk != null) { // depends on entry in question...
+                    if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
+                        Storable old = _backend.putEntry(key, s0);
+                        return new StorableCreationResult(key, true, s0, old);
                     }
-            },
+                    // strict "insert"
+                    Storable old = _backend.createEntry(key, s0);
+                    if (old == null) { // ok, succeeded
+                        return new StorableCreationResult(key, true, s0, null);
+                    }
+                    // fail: caller may need to clean up the underlying file
+                    return new StorableCreationResult(key, false, s0, old);
+                }
+                // But if things depend on existence of old entry, or entries, trickier:
+                AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
+                if (!_backend.upsertEntry(key, s0, allowOverwrites, oldEntryRef)) {
+                    // fail due to existing entry
+                    return new StorableCreationResult(key, false, s0, oldEntryRef.get());
+                }
+                return new StorableCreationResult(key, true, s0, oldEntryRef.get());
+            }
+        },
         operationTime, key, storable);
 
-        StorableCreationResult result = resultRef[0];
-        
         //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
             // One piece of clean up: for failed insert, delete backing file, if any
@@ -757,7 +765,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         _checkClosed();
         Storable entry = _partitions.performSoftDelete(
-            new ReadModifyOperationCallback(_backend) {
+            new ReadModifyOperationCallback<Storable>(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
                     throws IOException, StoreException
@@ -779,7 +787,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         _checkClosed();
         Storable entry = _partitions.performHardDelete(
-            new ReadModifyOperationCallback(_backend) {
+            new ReadModifyOperationCallback<Storable>(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
                     throws IOException, StoreException
@@ -864,9 +872,8 @@ public class StorableStoreImpl extends AdminStorableStore
      */
 
     @Override
-    public int getInFlightWritesCount()
-    {
-        return _partitions.getInFlightCount();
+    public int getInFlightWritesCount() {
+        return _partitions.getInFlightWritesCount();
     }
     
     @Override

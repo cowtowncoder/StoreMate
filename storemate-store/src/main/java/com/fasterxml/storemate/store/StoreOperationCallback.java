@@ -13,7 +13,7 @@ import com.fasterxml.storemate.shared.StorableKey;
  * @param <IN> Type of argument that is passed through
  * @param <OUT> Type of return value
  */
-public interface StoreOperationCallback
+public interface StoreOperationCallback<OUT>
 {
     /**
      * Callback method called in context of write lock.
@@ -23,6 +23,6 @@ public interface StoreOperationCallback
      * 
      * @return Return value from operation, if any
      */
-    public Storable perform(long operationTime, StorableKey key, Storable value)
+    public OUT perform(long operationTime, StorableKey key, Storable value)
         throws IOException, StoreException;
 }

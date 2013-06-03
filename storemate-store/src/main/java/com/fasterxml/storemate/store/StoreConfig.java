@@ -23,7 +23,8 @@ public class StoreConfig
      * locks. 64 seems like a reasonable initial guess.
      *<p>
      * Note that in addition to memory overhead, there is additional overhead
-     * for finding latest in-flight timestamp, which is a linear operation.
+     * for finding latest in-flight timestamp, which is a linear operation
+     * (although only called during node-to-node synclist access).
      */
     public final static int DEFAULT_LOCK_PARTITIONS = 64;
     
