@@ -23,12 +23,6 @@ public abstract class StoreOperationThrottler
      */
 
     /**
-     * Factory method for constructing an instance that will delegate to given
-     * throttler, instead of directly calling callback.
-     */
-    public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
-
-    /**
      * Method that can be called to find if there are operations in-flight,
      * and if so, get the oldest timestamp from those operations.
      * This can be used to calculate high-water marks for traversing last-modified
@@ -87,9 +81,6 @@ public abstract class StoreOperationThrottler
         extends StoreOperationThrottler
     {
         @Override
-        public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
-        
-        @Override
         public long getOldestInFlightTimestamp() { return 0L; }
 
         @Override
@@ -141,9 +132,6 @@ public abstract class StoreOperationThrottler
         {
             _throttler = t;
         }
-
-        @Override
-        public abstract StoreOperationThrottler chainedInstance(StoreOperationThrottler delegating);
         
         @Override
         public long getOldestInFlightTimestamp() {

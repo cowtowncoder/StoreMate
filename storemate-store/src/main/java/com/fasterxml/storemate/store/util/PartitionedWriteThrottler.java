@@ -86,12 +86,6 @@ public class PartitionedWriteThrottler
     /* Public API, metadata etc
     /**********************************************************************
      */
-    
-    @Override
-    public StoreOperationThrottler chainedInstance(StoreOperationThrottler delegatee)
-    {
-        return new PartitionedWriteThrottler(this, delegatee);
-    }
 
     @Override
     public long getOldestInFlightTimestamp()
