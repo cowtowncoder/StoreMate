@@ -80,7 +80,7 @@ public abstract class StoreOperationThrottler
         throws IOException, StoreException;
 
     public abstract <OUT> OUT performFileWrite(FileOperationCallback<OUT> cb,
-            long operationTime, File externalFile)
+            long operationTime, StorableKey key, File externalFile)
         throws IOException, StoreException;
     
     /*
@@ -143,71 +143,16 @@ public abstract class StoreOperationThrottler
                 long operationTime, Storable value, File externalFile)
             throws IOException, StoreException
         {
-            return cb.perform(operationTime, value, externalFile);
+            return cb.perform(operationTime, (value == null) ? null : value.getKey(),
+                    value, externalFile);
         }
 
         @Override
         public <T> T performFileWrite(FileOperationCallback<T> cb,
-                long operationTime, File externalFile)
+                long operationTime, StorableKey key, File externalFile)
             throws IOException, StoreException
         {
-            return cb.perform(operationTime, null, externalFile);
+            return cb.perform(operationTime, key, null, externalFile);
         }
     }
-
-    /*
-    public static abstract class Delegating
-        extends StoreOperationThrottler
-    {
-        protected final StoreOperationThrottler _throttler;
-
-        public Delegating(StoreOperationThrottler t)
-        {
-            _throttler = t;
-        }
-        
-        @Override
-        public long getOldestInFlightTimestamp() {
-            return _throttler.getOldestInFlightTimestamp();
-        }
-
-        @Override
-        public int getInFlightWritesCount() {
-            return _throttler.getInFlightWritesCount();
-        }
-
-        @Override
-        public Storable performGet(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
-            throws IOException, StoreException
-        {
-            return _throttler.performGet(cb, operationTime, key);
-        }
-
-        @Override
-        public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
-                long operationTime, StorableKey key, Storable value)
-            throws IOException, StoreException
-        {
-            return _throttler.performPut(cb, operationTime, key, value);
-        }
-
-        @Override
-        public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
-            throws IOException, StoreException
-        {
-            return _throttler.performSoftDelete(cb, operationTime, key);
-        }
-            
-
-        @Override
-        public Storable performHardDelete(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
-            throws IOException, StoreException
-        {
-            return _throttler.performHardDelete(cb, operationTime, key);
-        }
-    }
-    */
 }

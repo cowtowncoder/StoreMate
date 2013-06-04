@@ -510,9 +510,9 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putSmallEntry(key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallEntry(StorableKey key,
+    protected StorableCreationResult _putSmallEntry(final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
-            OverwriteChecker allowOverwrites, ByteContainer data)
+            OverwriteChecker allowOverwrites, final ByteContainer data)
         throws IOException, StoreException
     {
         Storable storable;
@@ -525,11 +525,18 @@ public class StorableStoreImpl extends AdminStorableStore
                     stdMetadata, customMetadata, data);
         } else {
             // otherwise, need to create file and all that fun...
-            long fileCreationTime = _timeMaster.currentTimeMillis();
+            final long fileCreationTime = _timeMaster.currentTimeMillis();
             FileReference fileRef = _fileManager.createStorageFile(key,
                     stdMetadata.compression, fileCreationTime);
             try {
-                IOUtil.writeFile(fileRef.getFile(), data);
+                _throttler.performFileWrite(new FileOperationCallback<Void>() {
+                    @Override
+                    public Void perform(long operationTime, StorableKey key, Storable value, File externalFile)
+                            throws IOException, StoreException {
+                        IOUtil.writeFile(externalFile, data);
+                        return null;
+                    }
+                }, fileCreationTime, key, fileRef.getFile());
             } catch (IOException e) {
                 // better remove the file, if one exists...
                 fileRef.getFile().delete();
@@ -545,14 +552,14 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @SuppressWarnings("resource")
-    protected StorableCreationResult _putLargeEntry(StorableKey key,
+    protected StorableCreationResult _putLargeEntry(final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
-            byte[] readBuffer, int readByteCount,
-            InputStream input)
+            final byte[] readBuffer, final int readByteCount,
+            final InputStream input)
         throws IOException, StoreException
     {
-        boolean skipCompression;
+        final boolean skipCompression;
         Compression comp = stdMetadata.compression;
         
         if (comp != null) { // pre-compressed, or blocked
@@ -574,57 +581,68 @@ public class StorableStoreImpl extends AdminStorableStore
         final FileReference fileRef = _fileManager.createStorageFile(key, comp, fileCreationTime);
         File storedFile = fileRef.getFile();
         
-        OutputStream out = null;
-        CountingOutputStream compressedOut;
+        final OutputStream out;
+        final CountingOutputStream compressedOut;
 
-        try {
-            if (skipCompression) {
-                compressedOut = null;
-                out = new FileOutputStream(storedFile);
-            } else {
-                compressedOut = new CountingOutputStream(new FileOutputStream(storedFile),
-                        new IncrementalMurmur3Hasher());
-                out = Compressors.compressingStream(compressedOut, comp);
-            }
-            out.write(readBuffer, 0, readByteCount);
-        } catch (IOException e) {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException e2) { }
-            throw new StoreException.IO(key, "Failed to write initial "+readByteCount+" bytes of file '"+storedFile.getAbsolutePath()+"'", e);
+        if (skipCompression) {
+            compressedOut = null;
+            out = new FileOutputStream(storedFile);
+        } else {
+            compressedOut = new CountingOutputStream(new FileOutputStream(storedFile),
+                    new IncrementalMurmur3Hasher());
+            out = Compressors.compressingStream(compressedOut, comp);
         }
-        IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
-        hasher.update(readBuffer, 0, readByteCount);
-        long copiedBytes = readByteCount;
+        final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
         
-        // and then need to proceed with copying the rest, compressing along the way
-        try {
-            while (true) {
-                int count;
+        /* 04-Jun-2013, tatu: Rather long block of possibly throttled file-writing
+         *    action... will need to be straightened out in due time.
+         */
+        long copiedBytes = _throttler.performFileWrite(new FileOperationCallback<Long>() {
+            @Override
+            public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
+                    throws IOException, StoreException {
                 try {
-                    count = input.read(readBuffer);
-                } catch (IOException e) { // probably will fail to write response too but...
-                    throw new StoreException.IO(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
-                }
-                if (count < 0) {
-                    break;
-                }
-                copiedBytes += count;
-                try {
-                    out.write(readBuffer, 0, count);
+                    out.write(readBuffer, 0, readByteCount);
                 } catch (IOException e) {
-                    throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
-                            +") to file '"+storedFile.getAbsolutePath()+"'", e);
+                    try {
+                        if (out != null) {
+                            out.close();
+                        }
+                    } catch (IOException e2) { }
+                    throw new StoreException.IO(key, "Failed to write initial "+readByteCount+" bytes of file '"+externalFile.getAbsolutePath()+"'", e);
                 }
-                hasher.update(readBuffer, 0, count);
+                hasher.update(readBuffer, 0, readByteCount);
+                long copiedBytes = readByteCount;
+                
+                // and then need to proceed with copying the rest, compressing along the way
+                try {
+                    while (true) {
+                        int count;
+                        try {
+                            count = input.read(readBuffer);
+                        } catch (IOException e) { // probably will fail to write response too but...
+                            throw new StoreException.IO(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+                        }
+                        if (count < 0) {
+                            break;
+                        }
+                        copiedBytes += count;
+                        try {
+                            out.write(readBuffer, 0, count);
+                        } catch (IOException e) {
+                            throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                                    +") to file '"+externalFile.getAbsolutePath()+"'", e);
+                        }
+                        hasher.update(readBuffer, 0, count);
+                    }
+                } finally {
+                    try {
+                        out.close();
+                    } catch (IOException e) { }
+                }
+                return copiedBytes;
             }
-        } finally {
-            try {
-                out.close();
-            } catch (IOException e) { }
-        }
+        }, fileCreationTime, key, fileRef.getFile());
         
         // Checksum calculation and storage details differ depending on whether compression is used
         if (skipCompression) {
