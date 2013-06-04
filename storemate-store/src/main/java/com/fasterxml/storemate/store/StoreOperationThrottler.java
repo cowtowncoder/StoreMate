@@ -75,11 +75,11 @@ public abstract class StoreOperationThrottler
     /**********************************************************************
      */
 
-    public abstract void performFileRead(FileOperationCallback cb,
+    public abstract <OUT> OUT performFileRead(FileOperationCallback<OUT> cb,
             long operationTime, Storable value, File externalFile)
         throws IOException, StoreException;
 
-    public abstract void performFileWrite(FileOperationCallback cb,
+    public abstract <OUT> OUT performFileWrite(FileOperationCallback<OUT> cb,
             long operationTime, File externalFile)
         throws IOException, StoreException;
     
@@ -139,19 +139,19 @@ public abstract class StoreOperationThrottler
         }
         
         @Override
-        public void performFileRead(FileOperationCallback cb,
+        public <T> T performFileRead(FileOperationCallback<T> cb,
                 long operationTime, Storable value, File externalFile)
             throws IOException, StoreException
         {
-            cb.perform(operationTime, value, externalFile);
+            return cb.perform(operationTime, value, externalFile);
         }
 
         @Override
-        public void performFileWrite(FileOperationCallback cb,
+        public <T> T performFileWrite(FileOperationCallback<T> cb,
                 long operationTime, File externalFile)
             throws IOException, StoreException
         {
-            cb.perform(operationTime, null, externalFile);
+            return cb.perform(operationTime, null, externalFile);
         }
     }
 

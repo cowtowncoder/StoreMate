@@ -7,7 +7,7 @@ import java.io.IOException;
  * Interface that defines callback used for operations
  * against file system.
  */
-public interface FileOperationCallback
+public interface FileOperationCallback<OUT>
 {
     /**
      * Callback method called with context.
@@ -18,6 +18,6 @@ public interface FileOperationCallback
      * 
      * @return Return value from operation, if any
      */
-    public void perform(long operationTime, Storable value, File externalFile)
+    public OUT perform(long operationTime, Storable value, File externalFile)
         throws IOException, StoreException;
 }

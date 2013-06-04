@@ -32,6 +32,11 @@ public enum Compression
         _contentEncoding = contentEnc;
     }
 
+    public static boolean needsUncompress(Compression c)
+    {
+        return (c != null) && (c != Compression.NONE);
+    }
+    
     public char asChar() { return _char; }
     public int asIndex() { return _index; }
 
