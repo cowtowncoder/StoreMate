@@ -1,17 +1,18 @@
-package com.fasterxml.storemate.store;
+package com.fasterxml.storemate.store.util;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.*;
 
 /**
- * Helper class for partitioning keyspace into single-access 'slices';
- * used for guaranteeing atomicity of single-entry modifying operations (PUTs,
- * DELETEs).
+ * {@link StoreOperationThrottler} that throttles all write operations
+ * (usually PUT and DELETE) using N-way key-based partitions; such that
+ * only a single active operation is allowed per partition.
  */
-public class StorePartitions
+public class PartitionedWriteThrottler
     extends StoreOperationThrottler
 {
     private final static int MIN_PARTITIONS = 4;
@@ -48,7 +49,7 @@ public class StorePartitions
      * @param fair Whether underlying semaphores should be fair or not; fair ones have
      *   more overhead, but mostly (only?) for contested access, not uncontested
      */
-    public StorePartitions(int n, boolean fair)
+    public PartitionedWriteThrottler(int n, boolean fair)
     {
         n = powerOf2(n);
         _modulo = n-1;
@@ -60,7 +61,7 @@ public class StorePartitions
         _delegatee = null;
     }
 
-    protected StorePartitions(StorePartitions base,
+    protected PartitionedWriteThrottler(PartitionedWriteThrottler base,
             StoreOperationThrottler delegatee)
     {
         _modulo = base._modulo;
@@ -89,7 +90,7 @@ public class StorePartitions
     @Override
     public StoreOperationThrottler chainedInstance(StoreOperationThrottler delegatee)
     {
-        return new StorePartitions(this, delegatee);
+        return new PartitionedWriteThrottler(this, delegatee);
     }
 
     @Override
@@ -129,7 +130,7 @@ public class StorePartitions
     @Override
     public Storable performGet(StoreOperationCallback<Storable> cb, long operationTime,
             StorableKey key)
-    throws IOException, StoreException
+        throws IOException, StoreException
     {
         if (_delegatee != null) {
             return _delegatee.performGet(cb, operationTime, key);
@@ -141,7 +142,7 @@ public class StorePartitions
     @Override
     public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
             long operationTime, StorableKey key, Storable value)
-    throws IOException, StoreException
+        throws IOException, StoreException
     {
         final int partition = _partitionFor(key);
         final Semaphore semaphore = _semaphores[partition];

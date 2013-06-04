@@ -28,6 +28,7 @@ import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
+import com.fasterxml.storemate.store.util.PartitionedWriteThrottler;
 
 /**
  * Full store front-end implementation.
@@ -161,7 +162,7 @@ public class StorableStoreImpl extends AdminStorableStore
          *   fairness as it is not needed (if we serialize calls anyway) but
          *   still incurs overhead.
          */
-        return new StorePartitions(config.lockPartitions, true);
+        return new PartitionedWriteThrottler(config.lockPartitions, true);
     }
 
     @Override
