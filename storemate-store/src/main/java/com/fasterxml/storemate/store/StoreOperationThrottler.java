@@ -70,21 +70,17 @@ public abstract class StoreOperationThrottler
         throws IOException, StoreException;
 
     /*
-    public abstract void performScan();
-    */
-
-    /*
     /**********************************************************************
     /* API, throttle methods for file system access
     /**********************************************************************
      */
 
-    public abstract Object performFileRead(FileOperationCallback<Object> cb,
-            long operationTime, StorableKey key, Storable value, File externalFile)
+    public abstract void performFileRead(FileOperationCallback cb,
+            long operationTime, Storable value, File externalFile)
         throws IOException, StoreException;
 
-    public abstract Object performFileWrite(FileOperationCallback<Object> cb,
-            long operationTime, StorableKey key, File externalFile)
+    public abstract void performFileWrite(FileOperationCallback cb,
+            long operationTime, File externalFile)
         throws IOException, StoreException;
     
     /*
@@ -143,19 +139,19 @@ public abstract class StoreOperationThrottler
         }
         
         @Override
-        public Object performFileRead(FileOperationCallback<Object> cb,
-                long operationTime, StorableKey key, Storable value, File externalFile)
+        public void performFileRead(FileOperationCallback cb,
+                long operationTime, Storable value, File externalFile)
             throws IOException, StoreException
         {
-            return cb.perform(operationTime, key, value, externalFile);
+            cb.perform(operationTime, value, externalFile);
         }
 
         @Override
-        public Object performFileWrite(FileOperationCallback<Object> cb,
-                long operationTime, StorableKey key, File externalFile)
+        public void performFileWrite(FileOperationCallback cb,
+                long operationTime, File externalFile)
             throws IOException, StoreException
         {
-            return cb.perform(operationTime, key, null, externalFile);
+            cb.perform(operationTime, null, externalFile);
         }
     }
 
