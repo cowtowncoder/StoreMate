@@ -13,7 +13,7 @@ import com.fasterxml.storemate.store.*;
  * only a single active operation is allowed per partition.
  */
 public class PartitionedWriteThrottler
-    extends StoreOperationThrottler
+    extends StoreOperationThrottler.Base
 {
     private final static int MIN_PARTITIONS = 4;
     private final static int MAX_PARTITIONS = 256;

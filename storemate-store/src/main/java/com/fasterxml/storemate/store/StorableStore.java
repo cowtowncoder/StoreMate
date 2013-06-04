@@ -50,6 +50,8 @@ public abstract class StorableStore
     public abstract TimeMaster getTimeMaster();
 
     public abstract StoreBackend getBackend();
+
+    public abstract StoreOperationThrottler getThrottler();
     
     /*
     /**********************************************************************

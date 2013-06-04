@@ -1,8 +1,10 @@
 package com.fasterxml.storemate.store;
 
+import java.io.File;
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
+import com.fasterxml.storemate.store.backend.IterationResult;
 
 /**
  * Abstract class that defines interface StoreMate exposes to let higher-level
@@ -43,7 +45,7 @@ public abstract class StoreOperationThrottler
     
     /*
     /**********************************************************************
-    /* API, actual throttle methods
+    /* API, throttle methods for database access
     /**********************************************************************
      */
     
@@ -51,6 +53,10 @@ public abstract class StoreOperationThrottler
             long operationTime, StorableKey key)
         throws IOException, StoreException;
 
+    public abstract IterationResult performList(StoreOperationCallback<IterationResult> cb,
+            long operationTime)
+        throws IOException, StoreException;
+    
     public abstract StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
             long operationTime, StorableKey key, Storable value)
         throws IOException, StoreException;
@@ -64,20 +70,30 @@ public abstract class StoreOperationThrottler
         throws IOException, StoreException;
 
     /*
-    public abstract void performList(StoreOperationCallback cb);
     public abstract void performScan();
     */
 
     /*
     /**********************************************************************
+    /* API, throttle methods for file system access
+    /**********************************************************************
+     */
+
+    public abstract Object performFileRead(FileOperationCallback<Object> cb,
+            long operationTime, StorableKey key, Storable value, File externalFile)
+        throws IOException, StoreException;
+
+    public abstract Object performFileWrite(FileOperationCallback<Object> cb,
+            long operationTime, StorableKey key, File externalFile)
+        throws IOException, StoreException;
+    
+    /*
+    /**********************************************************************
     /* Standard implementation(s)
     /**********************************************************************
      */
-    
-    /**
-     * Default non-throttling pass-through implementation: useful as a building block
-     */
-    public abstract static class Base
+
+    public static class Base
         extends StoreOperationThrottler
     {
         @Override
@@ -94,6 +110,14 @@ public abstract class StoreOperationThrottler
             return cb.perform(operationTime, key, null);
         }
 
+        @Override
+        public IterationResult performList(StoreOperationCallback<IterationResult> cb,
+                long operationTime)
+            throws IOException, StoreException
+        {
+            return cb.perform(operationTime, null, null);
+        }
+        
         @Override
         public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
                 long operationTime, StorableKey key, Storable value)
@@ -117,12 +141,25 @@ public abstract class StoreOperationThrottler
         {
             return cb.perform(operationTime, key, null);
         }
+        
+        @Override
+        public Object performFileRead(FileOperationCallback<Object> cb,
+                long operationTime, StorableKey key, Storable value, File externalFile)
+            throws IOException, StoreException
+        {
+            return cb.perform(operationTime, key, value, externalFile);
+        }
+
+        @Override
+        public Object performFileWrite(FileOperationCallback<Object> cb,
+                long operationTime, StorableKey key, File externalFile)
+            throws IOException, StoreException
+        {
+            return cb.perform(operationTime, key, null, externalFile);
+        }
     }
 
-    /**
-     * Implementation that by default simply forwards requests: useful for
-     * adding throttling chains.
-     */
+    /*
     public static abstract class Delegating
         extends StoreOperationThrottler
     {
@@ -175,5 +212,6 @@ public abstract class StoreOperationThrottler
         {
             return _throttler.performHardDelete(cb, operationTime, key);
         }
-    }    
+    }
+    */
 }

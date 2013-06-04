@@ -92,14 +92,12 @@ public class StorableStoreImpl extends AdminStorableStore
     protected final StorableConverter _storableConverter;
 
     /**
-     * We will also need a simple form of locking to make 'read+write'
-     * combinations atomic without requiring backend store to have
-     * real transactions.
-     * This is sufficient only because we know the specific usage pattern,
-     * and the problem to resolve: it is not a general replacement for
-     * real transactions.
+     * We may also need to do primitive locking for read-modify-write
+     * operations (which soft-delete is, for example); and/or throttle
+     * number of concurrent operations of certain types.
+     * Both can be implemented using chained set of throttlers.
      */
-    protected final StoreOperationThrottler _partitions;
+    protected final StoreOperationThrottler _throttler;
     
     /**
      * We can reuse read buffers as they are somewhat costly to
@@ -151,7 +149,7 @@ public class StorableStoreImpl extends AdminStorableStore
         if (throttler == null) {
             throttler = buildDefaultThrottler(config);
         }
-        _partitions = throttler;
+        _throttler = throttler;
     }
 
     protected StoreOperationThrottler buildDefaultThrottler(StoreConfig config)
@@ -208,6 +206,11 @@ public class StorableStoreImpl extends AdminStorableStore
     public StoreBackend getBackend() {
         return _backend;
     }
+
+    @Override
+    public StoreOperationThrottler getThrottler() {
+        return _throttler;
+    }
     
     /*
     /**********************************************************************
@@ -231,7 +234,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
     @Override
     public long getOldestInFlightTimestamp() {
-        return _partitions.getOldestInFlightTimestamp();
+        return _throttler.getOldestInFlightTimestamp();
     }
 
     /*
@@ -708,7 +711,7 @@ public class StorableStoreImpl extends AdminStorableStore
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
-        final StorableCreationResult result = _partitions.performPut(
+        final StorableCreationResult result = _throttler.performPut(
                 new StoreOperationCallback<StorableCreationResult>() {
             @Override
             public StorableCreationResult perform(long time, StorableKey key, Storable s0)
@@ -765,7 +768,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.performSoftDelete(
+        Storable entry = _throttler.performSoftDelete(
             new ReadModifyOperationCallback<Storable>(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
@@ -787,7 +790,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _partitions.performHardDelete(
+        Storable entry = _throttler.performHardDelete(
             new ReadModifyOperationCallback<Storable>(_backend) {
                 @Override
                 protected Storable modify(long time, StorableKey key, Storable value)
@@ -841,21 +844,43 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     
     @Override
-    public IterationResult iterateEntriesByKey(StorableIterationCallback cb,
-            StorableKey firstKey)
-        throws StoreException {
-        return _backend.iterateEntriesByKey(cb, firstKey);
+    public IterationResult iterateEntriesByKey(final StorableIterationCallback cb,
+            final StorableKey firstKey)
+        throws StoreException
+    {
+        try {
+            return _throttler.performList(new StoreOperationCallback<IterationResult>() {
+                @Override
+                public IterationResult perform(long operationTime, StorableKey key, Storable value)
+                        throws IOException, StoreException {
+                    return _backend.iterateEntriesByKey(cb, firstKey);
+                }
+            }, _timeMaster.currentTimeMillis());
+        } catch (IOException e) {
+            throw new StoreException.IO(firstKey, "Failed to iterate entries from "+firstKey+": "+e.getMessage(), e);
+        }
     }
 
     @Override
-    public IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
-            StorableKey lastSeen)
-        throws StoreException {
-        // if we didn't get "lastSeen", same as regular method
-        if (lastSeen == null) {
-            return _backend.iterateEntriesByKey(cb, null);
+    public IterationResult iterateEntriesAfterKey(final StorableIterationCallback cb,
+            final StorableKey lastSeen)
+        throws StoreException
+    {
+        try {
+            return _throttler.performList(new StoreOperationCallback<IterationResult>() {
+                @Override
+                public IterationResult perform(long operationTime, StorableKey key, Storable value)
+                        throws IOException, StoreException {
+                    // if we didn't get "lastSeen", same as regular method
+                    if (lastSeen == null) {
+                        return _backend.iterateEntriesByKey(cb, null);
+                    }
+                    return _backend.iterateEntriesAfterKey(cb, lastSeen);
+                }
+            }, _timeMaster.currentTimeMillis());
+        } catch (IOException e) {
+            throw new StoreException.IO(lastSeen, "Failed to iterate entries from "+lastSeen+": "+e.getMessage(), e);
         }
-        return _backend.iterateEntriesAfterKey(cb, lastSeen);
     }
     
     @Override
@@ -874,7 +899,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
     @Override
     public int getInFlightWritesCount() {
-        return _partitions.getInFlightWritesCount();
+        return _throttler.getInFlightWritesCount();
     }
     
     @Override

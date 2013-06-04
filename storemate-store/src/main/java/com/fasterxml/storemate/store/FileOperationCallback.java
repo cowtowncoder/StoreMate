@@ -1,16 +1,17 @@
 package com.fasterxml.storemate.store;
 
+import java.io.File;
 import java.io.IOException;
 
 import com.fasterxml.storemate.shared.StorableKey;
 
 /**
  * Interface that defines callback used for operations
- * (usually of form "GET,modify,PUT") against store.
+ * against file system
  *
  * @param <OUT> Type of return value
  */
-public interface StoreOperationCallback<OUT>
+public interface FileOperationCallback<OUT>
 {
     /**
      * Callback method called with context.
@@ -21,6 +22,7 @@ public interface StoreOperationCallback<OUT>
      * 
      * @return Return value from operation, if any
      */
-    public OUT perform(long operationTime, StorableKey key, Storable value)
+    public OUT perform(long operationTime, StorableKey key, Storable value,
+            File externalFile)
         throws IOException, StoreException;
 }
