@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.10 (xx-xxx-2013)
+
+- Add more sanity checks in `StorableKey` constructor
+
 0.9.9 (04-Jun-2013)
 
 - Make `StorableKey` comparable

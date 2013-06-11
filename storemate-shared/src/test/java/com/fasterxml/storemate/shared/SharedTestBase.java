@@ -15,9 +15,9 @@ import junit.framework.TestCase;
 public abstract class SharedTestBase extends TestCase
 {
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Checksum calculation
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Checksum calculation
+    /**********************************************************************
      */
 
     protected int calcChecksum32(byte[] data) {
@@ -29,9 +29,9 @@ public abstract class SharedTestBase extends TestCase
     }
 	
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Data generation methods
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Data generation methods
+    /**********************************************************************
      */
 	
     protected String biggerCompressibleData(int size)
@@ -86,9 +86,9 @@ public abstract class SharedTestBase extends TestCase
     }
 
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // Exception verification methods
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* Exception verification methods
+    /**********************************************************************
      */
 
     protected final void verifyException(Exception e, String expected)
@@ -105,9 +105,9 @@ public abstract class SharedTestBase extends TestCase
     }
 
     /*
-    ///////////////////////////////////////////////////////////////////////
-    // I/O helpers
-    ///////////////////////////////////////////////////////////////////////
+    /**********************************************************************
+    /* I/O helpers
+    /**********************************************************************
      */
     
     protected final byte[] readFile(File f) throws IOException

@@ -18,7 +18,9 @@ public class StorableKey
     protected int _hashCode;
     
     public StorableKey(byte[] buf) {
-        this(buf, 0, buf.length);
+        _buffer = buf;
+        _offset = 0;
+        _length = buf.length;
     }
 
     public StorableKey(byte[] buf, int offset, int len)
@@ -26,6 +28,16 @@ public class StorableKey
         _buffer = buf;
         _offset = offset;
         _length = len;
+        if (offset < 0) {
+            throw new IllegalArgumentException("Illegal offset: "+offset);
+        }
+        if (len < 0) {
+            throw new IllegalArgumentException("Illegal length: "+len);
+        }
+        if ((offset + len) > buf.length) {
+            throw new IllegalArgumentException("Illegal offset/length ("+offset+"/"+len
+                    +") combination: array length = "+buf.length);
+        }
     }
 
     /*
