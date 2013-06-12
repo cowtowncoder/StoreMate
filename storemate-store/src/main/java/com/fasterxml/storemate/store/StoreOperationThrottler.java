@@ -27,10 +27,6 @@ public abstract class StoreOperationThrottler
     public abstract Storable performGet(StoreOperationCallback<Storable> cb,
             long operationTime, StorableKey key)
         throws IOException, StoreException;
-
-    public abstract Storable priorityGet(StoreOperationCallback<Storable> cb,
-            long operationTime, StorableKey key)
-        throws IOException, StoreException;
     
     public abstract IterationResult performList(StoreOperationCallback<IterationResult> cb,
             long operationTime)
@@ -77,14 +73,6 @@ public abstract class StoreOperationThrottler
     {
         @Override
         public Storable performGet(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
-            throws IOException, StoreException
-        {
-            return cb.perform(operationTime, key, null);
-        }
-
-        @Override
-        public Storable priorityGet(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
             throws IOException, StoreException
         {
