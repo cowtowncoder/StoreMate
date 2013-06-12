@@ -60,7 +60,7 @@ public abstract class BackendTestBase extends StoreTestBase
         StoreBackend backend = createBackend(testRoot, storeConfig);
         return new StorableStoreImpl(storeConfig, backend, timeMaster,
                 new FileManager(fmConfig, timeMaster, new DefaultFilenameConverter()),
-                null);
+                null, null);
     }
 
     protected abstract StoreBackend createBackend(File testRoot, StoreConfig storeConfig);

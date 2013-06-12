@@ -184,7 +184,7 @@ public abstract class LastModTestBase extends BackendTestBase
                // also: we better see the entry
                try {
                    assertTrue(store.hasEntry(key));
-               } catch (StoreException e) {
+               } catch (Exception e) {
                    fail("Prob with store"+e);
                }
                return IterationAction.PROCESS_ENTRY;
@@ -196,7 +196,7 @@ public abstract class LastModTestBase extends BackendTestBase
                // and still have the entry
                try {
                    assertTrue(store.hasEntry(entry.getKey()));
-               } catch (StoreException e) {
+               } catch (Exception e) {
                    fail("Prob with store"+e);
                }
 

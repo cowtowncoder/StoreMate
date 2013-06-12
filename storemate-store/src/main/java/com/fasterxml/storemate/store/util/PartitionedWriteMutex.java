@@ -8,23 +8,16 @@ import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.*;
 
 /**
- * {@link StoreOperationThrottler} that throttles all write operations
+ * Object used to implement mutex for write operations
  * (usually PUT and DELETE) using N-way key-based partitions; such that
  * only a single active operation is allowed per partition.
  */
-public class PartitionedWriteThrottler
-    extends StoreOperationThrottler.Base
+public class PartitionedWriteMutex
 {
     private final static int MIN_PARTITIONS = 4;
     private final static int MAX_PARTITIONS = 256;
     
     protected final int _modulo;
-
-    /**
-     * If we are delegating to another throttler (instead of directly
-     * calling callback), this is the throttler to delegate to.
-     */
-    protected final StoreOperationThrottler _delegatee;
     
     /**
      * Underlying semaphores used for locking
@@ -36,6 +29,19 @@ public class PartitionedWriteThrottler
      * safe synchronization ranges.
      */
     protected final AtomicLongArray _inFlightStartTimes;
+
+    /*
+    /**********************************************************************
+    /* Call back type(s)
+    /**********************************************************************
+     */
+
+    /**
+     * Callback used by partitioner.
+     */
+    public interface Callback<T> {
+        public T performWrite(StorableKey key) throws IOException, StoreException;
+    }
     
     /*
     /**********************************************************************
@@ -49,7 +55,7 @@ public class PartitionedWriteThrottler
      * @param fair Whether underlying semaphores should be fair or not; fair ones have
      *   more overhead, but mostly (only?) for contested access, not uncontested
      */
-    public PartitionedWriteThrottler(int n, boolean fair)
+    public PartitionedWriteMutex(int n, boolean fair)
     {
         n = powerOf2(n);
         _modulo = n-1;
@@ -58,16 +64,6 @@ public class PartitionedWriteThrottler
             _semaphores[i] = new Semaphore(1, fair);
         }
         _inFlightStartTimes = new AtomicLongArray(n);
-        _delegatee = null;
-    }
-
-    protected PartitionedWriteThrottler(PartitionedWriteThrottler base,
-            StoreOperationThrottler delegatee)
-    {
-        _modulo = base._modulo;
-        _semaphores = base._semaphores;
-        _inFlightStartTimes = base._inFlightStartTimes;
-        _delegatee = delegatee;
     }
 
     private final static int powerOf2(int n)
@@ -87,7 +83,6 @@ public class PartitionedWriteThrottler
     /**********************************************************************
      */
 
-    @Override
     public long getOldestInFlightTimestamp()
     {
         long lowest = Long.MAX_VALUE;
@@ -102,7 +97,6 @@ public class PartitionedWriteThrottler
         return (lowest == Long.MAX_VALUE) ? 0L : lowest;
     }
 
-    @Override
     public int getInFlightWritesCount()
     {
         int count = 0;
@@ -121,21 +115,7 @@ public class PartitionedWriteThrottler
     /**********************************************************************
      */
 
-    @Override
-    public Storable performGet(StoreOperationCallback<Storable> cb, long operationTime,
-            StorableKey key)
-        throws IOException, StoreException
-    {
-        if (_delegatee != null) {
-            return _delegatee.performGet(cb, operationTime, key);
-        }
-        // Not to be throttled, so:
-        return cb.perform(operationTime, key, null);
-    }
-
-    @Override
-    public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
-            long operationTime, StorableKey key, Storable value)
+    public <T> T partitionedWrite(Callback<T> cb, long operationTime, StorableKey key)
         throws IOException, StoreException
     {
         final int partition = _partitionFor(key);
@@ -148,60 +128,7 @@ public class PartitionedWriteThrottler
         }
         _inFlightStartTimes.set(partition, operationTime);
         try {
-            if (_delegatee != null) {
-                return _delegatee.performPut(cb, operationTime, key, value);
-            }
-            return cb.perform(operationTime, key, value);
-        } finally {
-            _inFlightStartTimes.set(partition, 0L);
-            semaphore.release();
-        }
-    }
-
-    @Override
-    public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
-            long operationTime, StorableKey key)
-        throws IOException, StoreException
-    {
-        final int partition = _partitionFor(key);
-        final Semaphore semaphore = _semaphores[partition];
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) { // could this ever occur?
-            semaphore.release();
-            throw new StoreException.Internal(key, e);
-        }
-        _inFlightStartTimes.set(partition, operationTime);
-        try {
-            if (_delegatee != null) {
-                return _delegatee.performSoftDelete(cb, operationTime, key);
-            }
-            return cb.perform(operationTime, key, null);
-        } finally {
-            _inFlightStartTimes.set(partition, 0L);
-            semaphore.release();
-        }
-    }
-
-    @Override
-    public Storable performHardDelete(StoreOperationCallback<Storable> cb,
-            long operationTime, StorableKey key)
-        throws IOException, StoreException
-    {
-        final int partition = _partitionFor(key);
-        final Semaphore semaphore = _semaphores[partition];
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) { // could this ever occur?
-            semaphore.release();
-            throw new StoreException.Internal(key, e);
-        }
-        _inFlightStartTimes.set(partition, operationTime);
-        try {
-            if (_delegatee != null) {
-                return _delegatee.performHardDelete(cb, operationTime, key);
-            }
-            return cb.perform(operationTime, key, null);
+            return cb.performWrite(key);
         } finally {
             _inFlightStartTimes.set(partition, 0L);
             semaphore.release();

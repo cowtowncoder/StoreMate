@@ -20,31 +20,6 @@ public abstract class StoreOperationThrottler
 {
     /*
     /**********************************************************************
-    /* Metadata, life-cycle
-    /**********************************************************************
-     */
-
-    /**
-     * Method that can be called to find if there are operations in-flight,
-     * and if so, get the oldest timestamp from those operations.
-     * This can be used to calculate high-water marks for traversing last-modified
-     * index (to avoid accessing things modified after start of traversal).
-     * Note that this only establishes conservative lower bound: due to race condition,
-     * the oldest operation may finish before this method returns.
-     * 
-     * @return Timestamp of the "oldest" operation still being performed, if any,
-     *      or 0L if none
-     */
-    public abstract long getOldestInFlightTimestamp();
-
-    /**
-     * Method that will count number of write operations in-flight
-     * currently.
-     */
-    public abstract int getInFlightWritesCount();
-    
-    /*
-    /**********************************************************************
     /* API, throttle methods for database access
     /**********************************************************************
      */
@@ -53,6 +28,10 @@ public abstract class StoreOperationThrottler
             long operationTime, StorableKey key)
         throws IOException, StoreException;
 
+    public abstract Storable priorityGet(StoreOperationCallback<Storable> cb,
+            long operationTime, StorableKey key)
+        throws IOException, StoreException;
+    
     public abstract IterationResult performList(StoreOperationCallback<IterationResult> cb,
             long operationTime)
         throws IOException, StoreException;
@@ -89,15 +68,13 @@ public abstract class StoreOperationThrottler
     /**********************************************************************
      */
 
+    /**
+     * Base implementation that simply calls callbacks without any throttling
+     * or metrics tracking.
+     */
     public static class Base
         extends StoreOperationThrottler
     {
-        @Override
-        public long getOldestInFlightTimestamp() { return 0L; }
-
-        @Override
-        public int getInFlightWritesCount() { return 0; }
-        
         @Override
         public Storable performGet(StoreOperationCallback<Storable> cb,
                 long operationTime, StorableKey key)
@@ -106,6 +83,14 @@ public abstract class StoreOperationThrottler
             return cb.perform(operationTime, key, null);
         }
 
+        @Override
+        public Storable priorityGet(StoreOperationCallback<Storable> cb,
+                long operationTime, StorableKey key)
+            throws IOException, StoreException
+        {
+            return cb.perform(operationTime, key, null);
+        }
+        
         @Override
         public IterationResult performList(StoreOperationCallback<IterationResult> cb,
                 long operationTime)

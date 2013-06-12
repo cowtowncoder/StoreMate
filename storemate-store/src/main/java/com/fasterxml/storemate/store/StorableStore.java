@@ -96,15 +96,15 @@ public abstract class StorableStore
      * for given key at this point. Note that soft deletions leave
      * "tombstones", so soft-deleted entries may return true from this method.
      */
-    public abstract boolean hasEntry(StorableKey key) throws StoreException;
+    public abstract boolean hasEntry(StorableKey key) throws IOException, StoreException;
 
     /**
      * Accessor for getting entry for given key; this includes soft-deleted
      * entries ("tombstones") that have not yet been hard deleted (which typically
      * is done with some delay).
      */
-    public abstract Storable findEntry(StorableKey key) throws StoreException;
-
+    public abstract Storable findEntry(StorableKey key) throws IOException, StoreException;
+    
     /*
     /**********************************************************************
     /* API, entry creation
