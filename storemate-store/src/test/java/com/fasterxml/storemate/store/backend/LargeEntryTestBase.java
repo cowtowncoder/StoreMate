@@ -43,7 +43,8 @@ public abstract class LargeEntryTestBase extends BackendTestBase
                 calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
         
         // important: throttle input reading, to force chunking (and maybe tease out bugs)
-        StorableCreationResult resp = store.insert(KEY1, new ThrottlingByteArrayInputStream(DATA, 97),
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ThrottlingByteArrayInputStream(DATA, 97),
                 metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
@@ -91,7 +92,8 @@ public abstract class LargeEntryTestBase extends BackendTestBase
         
         // Actually, let's also verify handling of dups...
 
-        StorableCreationResult resp2 = store.insert(KEY1, new ThrottlingByteArrayInputStream(DATA, 77),
+        StorableCreationResult resp2 = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ThrottlingByteArrayInputStream(DATA, 77),
                 metadata0.clone(), ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());

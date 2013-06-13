@@ -34,12 +34,12 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         // Ok: insert entries first
         StorableCreationMetadata metadata = new StorableCreationMetadata(null,
                 calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
 
-        resp = store.insert(KEY2, new ByteArrayInputStream(SMALL_DATA),
+        resp = store.insert(StoreOperationSource.REQUEST, KEY2, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
@@ -47,7 +47,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         _verifyCounts(2L, store);
 
         // Then deletions. First soft deletion, leaving inlined data intact
-        StorableDeletionResult result = store.softDelete(KEY1, false, false);
+        StorableDeletionResult result = store.softDelete(StoreOperationSource.REQUEST, KEY1, false, false);
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
         _verifyCounts(2L, store);
@@ -63,7 +63,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertArrayEquals(SMALL_DATA, entry.withInlinedData(WithBytesAsArray.instance));
 
         // second deletion, but here let's remove inlined data
-        result = store.softDelete(KEY2, true, true);
+        result = store.softDelete(StoreOperationSource.REQUEST, KEY2, true, true);
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
         _verifyCounts(2L, store);
@@ -79,12 +79,12 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertArrayEquals(new byte[0], entry.withInlinedData(WithBytesAsArray.instance));
 
         // so far so good. Then let's hard delete the second entry
-        result = store.hardDelete(KEY2, true);
+        result = store.hardDelete(StoreOperationSource.REQUEST, KEY2, true);
         assertTrue(result.hadEntry());
         _verifyCounts(1L, store);
         assertFalse(store.hasEntry(StoreOperationSource.REQUEST, KEY2));
 
-        result = store.hardDelete(KEY1, false); // second arg irrelevant, as we have no ext data
+        result = store.hardDelete(StoreOperationSource.REQUEST, KEY1, false); // second arg irrelevant, as we have no ext data
         assertTrue(result.hadEntry());
         _verifyCounts(0L, store);
         assertFalse(store.hasEntry(StoreOperationSource.REQUEST, KEY2));

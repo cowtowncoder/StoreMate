@@ -39,7 +39,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
         		/*existing compression*/ null,
         		calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
         		KEY1, new ByteArrayInputStream(SMALL_DATA),
         		metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -94,7 +94,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                /*existing compression*/ null,
                calcChecksum32(NO_DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(NO_DATA),
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ByteArrayInputStream(NO_DATA),
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
@@ -150,8 +151,9 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
                         calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
-                        metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ByteArrayInputStream(SMALL_DATA),
+                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
         _verifyEntryCount(1L, store);
@@ -200,14 +202,16 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
                         calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ByteArrayInputStream(SMALL_DATA),
                         metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
         _verifyCounts(1L, store);
 
         // Ok: first, is ok to try to PUT again
-        StorableCreationResult resp2 = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+        StorableCreationResult resp2 = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertFalse(resp2.succeeded());
         assertNotNull(resp2.getPreviousEntry());
@@ -249,8 +253,9 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                         /*existing compression*/ null,
                         calcChecksum32(SMALL_DATA_LZF), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA_LZF),
-                        metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+                KEY1, new ByteArrayInputStream(SMALL_DATA_LZF),
+                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
         assertNull(resp.getPreviousEntry());
         _verifyCounts(1L, store);
@@ -294,7 +299,8 @@ public abstract class SmallEntryTestBase extends BackendTestBase
                 Compression.LZF,
                 calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
         try {
-            /*StorableCreationResult resp =*/ store.insert(KEY1, new ByteArrayInputStream(SMALL_DATA),
+            /*StorableCreationResult resp =*/ store.insert(StoreOperationSource.REQUEST,
+                    KEY1, new ByteArrayInputStream(SMALL_DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
             fail("Should have failed to add invalid data");
         } catch (StoreException e) {

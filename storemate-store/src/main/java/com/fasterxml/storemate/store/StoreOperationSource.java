@@ -23,6 +23,13 @@ public enum StoreOperationSource
     /**
      * Operation taken as part of background cleanup process.
      */
-    CLEANUP
+    CLEANUP,
+    
+    /**
+     * Operation taken as part of a command issued using an admin
+     * tool of some kind (that is, interactive external tool, not
+     * regular requests).
+     */
+    ADMIN_TOOL
     ;
 }

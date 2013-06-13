@@ -285,31 +285,31 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     
     @Override
-    public StorableCreationResult insert(StorableKey key, InputStream input,
+    public StorableCreationResult insert(StoreOperationSource source, StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException
     {
         _checkClosed();
-        return _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
+        return _putEntry(source, key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
     }
 
     @Override
-    public StorableCreationResult insert(StorableKey key, ByteContainer input,
+    public StorableCreationResult insert(StoreOperationSource source, StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException
     {
         _checkClosed();
-        return _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
+        return _putEntry(source, key, input, stdMetadata, customMetadata, OVERWRITE_NOT_OK);
     }
     
     @Override
-    public StorableCreationResult upsert(StorableKey key, InputStream input,
+    public StorableCreationResult upsert(StoreOperationSource source,StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_OK);
+        StorableCreationResult result = _putEntry(source, key, input, stdMetadata, customMetadata, OVERWRITE_OK);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -320,13 +320,13 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public StorableCreationResult upsert(StorableKey key, ByteContainer input,
+    public StorableCreationResult upsert(StoreOperationSource source, StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, OVERWRITE_OK);
+        StorableCreationResult result = _putEntry(source, key, input, stdMetadata, customMetadata, OVERWRITE_OK);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -337,13 +337,14 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public StorableCreationResult upsertConditionally(StorableKey key, InputStream input,
+    public StorableCreationResult upsertConditionally(StoreOperationSource source, StorableKey key,
+            InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile, OverwriteChecker checker)
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, checker);
+        StorableCreationResult result = _putEntry(source, key, input, stdMetadata, customMetadata, checker);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -354,13 +355,14 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public StorableCreationResult upsertConditionally(StorableKey key, ByteContainer input,
+    public StorableCreationResult upsertConditionally(StoreOperationSource source, StorableKey key,
+            ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile, OverwriteChecker checker)
         throws IOException, StoreException
     {
         _checkClosed();
-        StorableCreationResult result = _putEntry(key, input, stdMetadata, customMetadata, checker);
+        StorableCreationResult result = _putEntry(source, key, input, stdMetadata, customMetadata, checker);
         if (removeOldDataFile) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
@@ -385,7 +387,8 @@ public class StorableStoreImpl extends AdminStorableStore
      * @param input Input stream used for reading the content. NOTE: method never
      *   closes this stream
      */
-    protected StorableCreationResult _putEntry(StorableKey key, InputStream input,
+    protected StorableCreationResult _putEntry(StoreOperationSource source, StorableKey key,
+            InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites)
         throws IOException, StoreException
@@ -412,21 +415,22 @@ public class StorableStoreImpl extends AdminStorableStore
             }
             if (len < readBuffer.length) { // read it all: we are done with input stream
                 if (originalCompression == null) { // client did not compress, we may try to
-                    return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
+                    return _compressAndPutSmallEntry(source, key, stdMetadata, customMetadata,
                             allowOverwrites, ByteContainer.simple(readBuffer, 0, len));
                 }
-                return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
+                return _putSmallPreCompressedEntry(source, key, stdMetadata, customMetadata,
                         allowOverwrites, ByteContainer.simple(readBuffer, 0, len));
             }
             // partial read in buffer, rest from input stream:
-            return _putLargeEntry(key, stdMetadata, customMetadata,
+            return _putLargeEntry(source, key, stdMetadata, customMetadata,
                     allowOverwrites, readBuffer, len, input);
         } finally {
             bufferHolder.returnBuffer(readBuffer);
         }
     }
 
-    protected StorableCreationResult _putEntry(StorableKey key, ByteContainer input,
+    protected StorableCreationResult _putEntry(StoreOperationSource source, StorableKey key,
+            ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites)
         throws IOException, StoreException
@@ -438,10 +442,10 @@ public class StorableStoreImpl extends AdminStorableStore
             throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM, error);
         }
         if (originalCompression == null) { // client did not compress, we may try to
-            return _compressAndPutSmallEntry(key, stdMetadata, customMetadata,
+            return _compressAndPutSmallEntry(source, key, stdMetadata, customMetadata,
                     allowOverwrites, input);
         }
-        return _putSmallPreCompressedEntry(key, stdMetadata, customMetadata,
+        return _putSmallPreCompressedEntry(source, key, stdMetadata, customMetadata,
                 allowOverwrites, input);
     }
     
@@ -451,7 +455,7 @@ public class StorableStoreImpl extends AdminStorableStore
     /**********************************************************************
      */
     
-    protected StorableCreationResult _compressAndPutSmallEntry(StorableKey key,
+    protected StorableCreationResult _compressAndPutSmallEntry(StoreOperationSource source, StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
@@ -497,10 +501,10 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         }
         metadata.storageSize = data.byteLength();
-        return _putSmallEntry(key, metadata, customMetadata, allowOverwrites, data);
+        return _putSmallEntry(source, key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallPreCompressedEntry(StorableKey key,
+    protected StorableCreationResult _putSmallPreCompressedEntry(StoreOperationSource source, StorableKey key,
             StorableCreationMetadata metadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
@@ -528,10 +532,10 @@ public class StorableStoreImpl extends AdminStorableStore
                 metadata.compressedContentHash = _calcChecksum(data);
             }
         }
-        return _putSmallEntry(key, metadata, customMetadata, allowOverwrites, data);
+        return _putSmallEntry(source, key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallEntry(final StorableKey key,
+    protected StorableCreationResult _putSmallEntry(StoreOperationSource source, final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, final ByteContainer data)
         throws IOException, StoreException
@@ -569,11 +573,11 @@ public class StorableStoreImpl extends AdminStorableStore
             storable = _storableConverter.encodeOfflined(key, creationTime,
                     stdMetadata, customMetadata, fileRef);
         }
-        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrites);
+        return _putPartitionedEntry(source, key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     @SuppressWarnings("resource")
-    protected StorableCreationResult _putLargeEntry(final StorableKey key,
+    protected StorableCreationResult _putLargeEntry(StoreOperationSource source, final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
             final byte[] readBuffer, final int readByteCount,
@@ -735,7 +739,7 @@ public class StorableStoreImpl extends AdminStorableStore
         Storable storable = _storableConverter.encodeOfflined(key, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
-        return _putPartitionedEntry(key, creationTime, stdMetadata, storable, allowOverwrites);
+        return _putPartitionedEntry(source, key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     /**
@@ -744,7 +748,7 @@ public class StorableStoreImpl extends AdminStorableStore
      * @param operationTime Timestamp used as the "last-modified" timestamp in metadata;
      *   important as it determines last-modified traversal order for synchronization
      */
-    protected StorableCreationResult _putPartitionedEntry(StorableKey key,
+    protected StorableCreationResult _putPartitionedEntry(StoreOperationSource source, StorableKey key,
             final long operationTime,
             final StorableCreationMetadata stdMetadata, Storable storable,
             final OverwriteChecker allowOverwrites)
@@ -816,7 +820,7 @@ public class StorableStoreImpl extends AdminStorableStore
      */
 
     @Override
-    public StorableDeletionResult softDelete(StorableKey key,
+    public StorableDeletionResult softDelete(final StoreOperationSource source, StorableKey key,
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -834,7 +838,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         if (value == null) {
                             return null;
                         }
-                        return _softDelete(key, value, operationTime, removeInlinedData, removeExternalData);
+                        return _softDelete(source, key, value, operationTime, removeInlinedData, removeExternalData);
                     }
                 }, operationTime, key);
             }
@@ -843,7 +847,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
     
     @Override
-    public StorableDeletionResult hardDelete(StorableKey key,
+    public StorableDeletionResult hardDelete(final StoreOperationSource source, StorableKey key,
             final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -861,7 +865,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         if (value == null) {
                             return null;
                         }
-                        return _hardDelete(key, value, removeExternalData);
+                        return _hardDelete(source, key, value, removeExternalData);
                     }
                 }, operationTime, key);
             }
@@ -869,7 +873,8 @@ public class StorableStoreImpl extends AdminStorableStore
         return new StorableDeletionResult(key, entry);
     }
 
-    protected Storable _softDelete(StorableKey key, Storable entry, final long currentTime,
+    protected Storable _softDelete(StoreOperationSource source, StorableKey key,
+            Storable entry, final long currentTime,
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -888,7 +893,8 @@ public class StorableStoreImpl extends AdminStorableStore
         return entry;
     }
 
-    protected Storable _hardDelete(StorableKey key, Storable entry,
+    protected Storable _hardDelete(StoreOperationSource source,
+            StorableKey key, Storable entry,
             final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -907,8 +913,9 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     
     @Override
-    public IterationResult iterateEntriesByKey(final StorableIterationCallback cb,
-            final StorableKey firstKey)
+    public IterationResult iterateEntriesByKey(StoreOperationSource source,
+            final StorableKey firstKey,
+            final StorableIterationCallback cb)
         throws StoreException
     {
         try {
@@ -925,8 +932,9 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public IterationResult iterateEntriesAfterKey(final StorableIterationCallback cb,
-            final StorableKey lastSeen)
+    public IterationResult iterateEntriesAfterKey(StoreOperationSource source,
+            final StorableKey lastSeen,
+            final StorableIterationCallback cb)
         throws StoreException
     {
         try {
@@ -947,8 +955,9 @@ public class StorableStoreImpl extends AdminStorableStore
     }
     
     @Override
-    public IterationResult iterateEntriesByModifiedTime(StorableLastModIterationCallback cb,
-            long firstTimestamp)
+    public IterationResult iterateEntriesByModifiedTime(StoreOperationSource source,
+            long firstTimestamp,
+            StorableLastModIterationCallback cb)
         throws StoreException
     {
         return _backend.iterateEntriesByModifiedTime(cb, firstTimestamp);
@@ -966,7 +975,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
     
     @Override
-    public long getTombstoneCount(long maxRuntimeMsecs)
+    public long getTombstoneCount(StoreOperationSource source, long maxRuntimeMsecs)
         throws StoreException
     {
         final long startTime = _timeMaster.currentTimeMillis();
@@ -982,7 +991,8 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public List<Storable> dumpEntries(final int maxCount, final boolean includeDeleted)
+    public List<Storable> dumpEntries(StoreOperationSource source,
+            final int maxCount, final boolean includeDeleted)
         throws StoreException
     {
         final ArrayList<Storable> result = new ArrayList<Storable>();
@@ -1010,7 +1020,7 @@ public class StorableStoreImpl extends AdminStorableStore
      * from the oldest to newest entries.
      */
     @Override
-    public List<Storable> dumpOldestEntries(final int maxCount,
+    public List<Storable> dumpOldestEntries(StoreOperationSource source, final int maxCount,
             final long fromTime, final boolean includeDeleted)
         throws StoreException
     {
@@ -1049,7 +1059,7 @@ public class StorableStoreImpl extends AdminStorableStore
      * @return Number of entries deleted
      */
     @Override
-    public int removeEntries(final int maxToRemove)
+    public int removeEntries(StoreOperationSource source, final int maxToRemove)
         throws IOException, StoreException
     {
         int removed = 0;
@@ -1061,7 +1071,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 }
             };
             for (StorableKey key : collector.getCollected()) {
-                hardDelete(key, true);
+                hardDelete(source, key, true);
                 ++removed;
             }
         }
@@ -1077,7 +1087,7 @@ public class StorableStoreImpl extends AdminStorableStore
      * @return Number of tombstones actually deleted
      */
     @Override
-    public int removeTombstones(final int maxToRemove)
+    public int removeTombstones(StoreOperationSource source, final int maxToRemove)
         throws IOException, StoreException
     {
         int removed = 0;
@@ -1093,7 +1103,7 @@ public class StorableStoreImpl extends AdminStorableStore
              */
             _backend.iterateEntriesByKey(collector);
             for (StorableKey key : collector.getCollected()) {
-                hardDelete(key, true);
+                hardDelete(source, key, true);
                 ++removed;
             }
         }

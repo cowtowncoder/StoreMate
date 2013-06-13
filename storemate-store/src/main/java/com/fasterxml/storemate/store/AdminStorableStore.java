@@ -24,7 +24,7 @@ public abstract class AdminStorableStore extends StorableStore
      * @throws StoreException For failures of the backend store
      * @throws IllegalStateException If maximum runtime is exceeded, will throw an exception
      */
-    public abstract long getTombstoneCount(long maxRuntimeMsecs)
+    public abstract long getTombstoneCount(StoreOperationSource source, long maxRuntimeMsecs)
         throws IllegalStateException, StoreException;
 
     /**
@@ -34,7 +34,8 @@ public abstract class AdminStorableStore extends StorableStore
      * @param maxCount Maximum number of entries to include.
      * @param includeDeleted Whether to include soft-deleted entries or not
      */
-    public abstract List<Storable> dumpEntries(int maxCount, boolean includeDeleted)
+    public abstract List<Storable> dumpEntries(StoreOperationSource source,
+            int maxCount, boolean includeDeleted)
         throws StoreException;
 
     /**
@@ -46,13 +47,13 @@ public abstract class AdminStorableStore extends StorableStore
      *    are positive, use 0l for "all"
      * @param includeDeleted Whether to include soft-deleted entries or not
      */
-    public abstract List<Storable> dumpOldestEntries(int maxCount, long fromTime,
-            boolean includeDeleted)
+    public abstract List<Storable> dumpOldestEntries(StoreOperationSource source,
+            int maxCount, long fromTime, boolean includeDeleted)
         throws StoreException;
 
-    public abstract int removeTombstones(int maxToRemove)
+    public abstract int removeTombstones(StoreOperationSource source, int maxToRemove)
         throws IOException, StoreException;
 
-    public abstract int removeEntries(final int maxToRemove)
+    public abstract int removeEntries(StoreOperationSource source, int maxToRemove)
         throws IOException, StoreException;
 }
