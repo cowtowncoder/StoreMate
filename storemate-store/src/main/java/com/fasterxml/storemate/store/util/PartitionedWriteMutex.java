@@ -115,7 +115,7 @@ public class PartitionedWriteMutex
     /**********************************************************************
      */
 
-    public <T> T partitionedWrite(Callback<T> cb, long operationTime, StorableKey key)
+    public <T> T partitionedWrite(long operationTime, StorableKey key, Callback<T> cb)
         throws IOException, StoreException
     {
         final int partition = _partitionFor(key);

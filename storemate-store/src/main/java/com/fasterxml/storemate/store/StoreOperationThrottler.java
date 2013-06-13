@@ -28,20 +28,23 @@ public abstract class StoreOperationThrottler
             StoreOperationCallback<Storable> cb)
         throws IOException, StoreException;
     
-    public abstract IterationResult performList(StoreOperationCallback<IterationResult> cb,
-            long operationTime)
+    public abstract IterationResult performList(StoreOperationSource source, long operationTime,
+            StoreOperationCallback<IterationResult> cb)
         throws IOException, StoreException;
     
-    public abstract StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
-            long operationTime, StorableKey key, Storable value)
+    public abstract StorableCreationResult performPut(StoreOperationSource source,
+            long operationTime, StorableKey key, Storable value,
+            StoreOperationCallback<StorableCreationResult> cb)
         throws IOException, StoreException;
 
-    public abstract Storable performSoftDelete(StoreOperationCallback<Storable> cb,
-            long operationTime, StorableKey key)
+    public abstract Storable performSoftDelete(StoreOperationSource source,
+            long operationTime, StorableKey key,
+            StoreOperationCallback<Storable> cb)
         throws IOException, StoreException;
 
-    public abstract Storable performHardDelete(StoreOperationCallback<Storable> cb,
-            long operationTime, StorableKey key)
+    public abstract Storable performHardDelete(StoreOperationSource source,
+            long operationTime, StorableKey key,
+            StoreOperationCallback<Storable> cb)
         throws IOException, StoreException;
 
     /*
@@ -50,12 +53,14 @@ public abstract class StoreOperationThrottler
     /**********************************************************************
      */
 
-    public abstract <OUT> OUT performFileRead(FileOperationCallback<OUT> cb,
-            long operationTime, Storable value, File externalFile)
+    public abstract <OUT> OUT performFileRead(StoreOperationSource source,
+            long operationTime, Storable value, File externalFile,
+            FileOperationCallback<OUT> cb)
         throws IOException, StoreException;
 
-    public abstract <OUT> OUT performFileWrite(FileOperationCallback<OUT> cb,
-            long operationTime, StorableKey key, File externalFile)
+    public abstract <OUT> OUT performFileWrite(StoreOperationSource source,
+            long operationTime, StorableKey key, File externalFile,
+            FileOperationCallback<OUT> cb)
         throws IOException, StoreException;
     
     /*
@@ -81,40 +86,45 @@ public abstract class StoreOperationThrottler
         }
         
         @Override
-        public IterationResult performList(StoreOperationCallback<IterationResult> cb,
-                long operationTime)
+        public IterationResult performList(StoreOperationSource source,
+                long operationTime,
+                StoreOperationCallback<IterationResult> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, null, null);
         }
         
         @Override
-        public StorableCreationResult performPut(StoreOperationCallback<StorableCreationResult> cb,
-                long operationTime, StorableKey key, Storable value)
+        public StorableCreationResult performPut(StoreOperationSource source,
+                long operationTime, StorableKey key, Storable value,
+                StoreOperationCallback<StorableCreationResult> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, key, value);
         }
 
         @Override
-        public Storable performSoftDelete(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
+        public Storable performSoftDelete(StoreOperationSource source,
+                long operationTime, StorableKey key,
+                StoreOperationCallback<Storable> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, key, null);
         }
 
         @Override
-        public Storable performHardDelete(StoreOperationCallback<Storable> cb,
-                long operationTime, StorableKey key)
+        public Storable performHardDelete(StoreOperationSource source,
+                long operationTime, StorableKey key,
+                StoreOperationCallback<Storable> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, key, null);
         }
         
         @Override
-        public <T> T performFileRead(FileOperationCallback<T> cb,
-                long operationTime, Storable value, File externalFile)
+        public <T> T performFileRead(StoreOperationSource source,
+                long operationTime, Storable value, File externalFile,
+                FileOperationCallback<T> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, (value == null) ? null : value.getKey(),
@@ -122,8 +132,9 @@ public abstract class StoreOperationThrottler
         }
 
         @Override
-        public <T> T performFileWrite(FileOperationCallback<T> cb,
-                long operationTime, StorableKey key, File externalFile)
+        public <T> T performFileWrite(StoreOperationSource source,
+                long operationTime, StorableKey key, File externalFile,
+                FileOperationCallback<T> cb)
             throws IOException, StoreException
         {
             return cb.perform(operationTime, key, null, externalFile);

@@ -535,7 +535,8 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putSmallEntry(source, key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallEntry(StoreOperationSource source, final StorableKey key,
+    protected StorableCreationResult _putSmallEntry(final StoreOperationSource source,
+            final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, final ByteContainer data)
         throws IOException, StoreException
@@ -554,14 +555,15 @@ public class StorableStoreImpl extends AdminStorableStore
             FileReference fileRef = _fileManager.createStorageFile(key,
                     stdMetadata.compression, fileCreationTime);
             try {
-                _throttler.performFileWrite(new FileOperationCallback<Void>() {
+                _throttler.performFileWrite(source, fileCreationTime, key, fileRef.getFile(),
+                        new FileOperationCallback<Void>() {
                     @Override
                     public Void perform(long operationTime, StorableKey key, Storable value, File externalFile)
                             throws IOException, StoreException {
                         IOUtil.writeFile(externalFile, data);
                         return null;
                     }
-                }, fileCreationTime, key, fileRef.getFile());
+                });
             } catch (IOException e) {
                 // better remove the file, if one exists...
                 fileRef.getFile().delete();
@@ -622,7 +624,9 @@ public class StorableStoreImpl extends AdminStorableStore
         /* 04-Jun-2013, tatu: Rather long block of possibly throttled file-writing
          *    action... will need to be straightened out in due time.
          */
-        long copiedBytes = _throttler.performFileWrite(new FileOperationCallback<Long>() {
+        long copiedBytes = _throttler.performFileWrite(source,
+                fileCreationTime, key, fileRef.getFile(),
+                new FileOperationCallback<Long>() {
             @Override
             public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
                     throws IOException, StoreException {
@@ -667,7 +671,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 }
                 return copiedBytes;
             }
-        }, fileCreationTime, key, fileRef.getFile());
+        });
         
         // Checksum calculation and storage details differ depending on whether compression is used
         if (skipCompression) {
@@ -748,13 +752,15 @@ public class StorableStoreImpl extends AdminStorableStore
      * @param operationTime Timestamp used as the "last-modified" timestamp in metadata;
      *   important as it determines last-modified traversal order for synchronization
      */
-    protected StorableCreationResult _putPartitionedEntry(StoreOperationSource source, StorableKey key,
+    protected StorableCreationResult _putPartitionedEntry(final StoreOperationSource source, StorableKey key,
             final long operationTime,
             final StorableCreationMetadata stdMetadata, Storable storable,
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
-        final StorableCreationResult result = _throttler.performPut(new StoreOperationCallback<StorableCreationResult>() {
+        final StorableCreationResult result = _throttler.performPut(source,
+                operationTime, key, storable,
+                new StoreOperationCallback<StorableCreationResult>() {
             @Override
             public StorableCreationResult perform(long time, StorableKey key, final Storable newValue)
                 throws IOException, StoreException
@@ -763,16 +769,18 @@ public class StorableStoreImpl extends AdminStorableStore
                 Boolean defaultOk = allowOverwrites.mayOverwrite(key);
                 if (defaultOk != null) { // depends on entry in question...
                     if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
-                        return _writeMutex.partitionedWrite(new PartitionedWriteMutex.Callback<StorableCreationResult>() {
+                        return _writeMutex.partitionedWrite(time, key,
+                                new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                             @Override
                             public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
                                 Storable oldValue =  _backend.putEntry(key, newValue);
                                 return new StorableCreationResult(key, true, newValue, oldValue);
                             }
-                        }, time, key);
+                        });
                     }
                     // strict "insert"
-                    return _writeMutex.partitionedWrite(new PartitionedWriteMutex.Callback<StorableCreationResult>() {
+                    return _writeMutex.partitionedWrite(time, key,
+                            new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                         @Override
                         public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
                             Storable oldValue =  _backend.createEntry(key, newValue);
@@ -782,10 +790,11 @@ public class StorableStoreImpl extends AdminStorableStore
                             // fail: caller may need to clean up the underlying file
                             return new StorableCreationResult(key, false, newValue, oldValue);
                         }
-                    }, time, key);
+                    });
                 }
                 // But if things depend on existence of old entry, or entries, trickier:
-                return _writeMutex.partitionedWrite(new PartitionedWriteMutex.Callback<StorableCreationResult>() {
+                return _writeMutex.partitionedWrite(time, key,
+                        new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                     @Override
                     public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
                         AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
@@ -795,10 +804,9 @@ public class StorableStoreImpl extends AdminStorableStore
                         }
                         return new StorableCreationResult(key, true, newValue, oldEntryRef.get());
                     }
-                }, time, key);
+                });
             }
-        },
-        operationTime, key, storable);
+        });
 
         //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
@@ -825,12 +833,15 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _throttler.performSoftDelete(new StoreOperationCallback<Storable>() {
+        Storable entry = _throttler.performSoftDelete(source,
+                _timeMaster.currentTimeMillis(), key,
+        new StoreOperationCallback<Storable>() {
             @Override
             public Storable perform(final long operationTime, StorableKey key, Storable value)
                 throws IOException, StoreException
             {
-                return _writeMutex.partitionedWrite(new PartitionedWriteMutex.Callback<Storable>() {
+                return _writeMutex.partitionedWrite(operationTime, key,
+                        new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
                         Storable value = _backend.findEntry(key);              
@@ -840,9 +851,9 @@ public class StorableStoreImpl extends AdminStorableStore
                         }
                         return _softDelete(source, key, value, operationTime, removeInlinedData, removeExternalData);
                     }
-                }, operationTime, key);
+                });
             }
-        }, _timeMaster.currentTimeMillis(), key);
+        });
         return new StorableDeletionResult(key, entry);
     }
     
@@ -852,12 +863,15 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
-        Storable entry = _throttler.performHardDelete(new StoreOperationCallback<Storable>() {
+        Storable entry = _throttler.performHardDelete(source,
+                _timeMaster.currentTimeMillis(), key,
+                new StoreOperationCallback<Storable>() {
             @Override
             public Storable perform(final long operationTime, StorableKey key, Storable value)
                 throws IOException, StoreException
             {
-                return _writeMutex.partitionedWrite(new PartitionedWriteMutex.Callback<Storable>() {
+                return _writeMutex.partitionedWrite(operationTime, key,
+                        new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
                         Storable value = _backend.findEntry(key);              
@@ -867,9 +881,9 @@ public class StorableStoreImpl extends AdminStorableStore
                         }
                         return _hardDelete(source, key, value, removeExternalData);
                     }
-                }, operationTime, key);
+                });
             }
-        }, _timeMaster.currentTimeMillis(), key);
+        });
         return new StorableDeletionResult(key, entry);
     }
 
@@ -919,13 +933,14 @@ public class StorableStoreImpl extends AdminStorableStore
         throws StoreException
     {
         try {
-            return _throttler.performList(new StoreOperationCallback<IterationResult>() {
+            return _throttler.performList(source, _timeMaster.currentTimeMillis(),
+                    new StoreOperationCallback<IterationResult>() {
                 @Override
                 public IterationResult perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
                     return _backend.iterateEntriesByKey(cb, firstKey);
                 }
-            }, _timeMaster.currentTimeMillis());
+            });
         } catch (IOException e) {
             throw new StoreException.IO(firstKey, "Failed to iterate entries from "+firstKey+": "+e.getMessage(), e);
         }
@@ -938,7 +953,8 @@ public class StorableStoreImpl extends AdminStorableStore
         throws StoreException
     {
         try {
-            return _throttler.performList(new StoreOperationCallback<IterationResult>() {
+            return _throttler.performList(source, _timeMaster.currentTimeMillis(),
+            new StoreOperationCallback<IterationResult>() {
                 @Override
                 public IterationResult perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
@@ -948,7 +964,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     return _backend.iterateEntriesAfterKey(cb, lastSeen);
                 }
-            }, _timeMaster.currentTimeMillis());
+            });
         } catch (IOException e) {
             throw new StoreException.IO(lastSeen, "Failed to iterate entries from "+lastSeen+": "+e.getMessage(), e);
         }
