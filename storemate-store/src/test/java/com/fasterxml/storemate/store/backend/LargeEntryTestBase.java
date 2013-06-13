@@ -35,7 +35,7 @@ public abstract class LargeEntryTestBase extends BackendTestBase
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
         final byte[] COMPRESSED_DATA = Compressors.lzfCompress(DATA);
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // then try adding said entry
         StorableCreationMetadata metadata0 = new StorableCreationMetadata(
@@ -50,7 +50,7 @@ public abstract class LargeEntryTestBase extends BackendTestBase
         _verifyCounts(1L, store);
 
         // and then verify entry
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         // big enough so it can't be inlined:

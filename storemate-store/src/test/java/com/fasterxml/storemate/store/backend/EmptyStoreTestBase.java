@@ -22,7 +22,7 @@ public abstract class EmptyStoreTestBase extends BackendTestBase
 
         StorableKey testKey = storableKey("bogus");
         
-        assertNull(store.findEntry(testKey));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, testKey));
         
         store.stop();
     }

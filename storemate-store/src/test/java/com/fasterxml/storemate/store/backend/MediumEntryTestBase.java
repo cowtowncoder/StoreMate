@@ -31,7 +31,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
         final byte[] GZIPPED_DATA = Compressors.gzipCompress(DATA);
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // then try adding said entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -44,7 +44,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         _verifyCounts(1L, store);
 
         // and then verify entry
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         // big enough so it can't be inlined:
@@ -94,7 +94,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
         final byte[] LZF_DATA = Compressors.lzfCompress(DATA);
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // then try adding said entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -107,7 +107,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         _verifyCounts(1L, store);
 
         // and then verify entry
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         // big enough so it can't be inlined:

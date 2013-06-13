@@ -33,7 +33,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA = SMALL_STRING.getBytes("UTF-8");
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // Ok: store a small entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -50,7 +50,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         _verifyIndexCount(1L, store);
 
         // Ok. Then, we should also be able to fetch it, right?
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
 
         assertEquals(startTime, entry.getLastModified());
@@ -88,7 +88,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] NO_DATA = new byte[0];
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // Ok: store a small entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -102,7 +102,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         _verifyEntryCount(1L, store);
         _verifyIndexCount(1L, store);
 
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
 
         assertEquals(startTime, entry.getLastModified());
@@ -144,7 +144,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA = SMALL_STRING.getBytes("UTF-8");
         final byte[] CUSTOM_METADATA_IN = new byte[] { 4, 5, 6, 7 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
         
         // Ok: insert compressible smallish (inlineable) entry:
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -158,7 +158,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         _verifyIndexCount(1L, store);
 
         // Ok. Then, we should also be able to fetch it, right?
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         assertTrue(entry.hasInlineData());
@@ -194,7 +194,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA = "Some smallish data...".getBytes("UTF-8");
         final byte[] CUSTOM_METADATA_IN = new byte[] { (byte) 255 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
         
         // Ok: insert entry
         StorableCreationMetadata metadata = new StorableCreationMetadata(
@@ -214,7 +214,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         _verifyCounts(1L, store);
 
         // and then verify entry
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         assertTrue(entry.hasInlineData());
@@ -242,7 +242,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA_LZF = Compressors.lzfCompress(SMALL_DATA_ORIG);
         final byte[] CUSTOM_METADATA_IN = new byte[] { (byte) 255 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
         
         // Let's NOT indicate as compressed, should figure it out
         // and then verify that it is stored as if not compressed
@@ -256,7 +256,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         _verifyCounts(1L, store);
 
         // and then verify entry
-        Storable entry = store.findEntry(KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
         assertNotNull(entry);
         assertEquals(startTime, entry.getLastModified());
         assertTrue(entry.hasInlineData());
@@ -287,7 +287,7 @@ public abstract class SmallEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA = "ZV but not really LZF".getBytes("UTF-8");
         final byte[] CUSTOM_METADATA_IN = new byte[] { 77, 65, 13, 19, 0, 0 };
 
-        assertNull(store.findEntry(KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
 
         // Ok, then with data that claims to be LZF, but is not. Should be caught:
         StorableCreationMetadata metadata = new StorableCreationMetadata(

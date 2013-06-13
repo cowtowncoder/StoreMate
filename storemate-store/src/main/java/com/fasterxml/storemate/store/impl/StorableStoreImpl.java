@@ -253,25 +253,25 @@ public class StorableStoreImpl extends AdminStorableStore
      */
 
     @Override
-    public boolean hasEntry(StorableKey key) throws StoreException
+    public boolean hasEntry(StoreOperationSource source, StorableKey key) throws StoreException
     {
         _checkClosed();
         return _backend.hasEntry(key);
     }
 
     @Override
-    public Storable findEntry(StorableKey key) throws StoreException
+    public Storable findEntry(StoreOperationSource source, StorableKey key) throws StoreException
     {
         _checkClosed();
         final long operationTime = _timeMaster.currentTimeMillis();
         try {
-            return _throttler.performGet(new StoreOperationCallback<Storable>() {
+            return _throttler.performGet(source, operationTime, key, new StoreOperationCallback<Storable>() {
                 @Override
                 public Storable perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
                     return _backend.findEntry(key);
                 }
-            }, operationTime, key);
+            });
         } catch (IOException e) {
             throw new StoreException.IO(key,
                     "Problem when trying to access entry: "+e.getMessage(), e);
