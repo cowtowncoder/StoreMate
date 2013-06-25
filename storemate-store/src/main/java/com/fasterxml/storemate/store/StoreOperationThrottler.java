@@ -23,6 +23,14 @@ public abstract class StoreOperationThrottler
     /* API, throttle methods for database access
     /**********************************************************************
      */
+
+    /**
+     * Similar to {@link #performGet}, except only checks for existence of entry with
+     * given key.
+     */
+    public abstract Boolean performHas(StoreOperationSource source, long operationTime, StorableKey key,
+            StoreOperationCallback<Boolean> cb)
+        throws IOException, StoreException;
     
     public abstract Storable performGet(StoreOperationSource source, long operationTime, StorableKey key,
             StoreOperationCallback<Storable> cb)
@@ -76,6 +84,14 @@ public abstract class StoreOperationThrottler
     public static class Base
         extends StoreOperationThrottler
     {
+        @Override
+        public Boolean performHas(StoreOperationSource source, long operationTime, StorableKey key,
+                StoreOperationCallback<Boolean> cb)
+            throws IOException, StoreException
+        {
+            return cb.perform(operationTime, key, null);
+        }
+        
         @Override
         public Storable performGet(StoreOperationSource source,
                 long operationTime, StorableKey key,

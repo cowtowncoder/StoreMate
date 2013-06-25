@@ -31,7 +31,7 @@ public abstract class LastModTestBase extends BackendTestBase
        StorableCreationMetadata metadata = new StorableCreationMetadata(
                /*existing compression*/ null,
                calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-       StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+       StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
                KEY1, new ByteArrayInputStream(SMALL_DATA),
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
        assertTrue(resp.succeeded());
@@ -40,7 +40,7 @@ public abstract class LastModTestBase extends BackendTestBase
 
        // then verify we can see it via iteration
        final AtomicInteger count = new AtomicInteger(0);
-       store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, 1L,
+       store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null, 1L,
                new StorableLastModIterationCallback() {
         @Override
         public IterationAction verifyTimestamp(long timestamp) {
@@ -74,7 +74,7 @@ public abstract class LastModTestBase extends BackendTestBase
        metadata = new StorableCreationMetadata(
                /*existing compression*/ null,
                calcChecksum32(SMALL_DATA2), HashConstants.NO_CHECKSUM);
-       resp = store.insert(StoreOperationSource.REQUEST,
+       resp = store.insert(StoreOperationSource.REQUEST, null,
                KEY2, new ByteArrayInputStream(SMALL_DATA2),
                metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -84,7 +84,7 @@ public abstract class LastModTestBase extends BackendTestBase
         // and verify order
         final ArrayList<Long> timestamps = new ArrayList<Long>();
         final ArrayList<StorableKey> keys = new ArrayList<StorableKey>();
-        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST,
+        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null,
                 0L, new StorableLastModIterationCallback() {
             long lastTimestamp;
 
@@ -116,7 +116,7 @@ public abstract class LastModTestBase extends BackendTestBase
 
         // finally, traverse partial:
         count.set(0);
-        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST,
+        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null,
                 startTime-50L,
                 new StorableLastModIterationCallback() {
             @Override
@@ -164,7 +164,7 @@ public abstract class LastModTestBase extends BackendTestBase
            StorableCreationMetadata metadata = new StorableCreationMetadata(
                    /*existing compression*/ null,
                    calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
-           StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+           StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
                    KEY1, new ByteArrayInputStream(SMALL_DATA),
                    metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
            assertTrue(resp.succeeded());
@@ -173,8 +173,8 @@ public abstract class LastModTestBase extends BackendTestBase
        }
 
        // And then verify traversal order
-       store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, startTime-50L,
-               new StorableLastModIterationCallback() {
+       store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null,
+               startTime-50L, new StorableLastModIterationCallback() {
            int index = 0;
            
            @Override

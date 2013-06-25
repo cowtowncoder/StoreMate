@@ -44,15 +44,16 @@ public class OperationDiagnostics
      */
 
     /**
-     * Accumulated timing information on primary database access calls.
+     * Accumulated timing information on primary database access calls
+     * excluding any wait time due to throttling.
      */
     protected TotalTime _dbAccess;
 
     /**
-     * Accumulated timing information on wait time(s) for doing local
-     * database access
+     * Accumulated timing information on primary database access calls
+     * including any wait time due to throttling.
      */
-    protected TotalTime _dbWait;
+    protected TotalTime _dbAccessTotal;
     
     /*
     /**********************************************************************
@@ -61,15 +62,16 @@ public class OperationDiagnostics
      */
 
     /**
-     * Accumulated timing information on file system access.
+     * Accumulated timing information on file system access, not including possible
+     * waits due to throttling.
      */
     protected TotalTime _fileAccess;
 
     /**
      * Accumulated timing information on wait time(s) for doing local
-     * filesystem access
+     * filesystem access including wait time due to throttling.
      */
-    protected TotalTime _fileWait;
+    protected TotalTime _fileAccessTotal;
     
     /*
     /**********************************************************************
@@ -123,12 +125,12 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
-    public void addDbAccess(long nanos) {
+    public void addDbAccessOnly(long nanos) {
         _dbAccess = TotalTime.createOrAdd(_dbAccess, nanos);
     }
 
-    public void addDbWait(long nanos) {
-        _dbWait = TotalTime.createOrAdd(_dbWait, nanos);
+    public void addDbAccessWithWait(long nanos) {
+        _dbAccessTotal = TotalTime.createOrAdd(_dbAccessTotal, nanos);
     }
 
     /*
@@ -137,12 +139,12 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
-    public void addFileAccess(long nanos) {
+    public void addFileAccessOnly(long nanos) {
         _fileAccess = TotalTime.createOrAdd(_fileAccess, nanos);
     }
 
-    public void addFileWait(long nanos) {
-        _fileWait = TotalTime.createOrAdd(_fileWait, nanos);
+    public void addFileAccessWithWait(long nanos) {
+        _fileAccessTotal = TotalTime.createOrAdd(_fileAccessTotal, nanos);
     }
     
     /*
@@ -202,18 +204,26 @@ public class OperationDiagnostics
     }
 
     public boolean hasDbAccess() { return _dbAccess != null; }
-    public boolean hasDbWait() { return _dbWait != null; }
 
     public boolean hasFileAccess() { return _fileAccess != null; }
-    public boolean hasFileWait() { return _fileWait != null; }
     
     public boolean hasContentCopyNanos() {
         return (_contentCopyStart != 0L);
     }
 
     public TotalTime getDbAccess() { return _dbAccess; }
-    public TotalTime getDbWait() { return _dbWait; }
+    public TotalTime getDbAccessTotal() {
+        if (_dbAccessTotal != null) {
+            return _dbAccessTotal;
+        }
+        return _dbAccess;
+    }
 
     public TotalTime getFileAccess() { return _fileAccess; }
-    public TotalTime getFileWait() { return _fileWait; }
+    public TotalTime getFileAccessTotal() {
+        if (_fileAccessTotal != null) {
+            return _fileAccessTotal;
+        }
+        return _fileAccess;
+    }
 }

@@ -123,8 +123,8 @@ public abstract class StorableStore
      * @param input Input stream used for reading the content. NOTE: method never
      *   closes this stream
      */
-    public abstract StorableCreationResult insert(StoreOperationSource source, StorableKey key,
-            InputStream input,
+    public abstract StorableCreationResult insert(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException;
 
@@ -134,8 +134,8 @@ public abstract class StorableStore
      * 
      * @param input Input data to store (usually inlined)
      */
-    public abstract StorableCreationResult insert(StoreOperationSource source, StorableKey key,
-            ByteContainer input,
+    public abstract StorableCreationResult insert(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata)
         throws IOException, StoreException;
 
@@ -149,8 +149,8 @@ public abstract class StorableStore
      * @param removeOldDataFile Whether method should delete backing data file for
      *   the existing entry (if one was found) or not.
      */
-    public abstract StorableCreationResult upsert(StoreOperationSource source, StorableKey key,
-            InputStream input,
+    public abstract StorableCreationResult upsert(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException;
@@ -164,8 +164,8 @@ public abstract class StorableStore
      * @param removeOldDataFile Whether method should delete backing data file for
      *   the existing entry (if one was found) or not.
      */
-    public abstract StorableCreationResult upsert(StoreOperationSource source, StorableKey key,
-            ByteContainer input,
+    public abstract StorableCreationResult upsert(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile)
         throws IOException, StoreException;
@@ -180,11 +180,9 @@ public abstract class StorableStore
      *   the existing entry (if one was found) or not.
      * @param checker Object that is called if overwriting of content is necessary, to check whether
      *   update is allowed.
-     *   
-     * @since 0.9.3
      */
-    public abstract StorableCreationResult upsertConditionally(StoreOperationSource source, StorableKey key,
-            InputStream input,
+    public abstract StorableCreationResult upsertConditionally(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, InputStream input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile, OverwriteChecker checker)
         throws IOException, StoreException;
@@ -199,11 +197,9 @@ public abstract class StorableStore
      *   the existing entry (if one was found) or not.
      * @param checker Object that is called if overwriting of content is necessary, to check whether
      *   update is allowed.
-     *
-     * @since 0.9.3
      */
-    public abstract StorableCreationResult upsertConditionally(StoreOperationSource source, StorableKey key,
-            ByteContainer input,
+    public abstract StorableCreationResult upsertConditionally(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, ByteContainer input,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             boolean removeOldDataFile, OverwriteChecker checker)
         throws IOException, StoreException;
@@ -230,8 +226,8 @@ public abstract class StorableStore
      * @return Status of the operation, including state of entry <b>after</b> changes
      *    specified have been made.
      */
-    public abstract StorableDeletionResult softDelete(StoreOperationSource source, StorableKey key,
-            final boolean removeInlinedData, final boolean removeExternalData)
+    public abstract StorableDeletionResult softDelete(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, boolean removeInlinedData, boolean removeExternalData)
         throws IOException, StoreException;
     
     /**
@@ -245,8 +241,8 @@ public abstract class StorableStore
      * @return Status of the operation, including state of entry <b>after</b> changes
      *    specified have been made.
      */
-    public abstract StorableDeletionResult hardDelete(StoreOperationSource source, StorableKey key,
-            final boolean removeExternalData)
+    public abstract StorableDeletionResult hardDelete(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key, boolean removeExternalData)
         throws IOException, StoreException;
 
     /*
@@ -269,7 +265,7 @@ public abstract class StorableStore
      *
      * @return Value that indicates how iteration ended
      */
-    public abstract IterationResult iterateEntriesByKey(StoreOperationSource source,
+    public abstract IterationResult iterateEntriesByKey(StoreOperationSource source, OperationDiagnostics diag,
             StorableKey firstKey,
             StorableIterationCallback cb)
         throws StoreException;
@@ -288,7 +284,7 @@ public abstract class StorableStore
      *
      * @return Value that indicates how iteration ended
      */
-    public abstract IterationResult iterateEntriesAfterKey(StoreOperationSource source,
+    public abstract IterationResult iterateEntriesAfterKey(StoreOperationSource source, OperationDiagnostics diag,
             StorableKey firstKey,
             StorableIterationCallback cb)
         throws StoreException;
@@ -307,7 +303,7 @@ public abstract class StorableStore
      *   
      * @return True if iteration completed successfully; false if it was terminated
      */
-    public abstract IterationResult iterateEntriesByModifiedTime(StoreOperationSource source,
+    public abstract IterationResult iterateEntriesByModifiedTime(StoreOperationSource source, OperationDiagnostics diag,
             long firstTimestamp,
             StorableLastModIterationCallback cb)
         throws StoreException;

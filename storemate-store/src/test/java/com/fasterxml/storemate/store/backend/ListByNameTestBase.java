@@ -59,7 +59,7 @@ public abstract class ListByNameTestBase extends BackendTestBase
             StorableCreationMetadata metadata = new StorableCreationMetadata(
                     /*existing compression*/ null,
                     0, HashConstants.NO_CHECKSUM);
-            StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+            StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
                     key, new ByteArrayInputStream(key.asBytes()),
                     metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
             assertTrue(resp.succeeded());
@@ -71,23 +71,23 @@ public abstract class ListByNameTestBase extends BackendTestBase
 
         // then verify we can see them via various kinds of iteration
         Callback cb = new Callback(KEY1, KEY2, KEY3, KEY4);
-        store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, cb);
+        store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, null, cb);
         assertEquals(4, cb.count);
 
         // then try partial traversal, inclusive first:
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
-        store.iterateEntriesByKey(StoreOperationSource.REQUEST, KEY2, cb);
+        store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, KEY2, cb);
         assertEquals(3, cb.count);
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
-        store.iterateEntriesByKey(StoreOperationSource.REQUEST, KEY4, cb);
+        store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, KEY4, cb);
         assertEquals(1, cb.count);
 
         // and exclusive
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
-        store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, KEY2, cb);
+        store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, null, KEY2, cb);
         assertEquals(2, cb.count);
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
-        store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, KEY4, cb);
+        store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, null, KEY4, cb);
         assertEquals(0, cb.count);
         
         store.stop();

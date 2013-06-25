@@ -37,7 +37,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                 /*existing compression*/ null,
                 calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
                 KEY1, new ByteArrayInputStream(DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
@@ -101,7 +101,7 @@ public abstract class MediumEntryTestBase extends BackendTestBase
         StorableCreationMetadata metadata = new StorableCreationMetadata(
                 /*existing compression*/ null,
                 calcChecksum32(DATA), HashConstants.NO_CHECKSUM);
-        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST,
+        StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
                 KEY1, new ByteArrayInputStream(DATA),
                 metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
         assertTrue(resp.succeeded());
