@@ -27,6 +27,7 @@ import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
+import com.fasterxml.storemate.store.util.OperationDiagnostics;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 import com.fasterxml.storemate.store.util.PartitionedWriteMutex;
 
@@ -253,14 +254,25 @@ public class StorableStoreImpl extends AdminStorableStore
      */
 
     @Override
-    public boolean hasEntry(StoreOperationSource source, StorableKey key) throws StoreException
+    public boolean hasEntry(final StoreOperationSource source,
+            final OperationDiagnostics diag,
+            final StorableKey key) throws StoreException
     {
         _checkClosed();
-        return _backend.hasEntry(key);
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+        try {
+            return _backend.hasEntry(key);
+        } finally {
+            if (diag != null) {
+                diag.addDbAccess(_timeMaster.nanosForDiagnostics() - nanoStart);
+            }
+        }
     }
 
     @Override
-    public Storable findEntry(StoreOperationSource source, StorableKey key) throws StoreException
+    public Storable findEntry(final StoreOperationSource source,
+            final OperationDiagnostics diag,
+            final StorableKey key) throws StoreException
     {
         _checkClosed();
         final long operationTime = _timeMaster.currentTimeMillis();
@@ -269,7 +281,14 @@ public class StorableStoreImpl extends AdminStorableStore
                 @Override
                 public Storable perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
-                    return _backend.findEntry(key);
+                    final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+                    try {
+                        return _backend.findEntry(key);
+                    } finally {
+                        if (diag != null) {
+                            diag.addDbAccess(_timeMaster.nanosForDiagnostics() - nanoStart);
+                        }
+                    }
                 }
             });
         } catch (IOException e) {

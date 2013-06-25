@@ -10,6 +10,7 @@ import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.util.OperationDiagnostics;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 
 /**
@@ -96,16 +97,18 @@ public abstract class StorableStore
      * for given key at this point. Note that soft deletions leave
      * "tombstones", so this methods may return for soft-deleted entries.
      */
-    public abstract boolean hasEntry(StoreOperationSource source, StorableKey key)
-            throws IOException, StoreException;
+    public abstract boolean hasEntry(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key)
+        throws IOException, StoreException;
 
     /**
      * Accessor for getting entry for given key; this includes soft-deleted
      * entries ("tombstones") that have not yet been hard deleted (which typically
      * is done with some delay).
      */
-    public abstract Storable findEntry(StoreOperationSource source, StorableKey key)
-            throws IOException, StoreException;
+    public abstract Storable findEntry(StoreOperationSource source, OperationDiagnostics diag,
+            StorableKey key)
+        throws IOException, StoreException;
     
     /*
     /**********************************************************************

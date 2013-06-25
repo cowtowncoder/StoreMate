@@ -28,8 +28,8 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         final byte[] SMALL_DATA = "Some data that we want to store -- small, gets inlined...".getBytes("UTF-8");
         final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
 
-        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY1));
-        assertNull(store.findEntry(StoreOperationSource.REQUEST, KEY2));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, null, KEY1));
+        assertNull(store.findEntry(StoreOperationSource.REQUEST, null, KEY2));
 
         // Ok: insert entries first
         StorableCreationMetadata metadata = new StorableCreationMetadata(null,
@@ -56,7 +56,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertTrue(result.getEntry().hasInlineData());
 
         // but let's see what is... "in store for us"
-        Storable entry = store.findEntry(StoreOperationSource.REQUEST, KEY1);
+        Storable entry = store.findEntry(StoreOperationSource.REQUEST, null, KEY1);
         assertNotNull(entry);
         assertTrue(entry.isDeleted());
         assertEquals(SMALL_DATA.length, entry.getInlineDataLength());
@@ -71,7 +71,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertArrayEquals(new byte[0], result.getEntry().withInlinedData(WithBytesAsArray.instance));
 
         // and then see how Store sees things:
-        entry = store.findEntry(StoreOperationSource.REQUEST, KEY2);
+        entry = store.findEntry(StoreOperationSource.REQUEST, null, KEY2);
         assertNotNull(entry);
         assertTrue(entry.isDeleted());
         assertFalse(entry.hasInlineData());
@@ -82,12 +82,12 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         result = store.hardDelete(StoreOperationSource.REQUEST, KEY2, true);
         assertTrue(result.hadEntry());
         _verifyCounts(1L, store);
-        assertFalse(store.hasEntry(StoreOperationSource.REQUEST, KEY2));
+        assertFalse(store.hasEntry(StoreOperationSource.REQUEST, null, KEY2));
 
         result = store.hardDelete(StoreOperationSource.REQUEST, KEY1, false); // second arg irrelevant, as we have no ext data
         assertTrue(result.hadEntry());
         _verifyCounts(0L, store);
-        assertFalse(store.hasEntry(StoreOperationSource.REQUEST, KEY2));
+        assertFalse(store.hasEntry(StoreOperationSource.REQUEST, null, KEY2));
         
         store.stop();
     }

@@ -188,7 +188,7 @@ public abstract class LastModTestBase extends BackendTestBase
                assertEquals(storableKey("data/entry/"+index), key);
                // also: we better see the entry
                try {
-                   assertTrue(store.hasEntry(StoreOperationSource.REQUEST, key));
+                   assertTrue(store.hasEntry(StoreOperationSource.REQUEST, null, key));
                } catch (Exception e) {
                    fail("Prob with store"+e);
                }
@@ -200,7 +200,7 @@ public abstract class LastModTestBase extends BackendTestBase
                assertEquals(startTime + index * 5000, entry.getLastModified());
                // and still have the entry
                try {
-                   assertTrue(store.hasEntry(StoreOperationSource.REQUEST, entry.getKey()));
+                   assertTrue(store.hasEntry(StoreOperationSource.REQUEST, null, entry.getKey()));
                } catch (Exception e) {
                    fail("Prob with store"+e);
                }
