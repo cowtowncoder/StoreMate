@@ -285,7 +285,7 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         }
     }
-
+    
     @Override
     public Storable findEntry(final StoreOperationSource source,
             final OperationDiagnostics diag,
@@ -797,12 +797,15 @@ public class StorableStoreImpl extends AdminStorableStore
      * @param operationTime Timestamp used as the "last-modified" timestamp in metadata;
      *   important as it determines last-modified traversal order for synchronization
      */
-    protected StorableCreationResult _putPartitionedEntry(final StoreOperationSource source, OperationDiagnostics diag,
+    protected StorableCreationResult _putPartitionedEntry(final StoreOperationSource source, final OperationDiagnostics diag,
             StorableKey key, final long operationTime,
             final StorableCreationMetadata stdMetadata, Storable storable,
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
     {
+        // NOTE: at this point request has been read, file written (if one needed),
+        // so it's ok to assume rest is DB access.
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         final StorableCreationResult result = _throttler.performPut(source,
                 operationTime, key, storable,
                 new StoreOperationCallback<StorableCreationResult>() {
@@ -818,7 +821,13 @@ public class StorableStoreImpl extends AdminStorableStore
                                 new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                             @Override
                             public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
+                                final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                                 Storable oldValue =  _backend.putEntry(key, newValue);
+                                if (diag != null) {
+                                    final long nanosNow = _timeMaster.nanosForDiagnostics();
+                                    diag.addDbAccessOnly(nanosNow - dbStart);
+                                    diag.addDbAccessWithWait(nanosNow - nanoStart);
+                                }
                                 return new StorableCreationResult(key, true, newValue, oldValue);
                             }
                         });
@@ -828,7 +837,13 @@ public class StorableStoreImpl extends AdminStorableStore
                             new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                         @Override
                         public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
+                            final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                             Storable oldValue =  _backend.createEntry(key, newValue);
+                            if (diag != null) {
+                                final long nanosNow = _timeMaster.nanosForDiagnostics();
+                                diag.addDbAccessOnly(nanosNow - dbStart);
+                                diag.addDbAccessWithWait(nanosNow - nanoStart);
+                            }
                             if (oldValue == null) { // ok, succeeded
                                 return new StorableCreationResult(key, true, newValue, null);
                             }
@@ -843,8 +858,15 @@ public class StorableStoreImpl extends AdminStorableStore
                     @Override
                     public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
                         AtomicReference<Storable> oldEntryRef = new AtomicReference<Storable>();                       
-                        if (!_backend.upsertEntry(key, newValue, allowOverwrites, oldEntryRef)) {
-                            // fail due to existing entry
+                        final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+                        boolean success = _backend.upsertEntry(key, newValue, allowOverwrites, oldEntryRef);
+                        if (diag != null) {
+                            final long nanosNow = _timeMaster.nanosForDiagnostics();
+                            diag.addDbAccessOnly(nanosNow - dbStart);
+                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                        }
+                        if (!success) {
+                        // fail due to existing entry
                             return new StorableCreationResult(key, false, newValue, oldEntryRef.get());
                         }
                         return new StorableCreationResult(key, true, newValue, oldEntryRef.get());
@@ -853,7 +875,6 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         });
 
-        //_partitions.put(key, stdMetadata, storable, allowOverwrite);
         if (!result.succeeded()) {
             // One piece of clean up: for failed insert, delete backing file, if any
 //            if (!allowOverwrite) {
@@ -879,6 +900,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         Storable entry = _throttler.performSoftDelete(source,
                 _timeMaster.currentTimeMillis(), key,
         new StoreOperationCallback<Storable>() {
@@ -890,13 +912,14 @@ public class StorableStoreImpl extends AdminStorableStore
                         new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
+                        final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                         Storable value = _backend.findEntry(key);              
                         // First things first: if no entry, nothing to do
                         if (value == null) {
                             return null;
                         }
-                        return _softDelete(source, diag, key,
-                                value, operationTime, removeInlinedData, removeExternalData);
+                        return _softDelete(source, diag, nanoStart, dbStart,
+                                key, value, operationTime, removeInlinedData, removeExternalData);
                     }
                 });
             }
@@ -910,6 +933,7 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         _checkClosed();
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         Storable entry = _throttler.performHardDelete(source,
                 _timeMaster.currentTimeMillis(), key,
                 new StoreOperationCallback<Storable>() {
@@ -921,12 +945,14 @@ public class StorableStoreImpl extends AdminStorableStore
                         new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
+                        final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                         Storable value = _backend.findEntry(key);              
                         // First things first: if no entry, nothing to do
                         if (value == null) {
                             return null;
                         }
-                        return _hardDelete(source, diag, key, value, removeExternalData);
+                        return _hardDelete(source, diag, nanoStart, dbStart,
+                                key, value, removeExternalData);
                     }
                 });
             }
@@ -935,7 +961,8 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     protected Storable _softDelete(StoreOperationSource source, final OperationDiagnostics diag,
-            StorableKey key, Storable entry, final long currentTime,
+            final long nanoStart, final long dbStart,
+            final StorableKey key, final Storable entry, final long currentTime,
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
@@ -944,22 +971,34 @@ public class StorableStoreImpl extends AdminStorableStore
         if (!entry.isDeleted() || hasExternalToDelete
                 || (removeInlinedData && entry.hasInlineData())) {
             File extFile = hasExternalToDelete ? entry.getExternalFile(_fileManager) : null;
-            entry = _storableConverter.softDeletedCopy(key, entry, currentTime,
+            Storable modifiedEntry = _storableConverter.softDeletedCopy(key, entry, currentTime,
                     removeInlinedData, removeExternalData);
-            _backend.ovewriteEntry(key, entry);
+            _backend.ovewriteEntry(key, modifiedEntry);
+            if (diag != null) {
+                final long nanosNow = _timeMaster.nanosForDiagnostics();
+                diag.addDbAccessOnly(nanosNow - dbStart);
+                diag.addDbAccessWithWait(nanosNow - nanoStart);
+            }
             if (extFile != null) {
                 _deleteBackingFile(key, extFile);
             }
+            return modifiedEntry;
         }
         return entry;
     }
 
     protected Storable _hardDelete(StoreOperationSource source, final OperationDiagnostics diag,
+            final long nanoStart, final long dbStart,
             StorableKey key, Storable entry,
             final boolean removeExternalData)
         throws IOException, StoreException
     {
         _backend.deleteEntry(key);
+        if (diag != null) {
+            final long nanosNow = _timeMaster.nanosForDiagnostics();
+            diag.addDbAccessOnly(nanosNow - dbStart);
+            diag.addDbAccessWithWait(nanosNow - nanoStart);
+        }
         // Hard deletion is not hard at all (pun attack!)...
         if (removeExternalData && entry.hasExternalData()) {
             _deleteBackingFile(key, entry.getExternalFile(_fileManager));
@@ -974,18 +1013,28 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     
     @Override
-    public IterationResult iterateEntriesByKey(StoreOperationSource source, OperationDiagnostics diag,
+    public IterationResult iterateEntriesByKey(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey firstKey,
             final StorableIterationCallback cb)
         throws StoreException
     {
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         try {
             return _throttler.performList(source, _timeMaster.currentTimeMillis(),
                     new StoreOperationCallback<IterationResult>() {
                 @Override
                 public IterationResult perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
-                    return _backend.iterateEntriesByKey(cb, firstKey);
+                    final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+                    try {
+                        return _backend.iterateEntriesByKey(cb, firstKey);
+                    } finally {
+                        if (diag != null) {
+                            final long nanosNow = _timeMaster.nanosForDiagnostics();
+                            diag.addDbAccessOnly(nanosNow - dbStart);
+                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                        }
+                    }
                 }
             });
         } catch (IOException e) {
@@ -994,22 +1043,32 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public IterationResult iterateEntriesAfterKey(StoreOperationSource source, OperationDiagnostics diag,
+    public IterationResult iterateEntriesAfterKey(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey lastSeen,
             final StorableIterationCallback cb)
         throws StoreException
     {
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         try {
             return _throttler.performList(source, _timeMaster.currentTimeMillis(),
             new StoreOperationCallback<IterationResult>() {
                 @Override
                 public IterationResult perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
+                    final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                     // if we didn't get "lastSeen", same as regular method
-                    if (lastSeen == null) {
-                        return _backend.iterateEntriesByKey(cb, null);
+                    try {
+                        if (lastSeen == null) {
+                            return _backend.iterateEntriesByKey(cb, null);
+                        }
+                        return _backend.iterateEntriesAfterKey(cb, lastSeen);
+                    } finally {
+                        if (diag != null) {
+                            final long nanosNow = _timeMaster.nanosForDiagnostics();
+                            diag.addDbAccessOnly(nanosNow - dbStart);
+                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                        }
                     }
-                    return _backend.iterateEntriesAfterKey(cb, lastSeen);
                 }
             });
         } catch (IOException e) {
@@ -1023,7 +1082,17 @@ public class StorableStoreImpl extends AdminStorableStore
             StorableLastModIterationCallback cb)
         throws StoreException
     {
-        return _backend.iterateEntriesByModifiedTime(cb, firstTimestamp);
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+        try {
+            return _backend.iterateEntriesByModifiedTime(cb, firstTimestamp);
+        } finally {
+            // no throttling for these (used only internally for now?), hence:
+            if (diag != null) {
+                final long time = _timeMaster.nanosForDiagnostics() - nanoStart;
+                diag.addDbAccessOnly(time);
+                diag.addDbAccessWithWait(time);
+            }
+        }
     }
     
     /*

@@ -169,8 +169,8 @@ public class OperationDiagnostics
         startContentCopy(System.nanoTime());
     }
     
-    public void finishContentCopy() {
-        _contentCopyEnd = System.nanoTime();
+    public void finishContentCopy(long endTime) {
+        _contentCopyEnd = endTime;
     }
     
     /*
