@@ -125,12 +125,10 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
-    public void addDbAccessOnly(long nanos) {
-        _dbAccess = TotalTime.createOrAdd(_dbAccess, nanos);
-    }
-
-    public void addDbAccessWithWait(long nanos) {
-        _dbAccessTotal = TotalTime.createOrAdd(_dbAccessTotal, nanos);
+    public void addDbAccess(long nanoStart, long nanoDbStart, long endTime) {
+        final long rawTime = endTime - nanoDbStart;
+        final long timeWithWait = endTime - nanoStart;
+        _dbAccess = TotalTime.createOrAdd(_dbAccess, rawTime, timeWithWait);
     }
 
     /*
@@ -139,12 +137,10 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
-    public void addFileAccessOnly(long nanos) {
-        _fileAccess = TotalTime.createOrAdd(_fileAccess, nanos);
-    }
-
-    public void addFileAccessWithWait(long nanos) {
-        _fileAccessTotal = TotalTime.createOrAdd(_fileAccessTotal, nanos);
+    public void addFileAccess(long nanoStart, long nanoFileStart, long endTime) {
+        final long rawTime = endTime - nanoFileStart;
+        final long timeWithWait = endTime - nanoStart;
+        _fileAccess = TotalTime.createOrAdd(_fileAccess, rawTime, timeWithWait);
     }
     
     /*
@@ -212,18 +208,6 @@ public class OperationDiagnostics
     }
 
     public TotalTime getDbAccess() { return _dbAccess; }
-    public TotalTime getDbAccessTotal() {
-        if (_dbAccessTotal != null) {
-            return _dbAccessTotal;
-        }
-        return _dbAccess;
-    }
 
     public TotalTime getFileAccess() { return _fileAccess; }
-    public TotalTime getFileAccessTotal() {
-        if (_fileAccessTotal != null) {
-            return _fileAccessTotal;
-        }
-        return _fileAccess;
-    }
 }

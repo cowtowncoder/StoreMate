@@ -271,7 +271,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         return _backend.hasEntry(key);
                     } finally {
                         if (diag != null) {
-                            diag.addDbAccessOnly(_timeMaster.nanosForDiagnostics() - dbStart);
+                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                     }
                 }
@@ -279,10 +279,6 @@ public class StorableStoreImpl extends AdminStorableStore
         } catch (IOException e) {
             throw new StoreException.IO(key,
                     "Problem when trying to access entry: "+e.getMessage(), e);
-        } finally {
-            if (diag != null) {
-                diag.addDbAccessWithWait(_timeMaster.nanosForDiagnostics() - nanoStart);
-            }
         }
     }
     
@@ -304,7 +300,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         return _backend.findEntry(key);
                     } finally {
                         if (diag != null) {
-                            diag.addDbAccessOnly(_timeMaster.nanosForDiagnostics() - dbStart);
+                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                     }
                 }
@@ -312,10 +308,6 @@ public class StorableStoreImpl extends AdminStorableStore
         } catch (IOException e) {
             throw new StoreException.IO(key,
                     "Problem when trying to access entry: "+e.getMessage(), e);
-        } finally {
-            if (diag != null) {
-                diag.addDbAccessWithWait(_timeMaster.nanosForDiagnostics() - nanoStart);
-            }
         }
     }
     
@@ -824,9 +816,7 @@ public class StorableStoreImpl extends AdminStorableStore
                                 final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                                 Storable oldValue =  _backend.putEntry(key, newValue);
                                 if (diag != null) {
-                                    final long nanosNow = _timeMaster.nanosForDiagnostics();
-                                    diag.addDbAccessOnly(nanosNow - dbStart);
-                                    diag.addDbAccessWithWait(nanosNow - nanoStart);
+                                    diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                                 }
                                 return new StorableCreationResult(key, true, newValue, oldValue);
                             }
@@ -840,9 +830,7 @@ public class StorableStoreImpl extends AdminStorableStore
                             final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                             Storable oldValue =  _backend.createEntry(key, newValue);
                             if (diag != null) {
-                                final long nanosNow = _timeMaster.nanosForDiagnostics();
-                                diag.addDbAccessOnly(nanosNow - dbStart);
-                                diag.addDbAccessWithWait(nanosNow - nanoStart);
+                                diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                             }
                             if (oldValue == null) { // ok, succeeded
                                 return new StorableCreationResult(key, true, newValue, null);
@@ -861,9 +849,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                         boolean success = _backend.upsertEntry(key, newValue, allowOverwrites, oldEntryRef);
                         if (diag != null) {
-                            final long nanosNow = _timeMaster.nanosForDiagnostics();
-                            diag.addDbAccessOnly(nanosNow - dbStart);
-                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                         if (!success) {
                         // fail due to existing entry
@@ -975,9 +961,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     removeInlinedData, removeExternalData);
             _backend.ovewriteEntry(key, modifiedEntry);
             if (diag != null) {
-                final long nanosNow = _timeMaster.nanosForDiagnostics();
-                diag.addDbAccessOnly(nanosNow - dbStart);
-                diag.addDbAccessWithWait(nanosNow - nanoStart);
+                diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
             }
             if (extFile != null) {
                 _deleteBackingFile(key, extFile);
@@ -995,9 +979,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         _backend.deleteEntry(key);
         if (diag != null) {
-            final long nanosNow = _timeMaster.nanosForDiagnostics();
-            diag.addDbAccessOnly(nanosNow - dbStart);
-            diag.addDbAccessWithWait(nanosNow - nanoStart);
+            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
         }
         // Hard deletion is not hard at all (pun attack!)...
         if (removeExternalData && entry.hasExternalData()) {
@@ -1030,9 +1012,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         return _backend.iterateEntriesByKey(cb, firstKey);
                     } finally {
                         if (diag != null) {
-                            final long nanosNow = _timeMaster.nanosForDiagnostics();
-                            diag.addDbAccessOnly(nanosNow - dbStart);
-                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                     }
                 }
@@ -1064,9 +1044,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         return _backend.iterateEntriesAfterKey(cb, lastSeen);
                     } finally {
                         if (diag != null) {
-                            final long nanosNow = _timeMaster.nanosForDiagnostics();
-                            diag.addDbAccessOnly(nanosNow - dbStart);
-                            diag.addDbAccessWithWait(nanosNow - nanoStart);
+                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                     }
                 }
@@ -1088,9 +1066,7 @@ public class StorableStoreImpl extends AdminStorableStore
         } finally {
             // no throttling for these (used only internally for now?), hence:
             if (diag != null) {
-                final long time = _timeMaster.nanosForDiagnostics() - nanoStart;
-                diag.addDbAccessOnly(time);
-                diag.addDbAccessWithWait(time);
+                diag.addDbAccess(nanoStart, nanoStart, _timeMaster.nanosForDiagnostics());
             }
         }
     }
