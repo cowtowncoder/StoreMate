@@ -80,14 +80,9 @@ public class OperationDiagnostics
      */
 
     /**
-     * Timestamp when content copy operation started (if any)
+     * Accumulated time for reading request data and/or writing response.
      */
-    protected long _contentCopyStart;
-
-    /**
-     * Timestamp when content copy operation ended (if it did)
-     */
-    protected long _contentCopyEnd;
+    protected long _requestResponseTotal;
     
     /*
     /**********************************************************************
@@ -125,6 +120,10 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
+    public void addDbAccess(long nanoStart, long nanoDbStart, TimeMaster timeMaster) {
+        addDbAccess(nanoStart, nanoDbStart, timeMaster.nanosForDiagnostics());
+    }
+
     public void addDbAccess(long nanoStart, long nanoDbStart, long endTime) {
         final long rawTime = endTime - nanoDbStart;
         final long timeWithWait = endTime - nanoStart;
@@ -137,10 +136,18 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
+    public void addFileAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster) {
+        addFileAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics());
+    }
+    
     public void addFileAccess(long nanoStart, long nanoFileStart, long endTime) {
         final long rawTime = endTime - nanoFileStart;
         final long timeWithWait = endTime - nanoStart;
         _fileAccess = TotalTime.createOrAdd(_fileAccess, rawTime, timeWithWait);
+    }
+
+    public void addFileWait(long waitTime) {
+        _fileAccess = TotalTime.createOrAdd(_fileAccess, waitTime, waitTime);
     }
     
     /*
@@ -148,25 +155,21 @@ public class OperationDiagnostics
     /* Request/response handling
     /**********************************************************************
      */
+
+    public void addRequestReadTime(long nanoStart, TimeMaster tm) {
+        addRequestReadTime(nanoStart, tm.nanosForDiagnostics());
+    }
     
-    /**
-     * Method called when content copy (between request and storage, or
-     * storage and response) is being started.
-     */
-    public void startContentCopy(long startNanos) {
-        _contentCopyStart = startNanos;
+    public void addRequestReadTime(long nanoStart, long nanoEnd) {
+        _requestResponseTotal += (nanoEnd - nanoStart);
     }
 
-    /**
-     * Method called when content copy (between request and storage, or
-     * storage and response) is being started.
-     */
-    public void startContentCopy() {
-        startContentCopy(System.nanoTime());
+    public void addResponseWriteTime(long nanoStart, TimeMaster tm) {
+        addResponseWriteTime(nanoStart, tm.nanosForDiagnostics());
     }
     
-    public void finishContentCopy(long endTime) {
-        _contentCopyEnd = endTime;
+    public void addResponseWriteTime(long nanoStart, long nanoEnd) {
+        _requestResponseTotal += (nanoEnd - nanoStart);
     }
     
     /*
@@ -186,25 +189,15 @@ public class OperationDiagnostics
         return System.nanoTime() - _nanoStart;
     }
 
-    public long getContentCopyNanos()
-    {
-        final long start = _contentCopyStart;
-        if (start == 0L) {
-            return 0L;
-        }
-        long end = _contentCopyEnd;
-        if (end == 0L) {
-            end = System.nanoTime();
-        }
-        return (end - start);
+    public boolean hasDbAccess() { return _dbAccess != null; }
+    public boolean hasFileAccess() { return _fileAccess != null; }
+
+    public boolean hasRequestResponseTotal() {
+        return (_requestResponseTotal > 0L);
     }
 
-    public boolean hasDbAccess() { return _dbAccess != null; }
-
-    public boolean hasFileAccess() { return _fileAccess != null; }
-    
-    public boolean hasContentCopyNanos() {
-        return (_contentCopyStart != 0L);
+    public long getRequestResponseTotal() {
+        return _requestResponseTotal;
     }
 
     public TotalTime getDbAccess() { return _dbAccess; }

@@ -296,13 +296,12 @@ public class StorableStoreImpl extends AdminStorableStore
                 public Storable perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
                     final long dbStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
-                    try {
-                        return _backend.findEntry(key);
-                    } finally {
-                        if (diag != null) {
-                            diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
-                        }
+                    Storable result = _backend.findEntry(key);
+                    if (diag != null) {
+                        diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
+                        diag.setEntry(result);
                     }
+                    return result;
                 }
             });
         } catch (IOException e) {

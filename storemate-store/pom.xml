@@ -31,6 +31,12 @@
       <artifactId>joda-time</artifactId>
     </dependency>
 
+    <!-- Off-heap buffers for buffering stuff to/from disk -->
+    <dependency>
+      <groupId>com.fasterxml.util</groupId>
+      <artifactId>low-gc-membuffers</artifactId>
+    </dependency>
+
     <!--  and we need base test stuff -->
     <dependency>
       <groupId>com.fasterxml.storemate</groupId>
