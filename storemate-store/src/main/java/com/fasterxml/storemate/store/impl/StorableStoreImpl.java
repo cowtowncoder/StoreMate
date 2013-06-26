@@ -437,10 +437,15 @@ public class StorableStoreImpl extends AdminStorableStore
         int len = 0;
 
         try {
+            // !!! TODO: only partial read... should include other parts too
+            final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
             try {
                 len = IOUtil.readFully(input, readBuffer);
             } catch (IOException e) {
                 throw new StoreException.IO(key, "Failed to read payload for key "+key+": "+e.getMessage(), e);
+            }
+            if (diag != null) {
+                diag.addRequestReadTime(nanoStart, _timeMaster);
             }
     
             // First things first: verify that compression is what it claims to be:
@@ -571,7 +576,7 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putSmallEntry(source, diag, key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallEntry(final StoreOperationSource source, OperationDiagnostics diag,
+    protected StorableCreationResult _putSmallEntry(final StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey key,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, final ByteContainer data)
@@ -591,12 +596,17 @@ public class StorableStoreImpl extends AdminStorableStore
             FileReference fileRef = _fileManager.createStorageFile(key,
                     stdMetadata.compression, fileCreationTime);
             try {
+                final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                 _throttler.performFileWrite(source, fileCreationTime, key, fileRef.getFile(),
                         new FileOperationCallback<Void>() {
                     @Override
                     public Void perform(long operationTime, StorableKey key, Storable value, File externalFile)
                             throws IOException, StoreException {
+                        final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                         IOUtil.writeFile(externalFile, data);
+                        if (diag != null) {
+                            diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                        }
                         return null;
                     }
                 });
@@ -615,7 +625,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @SuppressWarnings("resource")
-    protected StorableCreationResult _putLargeEntry(StoreOperationSource source, OperationDiagnostics diag,
+    protected StorableCreationResult _putLargeEntry(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
             final byte[] readBuffer, final int readByteCount,
@@ -656,16 +666,18 @@ public class StorableStoreImpl extends AdminStorableStore
             out = Compressors.compressingStream(compressedOut, comp);
         }
         final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
-        
+
         /* 04-Jun-2013, tatu: Rather long block of possibly throttled file-writing
          *    action... will need to be straightened out in due time.
          */
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         long copiedBytes = _throttler.performFileWrite(source,
                 fileCreationTime, key, fileRef.getFile(),
                 new FileOperationCallback<Long>() {
             @Override
             public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
                     throws IOException, StoreException {
+                final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                 try {
                     out.write(readBuffer, 0, readByteCount);
                 } catch (IOException e) {
@@ -704,6 +716,9 @@ public class StorableStoreImpl extends AdminStorableStore
                     try {
                         out.close();
                     } catch (IOException e) { }
+                    if (diag != null) {
+                        diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                    }
                 }
                 return copiedBytes;
             }
