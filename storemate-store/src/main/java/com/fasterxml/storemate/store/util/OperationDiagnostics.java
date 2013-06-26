@@ -147,7 +147,7 @@ public class OperationDiagnostics
     }
 
     public void addFileWait(long waitTime) {
-        _fileAccess = TotalTime.createOrAdd(_fileAccess, waitTime, waitTime);
+        _fileAccess = TotalTime.createOrAdd(_fileAccess, 0L, waitTime);
     }
     
     /*
@@ -169,7 +169,11 @@ public class OperationDiagnostics
     }
     
     public void addResponseWriteTime(long nanoStart, long nanoEnd) {
-        _requestResponseTotal += (nanoEnd - nanoStart);
+        addResponseWriteTime(nanoEnd - nanoStart);
+    }
+
+    public void addResponseWriteTime(long nanoSecs) {
+        _requestResponseTotal += nanoSecs;
     }
     
     /*

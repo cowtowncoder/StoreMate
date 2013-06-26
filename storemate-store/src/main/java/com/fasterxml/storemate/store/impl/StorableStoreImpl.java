@@ -723,7 +723,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 return copiedBytes;
             }
         });
-        
+
         // Checksum calculation and storage details differ depending on whether compression is used
         if (skipCompression) {
             // Storage sizes must match, first of all, if provided
