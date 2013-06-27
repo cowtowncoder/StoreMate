@@ -5,6 +5,7 @@ License: Apache License 2.0
 
 - Add more sanity checks in `StorableKey` constructor
 - Improve logging of timing information by moving OperationDiagnostics in.
+- Implement off-heap buffering for PUT content (to reduce congestion for file writes)
 
 0.9.9 (04-Jun-2013)
 

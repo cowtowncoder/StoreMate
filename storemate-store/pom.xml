@@ -19,6 +19,7 @@
     </dependency>
 
     <!-- Standard Java APIs -->
+
     <!-- need logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -29,6 +30,12 @@
     <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
+    </dependency>
+
+    <!-- for config, use config-magic for convenience (units) -->
+    <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
     </dependency>
 
     <!-- Off-heap buffers for buffering stuff to/from disk -->

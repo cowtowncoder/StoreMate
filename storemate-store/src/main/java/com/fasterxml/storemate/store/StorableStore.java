@@ -10,6 +10,7 @@ import com.fasterxml.storemate.store.backend.StorableIterationCallback;
 import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
+import com.fasterxml.storemate.store.util.ByteBufferCallback;
 import com.fasterxml.storemate.store.util.OperationDiagnostics;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 
@@ -53,6 +54,17 @@ public abstract class StorableStore
     public abstract StoreBackend getBackend();
 
     public abstract StoreOperationThrottler getThrottler();
+
+    /**
+     * Accessor for trying to obtain an off-heap memory buffer; buffer
+     * (if one can be allocated) will be passed via specified callback.
+     * Note that if allocation fails (due to large number of in-use buffers,
+     * for example), null buffer may be passed; caller needs to be able
+     * to check for this.
+     * 
+     * @since 0.9.10
+     */
+    public abstract <T> T leaseOffHeapBuffer(ByteBufferCallback<T> cb);
     
     /*
     /**********************************************************************

@@ -2,6 +2,8 @@ package com.fasterxml.storemate.store;
 
 import java.io.File;
 
+import org.skife.config.DataAmount;
+
 import com.fasterxml.storemate.store.impl.StorableConverter;
 
 /**
@@ -114,6 +116,29 @@ public class StoreConfig
      * content is compressible (beyond basic compression prefix checks)
      */
     public int minPayloadForStreaming = DEFAULT_MIN_PAYLOAD_FOR_STREAMING;
+
+    /**
+     * How much of off-heap memory can we use for buffering data for file-system
+     * operations (when copying data between request/response and file system).
+     *<p>
+     * Note that buffering is used to try to reduce contention and concurrency
+     * for file system access, with assumption that there is often impedance
+     * between read/write speeds of request/response (network) and filesystem.
+     *<p>
+     * Default size of 64 megabytes is chosen to stay under default limits
+     * for off-heap allocation
+     * 
+     * @since 0.9.10
+     */
+    public DataAmount offHeapBufferSize = new DataAmount("64MB");
+
+    /**
+     * Also: to support very large entries, let's limit buffering to first
+     * N bytes. Default is 1 megabyte.
+     * 
+     * @since 0.9.10
+     */
+    public DataAmount maxPerEntryBuffering = new DataAmount("1MB");
     
     /*
     /**********************************************************************
@@ -125,7 +150,7 @@ public class StoreConfig
      * {@link StorableConverter} implementation to use, if any
      */
     public Class<? extends StorableConverter> storableConverter = StorableConverter.class;
-        
+
     /*
     /**********************************************************************
     /* Accessors
@@ -145,4 +170,30 @@ public class StoreConfig
         }
     }
 
+    /*
+    /**********************************************************************
+    /* Convenience stuff for overriding
+    /**********************************************************************
+     */
+
+    public StoreConfig overrideOffHeapBufferSize(long sizeInBytes) {
+        offHeapBufferSize = new DataAmount(sizeInBytes);
+        return this;
+    }
+
+    public StoreConfig overrideOffHeapBufferSize(String sizeDesc) {
+        offHeapBufferSize = new DataAmount(sizeDesc);
+        return this;
+    }
+
+    public StoreConfig overrideMaxPerEntryBufferSize(long sizeInBytes) {
+        maxPerEntryBuffering = new DataAmount(sizeInBytes);
+        return this;
+    }
+
+    public StoreConfig overrideMaxPerEntryBufferSize(String sizeDesc) {
+        maxPerEntryBuffering = new DataAmount(sizeDesc);
+        return this;
+    }
+    
 }

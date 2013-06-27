@@ -21,14 +21,27 @@ public abstract class LargeEntryTestBase extends BackendTestBase
      * Simple unit test to verify handling of off-lined ("streaming")
      * insertion of entries.
      */
-    public void testSimpleLarge() throws Exception
+    public void testSimple100k() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
-        StorableStore store = createStore("bdb-medium-simple", startTime);
+        StorableStore store = createStore("bdb-large-simple-100k", startTime);
+        _testLarger(startTime, store, 100 * 1024);
+    }
+
+    // TODO: Fix -- buffering breaks
+    public void testSimple5Megs() throws Exception
+    {
+        final long startTime = _date(2012, 7, 9);
+        StorableStore store = createStore("bdb-large-simple-5megs", startTime);
+        _testLarger(startTime, store, 5 * 1024 * 1024);
+    }
+
+    private void _testLarger(long startTime, StorableStore store,
+            int origSize) throws Exception
+    {
         _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/1");
-        int origSize = StoreConfig.DEFAULT_MIN_PAYLOAD_FOR_STREAMING + 500;
         final String DATA_STRING = biggerCompressibleData(origSize);
         final byte[] DATA = DATA_STRING.getBytes("UTF-8");
 

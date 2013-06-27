@@ -2,6 +2,7 @@ package com.fasterxml.storemate.store.impl;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,10 +27,13 @@ import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
+import com.fasterxml.storemate.store.util.ByteBufferCallback;
 import com.fasterxml.storemate.store.util.CountingOutputStream;
 import com.fasterxml.storemate.store.util.OperationDiagnostics;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
 import com.fasterxml.storemate.store.util.PartitionedWriteMutex;
+import com.fasterxml.util.membuf.MemBuffersForBytes;
+import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 
 /**
  * Full store front-end implementation.
@@ -47,6 +51,11 @@ public class StorableStoreImpl extends AdminStorableStore
     
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
+    /**
+     * By default we'll use off-heap buffers composed of 64kB segments.
+     */
+    protected final int OFF_HEAP_BUFFER_SEGMENT_LEN = 64000;
+    
     /*
     /**********************************************************************
     /* Simple config, compression/inline settings
@@ -104,6 +113,12 @@ public class StorableStoreImpl extends AdminStorableStore
      * Both can be implemented using chained set of throttlers.
      */
     protected final StoreOperationThrottler _throttler;
+
+    /*
+    /**********************************************************************
+    /* Helper objects for buffering
+    /**********************************************************************
+     */
     
     /**
      * We can reuse read buffers as they are somewhat costly to
@@ -114,6 +129,17 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     protected final static BufferRecycler _readBuffers = new BufferRecycler(StoreConfig.DEFAULT_MIN_PAYLOAD_FOR_STREAMING);
 
+    /**
+     * Beyond simple read/write buffer, let's also use bigger off-heap buffers for
+     * larger entries.
+     */
+    protected final MemBuffersForBytes _offHeapBuffers;
+
+    /**
+     * Plus we also need to know configuration for buffers to construct.
+     */
+    protected final int _maxSegmentsPerBuffer;
+    
     /*
     /**********************************************************************
     /* Store status
@@ -160,6 +186,21 @@ public class StorableStoreImpl extends AdminStorableStore
             writeMutex = buildDefaultWriteMutex(config);
         }
         _writeMutex = writeMutex;
+
+        /* And then sizing for off-heap buffers... granularity of
+         * 64kB per buffer seems reasonable, and we can derive other
+         * attributes from that.
+         */
+        long totalSize = config.offHeapBufferSize.getNumberOfBytes();
+        int totalSegments = (int)(totalSize + OFF_HEAP_BUFFER_SEGMENT_LEN - 1) / OFF_HEAP_BUFFER_SEGMENT_LEN;
+        // let's prevent ridiculously small buffers tho:
+        if (totalSegments < 10) {
+            totalSegments = 10;
+        }
+        int maxPerBuffer = (int) (config.maxPerEntryBuffering.getNumberOfBytes() + OFF_HEAP_BUFFER_SEGMENT_LEN - 1) / OFF_HEAP_BUFFER_SEGMENT_LEN;
+        _maxSegmentsPerBuffer = Math.max(2,  maxPerBuffer);
+        // and pre-allocate quarter of those buffers right away?
+        _offHeapBuffers = new MemBuffersForBytes(OFF_HEAP_BUFFER_SEGMENT_LEN, totalSegments/4, totalSegments);
     }
 
     protected PartitionedWriteMutex buildDefaultWriteMutex(StoreConfig config)
@@ -220,6 +261,23 @@ public class StorableStoreImpl extends AdminStorableStore
     @Override
     public StoreOperationThrottler getThrottler() {
         return _throttler;
+    }
+
+    @Override
+    public <T> T leaseOffHeapBuffer(ByteBufferCallback<T> cb) {
+        StreamyBytesMemBuffer buffer = allocOffHeapBuffer();
+        try {
+            return cb.withBuffer(buffer);
+        } finally {
+            buffer.close();
+        }
+    }
+
+    /**
+     * Internal method that tries to allocate an off-heap buffer.
+     */
+    protected StreamyBytesMemBuffer allocOffHeapBuffer() {
+        return _offHeapBuffers.createStreamyBuffer(2, _maxSegmentsPerBuffer);
     }
     
     /*
@@ -624,36 +682,85 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
-    @SuppressWarnings("resource")
     protected StorableCreationResult _putLargeEntry(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
-            final byte[] readBuffer, final int readByteCount,
+            final byte[] readBuffer, int readByteCount,
             final InputStream input)
         throws IOException, StoreException
     {
         final boolean skipCompression;
-        Compression comp = stdMetadata.compression;
         
-        if (comp != null) { // pre-compressed, or blocked
+        if (stdMetadata.compression != null) { // pre-compressed, or blocked (explicit "none")
             skipCompression = true;
-            comp = stdMetadata.compression;
         } else {
             if (!_compressionEnabled || Compressors.isCompressed(readBuffer, 0, readByteCount)) {
                 skipCompression = true;
-                comp = Compression.NONE;
+                stdMetadata.compression = Compression.NONE;
             } else {
                 skipCompression = false;
-                comp = Compression.LZF;
+                stdMetadata.compression = Compression.LZF;
             }
-            stdMetadata.compression = comp;
         }
+        
+        // First things first: safe handling of off-heap buffer...
+        StreamyBytesMemBuffer offHeap = allocOffHeapBuffer();
+        try {
+            return _putLargeEntry2(source, diag,
+                    key, stdMetadata, customMetadata,
+                    allowOverwrites, readBuffer, readByteCount, input,
+                    skipCompression,
+                    offHeap);
+        } finally {
+            if (offHeap != null) {
+                offHeap.close();
+            }
+        }
+    }
+    
+    @SuppressWarnings("resource")
+    protected StorableCreationResult _putLargeEntry2(StoreOperationSource source, final OperationDiagnostics diag,
+            final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            OverwriteChecker allowOverwrites,
+            final byte[] readBuffer, int incomingReadByteCount,
+            final InputStream input,
+            final boolean skipCompression,
+            final StreamyBytesMemBuffer offHeap)
+        throws IOException, StoreException
+    {
+        /* First: let's see if we can't just read and buffer all the content in
+         * an off-heap buffer (if we got one).
+         */
+        final byte[] leftover;
+
+        final int readByteCount;
+        if (offHeap == null) { // unlikely to ever occur, but theoretically possible so:
+            leftover = Arrays.copyOf(readBuffer, incomingReadByteCount);
+        } else {
+            if (offHeap != null) {
+                if (!offHeap.tryAppend(readBuffer, 0, incomingReadByteCount)) {
+                    throw new IOException("Internal problem: failed to append "+incomingReadByteCount+" in an off-heap buffer");
+                }
+            }
+            int overflow = _readInBuffer(diag, key, input, readBuffer, offHeap);
+            if (overflow == 0) {
+                // Optimal case: managed to read all input -- offline!
+                return _putLargeEntryFullyBuffered(source, diag,
+                        key, stdMetadata, customMetadata, allowOverwrites,
+                        readBuffer, skipCompression, offHeap);
+            }
+            leftover = Arrays.copyOf(readBuffer, overflow);
+        }
+
+        /* No go: could not buffer all content. If so, copy whatever we have in a "left-over"
+         * bucket, start cranking...
+         */
         
         // So: start by creating the result file
         long fileCreationTime = _timeMaster.currentTimeMillis();
-        final FileReference fileRef = _fileManager.createStorageFile(key, comp, fileCreationTime);
+        final FileReference fileRef = _fileManager.createStorageFile(key, stdMetadata.compression, fileCreationTime);
         File storedFile = fileRef.getFile();
-        
+
         final OutputStream out;
         final CountingOutputStream compressedOut;
 
@@ -663,13 +770,11 @@ public class StorableStoreImpl extends AdminStorableStore
         } else {
             compressedOut = new CountingOutputStream(new FileOutputStream(storedFile),
                     new IncrementalMurmur3Hasher());
-            out = Compressors.compressingStream(compressedOut, comp);
+            out = Compressors.compressingStream(compressedOut, stdMetadata.compression);
         }
         final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
 
-        /* 04-Jun-2013, tatu: Rather long block of possibly throttled file-writing
-         *    action... will need to be straightened out in due time.
-         */
+        // Need to mix-n-match read, write; trickier to account for each part.
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         long copiedBytes = _throttler.performFileWrite(source,
                 fileCreationTime, key, fileRef.getFile(),
@@ -678,21 +783,26 @@ public class StorableStoreImpl extends AdminStorableStore
             public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
                     throws IOException, StoreException {
                 final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+                long copiedBytes = 0L;
+
                 try {
-                    out.write(readBuffer, 0, readByteCount);
-                } catch (IOException e) {
-                    try {
-                        if (out != null) {
-                            out.close();
+                    // First: dump out anything in off-heap buffer
+                    if (offHeap != null) {
+                        int count;
+                        while ((count = offHeap.readIfAvailable(readBuffer)) > 0) {
+                            out.write(readBuffer, 0, count);
+                            copiedBytes += count;
+                            hasher.update(readBuffer, 0, count);
                         }
-                    } catch (IOException e2) { }
-                    throw new StoreException.IO(key, "Failed to write initial "+readByteCount+" bytes of file '"+externalFile.getAbsolutePath()+"'", e);
-                }
-                hasher.update(readBuffer, 0, readByteCount);
-                long copiedBytes = readByteCount;
+                    }
+                    // then any leftovers
+                    if (leftover != null) {
+                        out.write(leftover);
+                        hasher.update(leftover, 0, leftover.length);
+                        copiedBytes += leftover.length;
+                    }
                 
-                // and then need to proceed with copying the rest, compressing along the way
-                try {
+                    // and then need to proceed with copying the rest, compressing along the way
                     while (true) {
                         int count;
                         try {
@@ -707,15 +817,21 @@ public class StorableStoreImpl extends AdminStorableStore
                         try {
                             out.write(readBuffer, 0, count);
                         } catch (IOException e) {
-                            throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
-                                    +") to file '"+externalFile.getAbsolutePath()+"'", e);
                         }
                         hasher.update(readBuffer, 0, count);
                     }
+                } catch (IOException e) {
+                    if (copiedBytes == 0L) {
+                        throw new StoreException.IO(key, "Failed to write initial bytes of file '"+externalFile.getAbsolutePath()+"'", e);
+                    }
+                    throw new StoreException.IO(key, "Failed to write intermediate bytes (after "+copiedBytes
+                            +") to file '"+externalFile.getAbsolutePath()+"'", e);
                 } finally {
                     try {
                         out.close();
-                    } catch (IOException e) { }
+                    } catch (IOException e) {
+                        LOG.warn("Failed to close file {}: {}", externalFile, e.getMessage());
+                    }
                     if (diag != null) {
                         diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
                     }
@@ -723,78 +839,191 @@ public class StorableStoreImpl extends AdminStorableStore
                 return copiedBytes;
             }
         });
-
         // Checksum calculation and storage details differ depending on whether compression is used
-        if (skipCompression) {
-            // Storage sizes must match, first of all, if provided
-            if (stdMetadata.storageSize != copiedBytes && stdMetadata.storageSize >= 0) {
-                throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
-                        "Incorrect length for entry; storageSize="+stdMetadata.storageSize
-                        +", bytes read: "+copiedBytes);
-            }
 
-            final int actualHash = _cleanChecksum(hasher.calculateHash());
-            stdMetadata.storageSize = copiedBytes;
+        final int contentHash = _cleanChecksum(hasher.calculateHash());
+        if (skipCompression) {
+            _verifyStorageSize(key, stdMetadata, copiedBytes);
             if (stdMetadata.compression == Compression.NONE) {
-                if (stdMetadata.contentHash == HashConstants.NO_CHECKSUM) {
-                    stdMetadata.contentHash = actualHash;
-                } else if (stdMetadata.contentHash != actualHash) {
-                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for not-compressed entry ("+copiedBytes+" bytes): got 0x"
-                                    +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
-                                    +Integer.toHexString(actualHash));
-                }
+                _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
             } else { // already compressed
-//                stdMetadata.compressedContentHash = _cleanChecksum(hasher.calculateHash());
-                if (stdMetadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
-                    stdMetadata.compressedContentHash = actualHash;
-                } else {
-                    if (stdMetadata.compressedContentHash != actualHash) {
-                        throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                                "Incorrect checksum for "+stdMetadata.compression+" pre-compressed entry ("+copiedBytes
-                                +" bytes): got 0x"
-                                +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
-                                +Integer.toHexString(actualHash));
-                    }
-                }
+                _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
             }
             // we don't really know the original size, either way:
             stdMetadata.uncompressedSize = 0L;
         } else {
-            final int contentHash = _cleanChecksum(hasher.calculateHash());
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
-            
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
             // must verify checksum, if one was offered...
-            if (stdMetadata.contentHash == HashConstants.NO_CHECKSUM) {
-                stdMetadata.contentHash = contentHash;
-            } else {
-                if (stdMetadata.contentHash != contentHash) {
-                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for entry ("+copiedBytes+" bytes, compression: "
-                            		+stdMetadata.compression+"; comp checksum 0x"+stdMetadata.compressedContentHash
-                            		+"): got 0x"+Integer.toHexString(stdMetadata.contentHash)
-                            		+", calculated to be 0x"+Integer.toHexString(contentHash));
-                }
-            }
-            if (stdMetadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
-                stdMetadata.compressedContentHash = compressedHash;
-            } else {
-                if (stdMetadata.compressedContentHash != compressedHash) {
-                    throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
-                            "Incorrect checksum for "+stdMetadata.compression+" compressed entry ("
-                            		+stdMetadata.storageSize+"/"+copiedBytes+" bytes): got 0x"
-                                +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
-                                +Integer.toHexString(compressedHash));
-                }
-            }
+            _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
+            _verifyCompressedHash(key, stdMetadata, copiedBytes, compressedHash);
         }
         long creationTime = _timeMaster.currentTimeMillis();
         Storable storable = _storableConverter.encodeOfflined(key, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
         return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
+    }
+
+    @SuppressWarnings("resource")
+    protected StorableCreationResult _putLargeEntryFullyBuffered(StoreOperationSource source, final OperationDiagnostics diag,
+            final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            OverwriteChecker allowOverwrites,
+            final byte[] readBuffer, final boolean skipCompression, final StreamyBytesMemBuffer offHeap)
+        throws IOException, StoreException
+    {
+        long fileCreationTime = _timeMaster.currentTimeMillis();
+        final FileReference fileRef = _fileManager.createStorageFile(key, stdMetadata.compression, fileCreationTime);
+        File storedFile = fileRef.getFile();
+
+        final OutputStream out;
+        final CountingOutputStream compressedOut;
+
+        if (skipCompression) {
+            compressedOut = null;
+            out = new FileOutputStream(storedFile);
+        } else {
+            compressedOut = new CountingOutputStream(new FileOutputStream(storedFile),
+                    new IncrementalMurmur3Hasher());
+            out = Compressors.compressingStream(compressedOut, stdMetadata.compression);
+        }
+        final IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(HASH_SEED);        
+
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+        long copiedBytes = _throttler.performFileWrite(source,
+                fileCreationTime, key, fileRef.getFile(),
+                new FileOperationCallback<Long>() {
+            @Override
+            public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
+                    throws IOException, StoreException {
+                final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+                long copiedBytes = 0L;
+                
+                try {
+                    int count;
+                    while ((count = offHeap.readIfAvailable(readBuffer)) > 0) {
+                        copiedBytes += count;
+                        try {
+                            out.write(readBuffer, 0, count);
+                        } catch (IOException e) {
+                            throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                                    +") to file '"+externalFile.getAbsolutePath()+"'", e);
+                        }
+                        hasher.update(readBuffer, 0, count);
+                    }
+                } finally {
+                    try { out.close(); } catch (IOException e) { }
+                    if (diag != null) {
+                        diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                    }
+                }
+                return copiedBytes;
+            }
+        });
+        // Checksum calculation and storage details differ depending on whether compression is used
+        final int contentHash = _cleanChecksum(hasher.calculateHash());
+        if (skipCompression) {
+            _verifyStorageSize(key, stdMetadata, copiedBytes);
+            if (stdMetadata.compression == Compression.NONE) {
+                _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
+            } else { // already compressed
+                _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
+            }
+            // we don't really know the original size, either way:
+            stdMetadata.uncompressedSize = 0L;
+        } else {
+            final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
+            stdMetadata.uncompressedSize = copiedBytes;
+            stdMetadata.storageSize = compressedOut.count();
+            // must verify checksum, if one was offered...
+            _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
+            _verifyCompressedHash(key, stdMetadata, copiedBytes, compressedHash);
+        }
+        long creationTime = _timeMaster.currentTimeMillis();
+        Storable storable = _storableConverter.encodeOfflined(key, creationTime,
+                stdMetadata, customMetadata, fileRef);
+
+        return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
+    }
+    
+    protected void _verifyStorageSize(StorableKey key, StorableCreationMetadata stdMetadata, long bytes)
+        throws StoreException
+    {
+        // Storage sizes must match, first of all, if provided
+        if (stdMetadata.storageSize != bytes && stdMetadata.storageSize >= 0) {
+            throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
+                    "Incorrect length for entry; storageSize="+stdMetadata.storageSize
+                    +", bytes read: "+bytes);
+        }
+        stdMetadata.storageSize = bytes;
+    }
+    
+    protected void _verifyContentHash(StorableKey key, StorableCreationMetadata stdMetadata,
+            long bytes, int contentHash)
+        throws StoreException
+    {
+        if (stdMetadata.contentHash == HashConstants.NO_CHECKSUM) {
+            stdMetadata.contentHash = contentHash;
+        } else if (stdMetadata.contentHash != contentHash) {
+            throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                    "Incorrect content checksum for entry (compression: "+stdMetadata.compression
+                    +", "+bytes+" bytes): got 0x"
+                    +Integer.toHexString(stdMetadata.contentHash)+", calculated to be 0x"
+                    +Integer.toHexString(contentHash));
+        }
+    }
+
+    protected void _verifyCompressedHash(StorableKey key, StorableCreationMetadata stdMetadata,
+            long bytes, int contentHash)
+        throws StoreException
+    {
+        if (stdMetadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
+            stdMetadata.compressedContentHash = contentHash;
+        } else {
+            if (stdMetadata.compressedContentHash != contentHash) {
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM,
+                        "Incorrect compressed checksum for "+stdMetadata.compression+" entry ("+bytes
+                        +" bytes): got 0x"
+                        +Integer.toHexString(stdMetadata.compressedContentHash)+", calculated to be 0x"
+                        +Integer.toHexString(contentHash));
+            }
+        }
+    }
+    
+    /**
+     * Helper method used for reading as much data from the request as
+     * possible, appending it in an off-heap buffer for further
+     * processing.
+     */
+    protected int _readInBuffer(final OperationDiagnostics diag, final StorableKey key,
+            InputStream input, byte[] readBuffer, StreamyBytesMemBuffer offHeap)
+        throws IOException
+    {
+        final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
+        try {
+            while (true) {
+                int count;
+                try {
+                    count = input.read(readBuffer);
+                } catch (IOException e) { // probably will fail to write response too but...
+                    throw new StoreException.IO(key, "Failed to read content to store (after "+offHeap.getTotalPayloadLength()
+                            +" bytes)", e);
+                }
+                if (count < 0) { // got it all babe
+                    return 0;
+                }
+                // can we append it in buffer?
+                if (!offHeap.tryAppend(readBuffer, 0, count)) {
+                    // if not, return to caller, indicating how much is left
+                    return count;
+                }
+            }
+        } finally {
+            if (diag != null) {
+                diag.addRequestReadTime(nanoStart, _timeMaster);
+            }
+        }
     }
 
     /**
