@@ -9,7 +9,7 @@ Check out [Project Wiki](../../wiki) for complete description; here are some of 
 * Automatic, configurable auto-negotiated on-the-fly compression, decompression (GZIP, LZF, depending on payload size)
 * Pluggable DB storage backends. Current implementations include:
     * [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB) based one: mature, default implementation
-    * [LevelDB/Java](https://github.com/dain/leveldb) based backend: experimental as of 0.9.7
+    * [LevelDB/Java](https://github.com/dain/leveldb) based backend: experimental as of 0.9.10
 
 # License
 
