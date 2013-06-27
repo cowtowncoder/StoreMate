@@ -732,8 +732,6 @@ public class StorableStoreImpl extends AdminStorableStore
          * an off-heap buffer (if we got one).
          */
         final byte[] leftover;
-
-        final int readByteCount;
         if (offHeap == null) { // unlikely to ever occur, but theoretically possible so:
             leftover = Arrays.copyOf(readBuffer, incomingReadByteCount);
         } else {
@@ -801,7 +799,6 @@ public class StorableStoreImpl extends AdminStorableStore
                         hasher.update(leftover, 0, leftover.length);
                         copiedBytes += leftover.length;
                     }
-                
                     // and then need to proceed with copying the rest, compressing along the way
                     while (true) {
                         int count;
@@ -814,10 +811,7 @@ public class StorableStoreImpl extends AdminStorableStore
                             break;
                         }
                         copiedBytes += count;
-                        try {
-                            out.write(readBuffer, 0, count);
-                        } catch (IOException e) {
-                        }
+                        out.write(readBuffer, 0, count);
                         hasher.update(readBuffer, 0, count);
                     }
                 } catch (IOException e) {
