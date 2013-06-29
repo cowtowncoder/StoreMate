@@ -1,7 +1,9 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.11 (xx-Jul-2013)
+0.9.11 (29-Jun-2013)
+
+- Updated versions of some dependencies
 
 0.9.10 (27-Jun-2013)
 
