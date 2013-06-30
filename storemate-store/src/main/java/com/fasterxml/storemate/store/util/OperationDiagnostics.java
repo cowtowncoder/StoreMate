@@ -120,24 +120,34 @@ public class OperationDiagnostics
 
     /*
     /**********************************************************************
-    /* File system access
+    /* File system access, reads
     /**********************************************************************
      */
 
-    public void addFileReadAccess(long nanoStart, TimeMaster timeMaster) {
-        addFileReadAccess(nanoStart, nanoStart, timeMaster.nanosForDiagnostics());
+    public void addFileReadAccess(long nanoStart, TimeMaster timeMaster, long bytes) {
+        addFileReadAccess(nanoStart, nanoStart, timeMaster.nanosForDiagnostics(), bytes);
     }
     
-    public void addFileReadAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster) {
-        addFileReadAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics());
+    public void addFileReadAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster, long bytes) {
+        addFileReadAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics(), bytes);
     }
     
-    public void addFileReadAccess(long nanoStart, long nanoFileStart, long endTime) {
+    public void addFileReadAccess(long nanoStart, long nanoFileStart, long endTime, long bytes) {
         final long rawTime = endTime - nanoFileStart;
         final long timeWithWait = endTime - nanoStart;
-        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, 0L);
+        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, bytes);
     }
 
+    public void addFileReadWait(long waitTime) {
+        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
+    }
+    
+    /*
+    /**********************************************************************
+    /* File system access, writes
+    /**********************************************************************
+     */
+    
     public void addFileWriteAccess(long nanoStart, TimeMaster timeMaster, long bytes) {
         addFileWriteAccess(nanoStart, nanoStart, timeMaster.nanosForDiagnostics(), bytes);
     }
@@ -152,8 +162,8 @@ public class OperationDiagnostics
         final long timeWithWait = endTime - nanoStart;
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, bytes);
     }
-    
-    public void addFileWait(long waitTime) {
+
+    public void addFileWriteWait(long waitTime) {
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
     }
     
