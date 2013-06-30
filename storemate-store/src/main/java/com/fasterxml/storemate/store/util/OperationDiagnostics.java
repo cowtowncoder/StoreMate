@@ -141,7 +141,7 @@ public class OperationDiagnostics
     public void addFileReadWait(long waitTime) {
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
     }
-    
+
     /*
     /**********************************************************************
     /* File system access, writes

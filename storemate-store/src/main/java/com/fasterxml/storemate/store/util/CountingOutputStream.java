@@ -25,7 +25,30 @@ public class CountingOutputStream extends OutputStream
         _hasher = hasher;
     }
 
+    /*
+    /**********************************************************************
+    /* Extended API
+    /**********************************************************************
+     */
+
+    /**
+     * Accessor for finding number of bytes output using this stream
+     */
     public long count() { return _count; }
+
+    /**
+     * Method for accessing {@link IncrementalHasher32} instance stream was
+     * constructed with, if any.
+     */
+    public IncrementalHasher32 getHasher() {
+        return _hasher;
+    }
+    
+    /*
+    /**********************************************************************
+    /* OutputStream implementation
+    /**********************************************************************
+     */
     
     @Override
     public void close() throws IOException {
@@ -51,7 +74,7 @@ public class CountingOutputStream extends OutputStream
         }
     }
 
-    byte[] TMP = null;
+    protected byte[] TMP = null;
     
     @Override
     public void write(int b) throws IOException {

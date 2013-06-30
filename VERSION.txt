@@ -1,6 +1,13 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.12 (...)
+
+#6: Buffer content being written from request into memory buffer, before disk write operation
+- Add 'bytes' argument to OperationDiagnostics, file operations; separate out read/write
+  operations for diagnostics
+- Add `CountingInputStream`
+
 0.9.11 (29-Jun-2013)
 
 - Updated versions of some dependencies
