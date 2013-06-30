@@ -57,16 +57,22 @@ public class IOUtil
             throws IOException
     {
         FileOutputStream out = new FileOutputStream(file);
-        out.write(data, offset, length);
-        out.close();
+        try {
+            out.write(data, offset, length);
+        } finally {
+            out.close();
+        }
     }
 
     public static void writeFile(File file, ByteContainer data)
         throws IOException
     {
         FileOutputStream out = new FileOutputStream(file);
-        data.writeBytes(out);
-        out.close();
+        try {
+            data.writeBytes(out);
+        } finally {
+            out.close();
+        }
     }
     
     /*

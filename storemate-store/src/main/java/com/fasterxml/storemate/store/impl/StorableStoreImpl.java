@@ -827,7 +827,9 @@ public class StorableStoreImpl extends AdminStorableStore
                         LOG.warn("Failed to close file {}: {}", externalFile, e.getMessage());
                     }
                     if (diag != null) {
-                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, copiedBytes);
+                        // Note: due to compression, bytes written may be less than read:
+                        long writtenBytes = (compressedOut == null) ? copiedBytes : compressedOut.count();
+                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, writtenBytes);
                     }
                 }
                 return copiedBytes;
@@ -909,7 +911,9 @@ public class StorableStoreImpl extends AdminStorableStore
                 } finally {
                     try { out.close(); } catch (IOException e) { }
                     if (diag != null) {
-                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, copiedBytes);
+                        // Note: due to compression, bytes written may be less than read:
+                        long writtenBytes = (compressedOut == null) ? copiedBytes : compressedOut.count();
+                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, writtenBytes);
                     }
                 }
                 return copiedBytes;
