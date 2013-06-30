@@ -48,12 +48,6 @@ public class OperationDiagnostics
      * excluding any wait time due to throttling.
      */
     protected TotalTime _dbAccess;
-
-    /**
-     * Accumulated timing information on primary database access calls
-     * including any wait time due to throttling.
-     */
-    protected TotalTime _dbAccessTotal;
     
     /*
     /**********************************************************************
@@ -65,13 +59,7 @@ public class OperationDiagnostics
      * Accumulated timing information on file system access, not including possible
      * waits due to throttling.
      */
-    protected TotalTime _fileAccess;
-
-    /**
-     * Accumulated timing information on wait time(s) for doing local
-     * filesystem access including wait time due to throttling.
-     */
-    protected TotalTime _fileAccessTotal;
+    protected TotalTimeAndBytes _fileAccess;
     
     /*
     /**********************************************************************
@@ -136,18 +124,37 @@ public class OperationDiagnostics
     /**********************************************************************
      */
 
-    public void addFileAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster) {
-        addFileAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics());
+    public void addFileReadAccess(long nanoStart, TimeMaster timeMaster) {
+        addFileReadAccess(nanoStart, nanoStart, timeMaster.nanosForDiagnostics());
     }
     
-    public void addFileAccess(long nanoStart, long nanoFileStart, long endTime) {
+    public void addFileReadAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster) {
+        addFileReadAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics());
+    }
+    
+    public void addFileReadAccess(long nanoStart, long nanoFileStart, long endTime) {
         final long rawTime = endTime - nanoFileStart;
         final long timeWithWait = endTime - nanoStart;
-        _fileAccess = TotalTime.createOrAdd(_fileAccess, rawTime, timeWithWait);
+        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, 0L);
     }
 
+    public void addFileWriteAccess(long nanoStart, TimeMaster timeMaster, long bytes) {
+        addFileWriteAccess(nanoStart, nanoStart, timeMaster.nanosForDiagnostics(), bytes);
+    }
+    
+    public void addFileWriteAccess(long nanoStart, long nanoFileStart, TimeMaster timeMaster,
+            long bytes) {
+        addFileWriteAccess(nanoStart, nanoFileStart, timeMaster.nanosForDiagnostics(), bytes);
+    }
+    
+    public void addFileWriteAccess(long nanoStart, long nanoFileStart, long endTime, long bytes) {
+        final long rawTime = endTime - nanoFileStart;
+        final long timeWithWait = endTime - nanoStart;
+        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, bytes);
+    }
+    
     public void addFileWait(long waitTime) {
-        _fileAccess = TotalTime.createOrAdd(_fileAccess, 0L, waitTime);
+        _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
     }
     
     /*

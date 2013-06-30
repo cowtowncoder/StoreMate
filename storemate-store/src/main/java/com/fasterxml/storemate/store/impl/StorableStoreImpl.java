@@ -663,7 +663,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
                         IOUtil.writeFile(externalFile, data);
                         if (diag != null) {
-                            diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                            diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, data.byteLength());
                         }
                         return null;
                     }
@@ -827,7 +827,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         LOG.warn("Failed to close file {}: {}", externalFile, e.getMessage());
                     }
                     if (diag != null) {
-                        diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, copiedBytes);
                     }
                 }
                 return copiedBytes;
@@ -909,7 +909,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 } finally {
                     try { out.close(); } catch (IOException e) { }
                     if (diag != null) {
-                        diag.addFileAccess(nanoStart,  fsStart,  _timeMaster);
+                        diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, copiedBytes);
                     }
                 }
                 return copiedBytes;
