@@ -38,6 +38,7 @@ import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 /**
  * Full store front-end implementation.
  */
+@SuppressWarnings("hiding")
 public class StorableStoreImpl extends AdminStorableStore
 {
     /**

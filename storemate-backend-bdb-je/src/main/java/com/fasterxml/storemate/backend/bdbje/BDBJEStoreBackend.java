@@ -98,11 +98,13 @@ public class BDBJEStoreBackend extends StoreBackend
     /**
      * Yes, BDB-JE can produce efficient entry count.
      */
+    @Override
     public boolean hasEfficientEntryCount() { return true; }
 
     /**
      * Yes, BDB-JE can produce efficient index entry count.
      */
+    @Override
     public boolean hasEfficientIndexCount() { return true; }
 
     @Override

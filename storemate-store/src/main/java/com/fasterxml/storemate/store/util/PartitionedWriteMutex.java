@@ -50,7 +50,6 @@ public class PartitionedWriteMutex
      */
 
     /**
-     * @param delegatee Object to which we forward actual 
      * @param n Minimum number of partitions (rounded up to next power of 2)
      * @param fair Whether underlying semaphores should be fair or not; fair ones have
      *   more overhead, but mostly (only?) for contested access, not uncontested
