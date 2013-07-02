@@ -1,7 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.12 (...)
+0.9.13 (xxx)
+
+- Fix `OperationDiagnostics`, was using from nano-second base
+
+0.9.12 (01-Jul-2013)
 
 #6: Buffer content being written from request into memory buffer, before disk write operation
 - Add 'bytes' argument to OperationDiagnostics, file operations; separate out read/write
