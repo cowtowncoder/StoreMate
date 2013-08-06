@@ -60,6 +60,10 @@ public class OperationDiagnostics
      * waits due to throttling.
      */
     protected TotalTimeAndBytes _fileAccess;
+
+    protected boolean _hasFileReads;
+
+    protected boolean _hasFileWrites;
     
     /*
     /**********************************************************************
@@ -83,7 +87,7 @@ public class OperationDiagnostics
     }
 
     public OperationDiagnostics(TimeMaster tm) {
-        this(tm.currentTimeMillis());
+        this(tm.nanosForDiagnostics());
     }
     
     /*
@@ -133,12 +137,14 @@ public class OperationDiagnostics
     }
     
     public void addFileReadAccess(long nanoStart, long nanoFileStart, long endTime, long bytes) {
+        _hasFileReads = true;
         final long rawTime = endTime - nanoFileStart;
         final long timeWithWait = endTime - nanoStart;
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, bytes);
     }
 
     public void addFileReadWait(long waitTime) {
+        _hasFileReads = true;
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
     }
 
@@ -158,12 +164,14 @@ public class OperationDiagnostics
     }
     
     public void addFileWriteAccess(long nanoStart, long nanoFileStart, long endTime, long bytes) {
+        _hasFileWrites = true;
         final long rawTime = endTime - nanoFileStart;
         final long timeWithWait = endTime - nanoStart;
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, rawTime, timeWithWait, bytes);
     }
 
     public void addFileWriteWait(long waitTime) {
+        _hasFileWrites = true;
         _fileAccess = TotalTimeAndBytes.createOrAdd(_fileAccess, 0L, waitTime, 0L);
     }
     
@@ -213,6 +221,9 @@ public class OperationDiagnostics
     public boolean hasDbAccess() { return _dbAccess != null; }
     public boolean hasFileAccess() { return _fileAccess != null; }
 
+    public boolean hasFileReads() { return _hasFileReads; }
+    public boolean hasFileWrites() { return _hasFileWrites; }
+    
     public boolean hasRequestResponseTotal() {
         return (_requestResponseTotal > 0L);
     }
@@ -223,5 +234,5 @@ public class OperationDiagnostics
 
     public TotalTime getDbAccess() { return _dbAccess; }
 
-    public TotalTime getFileAccess() { return _fileAccess; }
+    public TotalTimeAndBytes getFileAccess() { return _fileAccess; }
 }
