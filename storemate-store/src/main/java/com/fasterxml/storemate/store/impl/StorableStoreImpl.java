@@ -718,8 +718,7 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         }
     }
-    
-    @SuppressWarnings("resource")
+
     protected StorableCreationResult _putLargeEntry2(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
@@ -863,7 +862,10 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
-    @SuppressWarnings("resource")
+    /**
+     * Method used when the whole input did fit in off-heap buffer, and can be efficiently
+     * written in file.
+     */
     protected StorableCreationResult _putLargeEntryFullyBuffered(StoreOperationSource source, final OperationDiagnostics diag,
             final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
