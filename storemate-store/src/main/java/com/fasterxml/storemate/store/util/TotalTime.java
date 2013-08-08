@@ -50,4 +50,5 @@ public class TotalTime
 
     public long getTotalTimeWithoutWait() { return _timeNanoSecs; }
     public long getTotalTimeWithWait() { return _timeNanoSecsTotal; }
+    public long getWaitTime() { return _timeNanoSecsTotal - _timeNanoSecs; }
 }
