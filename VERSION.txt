@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.13 (xxx)
+0.9.13 (08-Aug-2013)
 
 - Fix `OperationDiagnostics`, was using from nano-second base
 
