@@ -1,9 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.13 (08-Aug-2013)
+0.9.14 (08-Aug-2013)
 
 - Fix `OperationDiagnostics`, was using from nano-second base
+- Update slf4j dependencies
 
 0.9.12 (01-Jul-2013)
 
