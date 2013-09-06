@@ -123,7 +123,9 @@ public class PartitionedWriteMutex
             semaphore.acquire();
         } catch (InterruptedException e) { // could this ever occur?
             semaphore.release();
-            throw new StoreException.Internal(key, e);
+            throw new StoreException.Internal(key, "partitionedWrite() for "+key+" failed ("
+                    +e.getClass().getName()+"), problem: "+e.getMessage(),
+                    e);
         }
         _inFlightStartTimes.set(partition, operationTime);
         try {
