@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.sleepycat.je.*;
 
-import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
@@ -71,18 +70,17 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         }
 
         StorableConverter storableConv = _storeConfig.createStorableConverter();
-        Environment env = new Environment(dbRoot, envConfig(canCreate, canWrite));
-        Database entryDB = env.openDatabase(null, // no TX
-                "entryMetadata", dbConfig(env));
-        SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entryDB,
-                indexConfig(env));
-        BDBJEStoreBackend physicalStore = new BDBJEStoreBackend(storableConv,
-                dbRoot, entryDB, index);
-
+        EnvironmentConfig envConfig = envConfig(canCreate, canWrite);
+        BDBJEStoreBackend physicalStore;
+        try {
+            physicalStore = new BDBJEStoreBackend(storableConv, dbRoot, _bdbConfig, envConfig);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to construct BDBJEStoreBackend: "+e.getMessage(), e);
+        }
         try {
             physicalStore.start();
         } catch (DatabaseException e) {
-            throw new IllegalStateException("Failed to open StorableStore: "+e.getMessage(), e);
+            throw new IllegalStateException("Failed to start BDBJEStoreBackend: "+e.getMessage(), e);
         }
         return physicalStore;
     }
@@ -127,35 +125,6 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         config.setLockTimeout(_bdbConfig.lockTimeoutMsecs, TimeUnit.MILLISECONDS);
         // Default of 1 for lock count is not good; let's see what to use instead:
         config.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, String.valueOf(_bdbConfig.lockTableCount));
-        return config;
-    }
-
-    protected DatabaseConfig dbConfig(Environment env)
-    {
-        DatabaseConfig dbConfig = new DatabaseConfig();
-        EnvironmentConfig econfig = env.getConfig();
-        dbConfig.setReadOnly(econfig.getReadOnly());
-        dbConfig.setAllowCreate(econfig.getAllowCreate());
-        dbConfig.setSortedDuplicates(false);
-        // since 0.9.8, we can opt to use deferred writes if we dare:
-        dbConfig.setDeferredWrite(_bdbConfig.useDeferredWritesForEntries());
-        return dbConfig;
-    }
-
-    protected SecondaryConfig indexConfig(Environment env)
-    {
-        LastModKeyCreator keyCreator = new LastModKeyCreator();
-        SecondaryConfig config = new SecondaryConfig();
-        config.setAllowCreate(env.getConfig().getAllowCreate());
-        // should not need to auto-populate ever:
-        config.setAllowPopulate(false);
-        config.setKeyCreator(keyCreator);
-        // important: timestamps are not unique, need to allow dups:
-        config.setSortedDuplicates(true);
-        // no, it is not immutable (entries will be updated with new timestamps)
-        config.setImmutableSecondaryKey(false);
-        // since 0.9.8, we can opt to use deferred writes if we dare:
-        config.setDeferredWrite(_bdbConfig.useDeferredWritesForEntries());
         return config;
     }
 }

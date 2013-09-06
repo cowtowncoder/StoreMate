@@ -3,6 +3,9 @@ package com.fasterxml.storemate.store.backend;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.store.Storable;
 import com.fasterxml.storemate.store.StorableStore;
@@ -16,6 +19,8 @@ import com.fasterxml.storemate.store.util.OverwriteChecker;
  */
 public abstract class StoreBackend
 {
+    protected final Logger LOG;
+
     protected final StorableConverter _storableConverter;
 
     /*
@@ -24,9 +29,15 @@ public abstract class StoreBackend
     /**********************************************************************
      */
 
-    protected StoreBackend(StorableConverter storableConverter)
+    protected StoreBackend(StorableConverter storableConverter) {
+        _storableConverter = storableConverter;
+        LOG = LoggerFactory.getLogger(getClass());
+    }
+
+    protected StoreBackend(StorableConverter storableConverter, Logger log)
     {
         _storableConverter = storableConverter;
+        LOG = log;
     }
 
     public abstract void start() throws Exception;

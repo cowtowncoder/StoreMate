@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.sleepycat.je.*;
 
+import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
 
@@ -32,21 +33,27 @@ public class BDBJEStoreBackend extends StoreBackend
 
     protected final File _dataRoot;
 
+    protected final BDBJEConfig _bdbConfig;
+
+    protected final EnvironmentConfig _envConfig;
+    
     /*
     /**********************************************************************
     /* BDB entities
     /**********************************************************************
      */
 
+    protected Environment _env;
+    
     /**
      * Underlying primary BDB-JE database
      */
-    protected final Database _entries;
+    protected Database _entries;
 
     /**
      * Secondary database that tracks last-modified order of primary entries.
      */
-    protected final SecondaryDatabase _index;
+    protected SecondaryDatabase _index;
 
     /*
     /**********************************************************************
@@ -54,13 +61,26 @@ public class BDBJEStoreBackend extends StoreBackend
     /**********************************************************************
      */
     
-    public BDBJEStoreBackend(StorableConverter conv,
-            File dbRoot, Database entryDB, SecondaryDatabase lastModIndex)
+    public BDBJEStoreBackend(StorableConverter conv, File dbRoot,
+            BDBJEConfig bdbConfig, EnvironmentConfig envConfig)
+        throws DatabaseException
     {
         super(conv);
         _dataRoot = dbRoot;
-        _entries = entryDB;
-        _index = lastModIndex;
+        _bdbConfig = bdbConfig;
+        _envConfig = envConfig;
+
+        openBDB(dbRoot, bdbConfig, envConfig);
+    }
+    
+    private synchronized void openBDB(File dbRoot, BDBJEConfig bdbConfig, EnvironmentConfig envConfig)
+        throws DatabaseException
+    {
+        _env = new Environment(_dataRoot, _envConfig);
+        _entries = _env.openDatabase(null, // no TX
+                "entryMetadata", dbConfig(_bdbConfig, _env));
+        _index = _env.openSecondaryDatabase(null, "lastModIndex", _entries,
+                indexConfig(_bdbConfig, _env));
     }
 
     @Override
@@ -72,23 +92,62 @@ public class BDBJEStoreBackend extends StoreBackend
     public void prepareForStop()
     {
         // If using deferred writes, better do sync() at this point
-        if (_entries.getConfig().getDeferredWrite()) {
-            _entries.sync();
-        }
-        if (_index.getConfig().getDeferredWrite()) {
-            _index.sync();
+        if (_env.isValid()) {
+            if (_entries.getConfig().getDeferredWrite()) {
+                _entries.sync();
+            }
+            if (_index.getConfig().getDeferredWrite()) {
+                _index.sync();
+            }
         }
     }
 
     @Override
     public void stop()
     {
-        Environment env = _entries.getEnvironment();
-        _index.close();
-        _entries.close();
-        env.close();
+        /* 06-Sep-2013, tatu: There are cases where the whole Environment is
+         *   busted; let's try to tone down error reporting for such cases.
+         */
+        if (_env.isValid()) {
+            _index.close();
+            _entries.close();
+            _env.close();
+        } else {
+            LOG.warn("BDB-JE Environment not valid on stop(): will not try closing Database instances, only Environment itself");
+            // If invalid, only close environment itself; db handles are invalid anyway
+            _env.close();
+        }
     }
 
+    protected DatabaseConfig dbConfig(BDBJEConfig bdbConfig, Environment env)
+    {
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        EnvironmentConfig econfig = env.getConfig();
+        dbConfig.setReadOnly(econfig.getReadOnly());
+        dbConfig.setAllowCreate(econfig.getAllowCreate());
+        dbConfig.setSortedDuplicates(false);
+        // since 0.9.8, we can opt to use deferred writes if we dare:
+        dbConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
+        return dbConfig;
+    }
+
+    protected SecondaryConfig indexConfig(BDBJEConfig bdbConfig, Environment env)
+    {
+        LastModKeyCreator keyCreator = new LastModKeyCreator();
+        SecondaryConfig secConfig = new SecondaryConfig();
+        secConfig.setAllowCreate(env.getConfig().getAllowCreate());
+        // should not need to auto-populate ever:
+        secConfig.setAllowPopulate(false);
+        secConfig.setKeyCreator(keyCreator);
+        // important: timestamps are not unique, need to allow dups:
+        secConfig.setSortedDuplicates(true);
+        // no, it is not immutable (entries will be updated with new timestamps)
+        secConfig.setImmutableSecondaryKey(false);
+        // since 0.9.8, we can opt to use deferred writes if we dare:
+        secConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
+        return secConfig;
+    }
+    
     /*
     /**********************************************************************
     /* Capability, statistics introspection
