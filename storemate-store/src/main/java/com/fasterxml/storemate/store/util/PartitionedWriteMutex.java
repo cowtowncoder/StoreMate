@@ -107,7 +107,7 @@ public class PartitionedWriteMutex
         }
         return count;
     }
-    
+
     /*
     /**********************************************************************
     /* Public API
