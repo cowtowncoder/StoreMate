@@ -4,6 +4,7 @@ License: Apache License 2.0
 0.9.15 (xx-xxx-2013)
 
 - Try to improve robustness of BDB-JE Environment handling
+- Add metadata (time taken, only-fast-stats) for BackendStats exposed
 
 0.9.14 (08-Aug-2013)
 
