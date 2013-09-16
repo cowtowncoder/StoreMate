@@ -12,7 +12,7 @@ public class BDBBackendStats
 
     public DatabaseStats db;
 
-    protected BDBBackendStats() { // only for deserialization
+    private BDBBackendStats() { // only for deserialization
         super("bdb", 0L, null);
     }
     
@@ -21,6 +21,7 @@ public class BDBBackendStats
     }
 
     public BDBBackendStats(BDBBackendStats src) {
+        super(src);
         env = src.env;
         db = src.db;
     }

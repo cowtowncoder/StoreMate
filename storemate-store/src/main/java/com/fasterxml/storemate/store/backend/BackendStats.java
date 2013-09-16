@@ -8,8 +8,6 @@ package com.fasterxml.storemate.store.backend;
  *<p>
  * Instances are most commonly either cast to expected type;
  * or serialized using a data-binding system like Jackson.
- * 
- * @since 0.9.8
  */
 public abstract class BackendStats
 {
@@ -26,8 +24,13 @@ public abstract class BackendStats
     protected Boolean _fastStats;
     
     protected Long _timeTakenMsecs;
-    
-    protected BackendStats() { }
+
+    protected BackendStats(BackendStats src) { 
+        _type = src._type;
+        _creationTime = src._creationTime;
+        _fastStats = src._fastStats;
+        _timeTakenMsecs = src._timeTakenMsecs;
+    }
 
     public BackendStats(String type, long creationTime, BackendStatsConfig config)
     {
