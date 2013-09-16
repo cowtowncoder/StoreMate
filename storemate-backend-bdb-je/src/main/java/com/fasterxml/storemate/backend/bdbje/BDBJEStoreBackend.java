@@ -182,15 +182,20 @@ public class BDBJEStoreBackend extends StoreBackend
             .setFast(config.onlyCollectFast())
             .setClear(config.resetStatsAfterCollection())
             ;
-        /* 16-May-2013, tatu: Would be great to be able to remove/clear depracted
+        /* 16-May-2013, tatu: Would be great to be able to remove/clear deprecated
          *   entries here... alas, no mutators, so need to leave them as is,
          *   for now.
          */
-        BDBBackendStats stats = new BDBBackendStats();
+        // Should we require creationTime to be accessed via TimeMaster?
+        BDBBackendStats stats = new BDBBackendStats(config, System.currentTimeMillis());
+        final long start = System.currentTimeMillis();
         stats.db = db.getStats(statsConfig);
         if (includeEnvStats) {
             stats.env = db.getEnvironment().getStats(statsConfig);
         }
+        // let's not accept "no time taken" as valid, always at least 1 msec:
+        final long taken = System.currentTimeMillis() - start;
+        stats.setTimeTakenMsecs(Math.max(1L, taken));
         return stats;
     }
 

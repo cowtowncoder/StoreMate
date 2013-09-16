@@ -87,11 +87,13 @@ public class LevelDBStoreBackend extends StoreBackend
     /**
      * No, LevelDB does not have means to produce efficient entry count.
      */
+    @Override
     public boolean hasEfficientEntryCount() { return false; }
 
     /**
      * No, LevelDB does not have means to produce efficient index entry count.
      */
+    @Override
     public boolean hasEfficientIndexCount() { return false; }
 
     @Override
@@ -113,7 +115,7 @@ public class LevelDBStoreBackend extends StoreBackend
         if (value != null) {
             stats.put(JNI_STATS, value);
         }
-        return new LevelDBBackendStats(stats);
+        return new LevelDBBackendStats(config, System.currentTimeMillis(), stats);
     }
     
     /*

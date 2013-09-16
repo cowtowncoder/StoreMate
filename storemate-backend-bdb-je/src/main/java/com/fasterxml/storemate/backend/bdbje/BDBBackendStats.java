@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.backend.bdbje;
 
 import com.fasterxml.storemate.store.backend.BackendStats;
+import com.fasterxml.storemate.store.backend.BackendStatsConfig;
 import com.sleepycat.je.DatabaseStats;
 import com.sleepycat.je.EnvironmentStats;
 
@@ -11,8 +12,12 @@ public class BDBBackendStats
 
     public DatabaseStats db;
 
-    public BDBBackendStats() {
-        super("bdb");
+    protected BDBBackendStats() { // only for deserialization
+        super("bdb", 0L, null);
+    }
+    
+    public BDBBackendStats(BackendStatsConfig config, long creationTime) {
+        super("bdb", creationTime, config);
     }
 
     public BDBBackendStats(BDBBackendStats src) {

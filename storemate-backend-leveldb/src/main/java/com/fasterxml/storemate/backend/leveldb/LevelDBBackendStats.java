@@ -3,16 +3,19 @@ package com.fasterxml.storemate.backend.leveldb;
 import java.util.*;
 
 import com.fasterxml.storemate.store.backend.BackendStats;
+import com.fasterxml.storemate.store.backend.BackendStatsConfig;
 
 public class LevelDBBackendStats
     extends BackendStats
 {
     public Map<String,Object> stats;
 
-    public LevelDBBackendStats() { this(null); }
-    public LevelDBBackendStats(Map<String,Object> src)
+    public LevelDBBackendStats() { this(null, 0L, null); }
+
+    public LevelDBBackendStats(BackendStatsConfig config, long creationTime,
+            Map<String,Object> src)
     {
-        super("leveldb");
+        super("leveldb", creationTime, config);
         stats = src;
     }
 }
