@@ -24,7 +24,7 @@ public class BackendStatsConfig
 
     protected BackendStatsConfig(boolean fast, boolean reset)
     {
-        _fast = false;
+        _fast = fast;
         _resetAfterCollection = reset;
     }
 

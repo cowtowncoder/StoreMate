@@ -6,6 +6,7 @@ License: Apache License 2.0
 - Try to improve robustness of BDB-JE error handling wrt Thread.interrupt()
   (occurred during testing)
 - Add metadata (time taken, only-fast-stats) for BackendStats exposed
+- Fix problem of always asking for "slow" metrics
 
 0.9.14 (08-Aug-2013)
 
