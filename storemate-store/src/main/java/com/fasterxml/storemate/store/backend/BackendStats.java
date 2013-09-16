@@ -52,5 +52,5 @@ public abstract class BackendStats
 
     public long getCreationTime() { return _creationTime; }
     
-    public long getTimeTakenMsecs() { return _timeTakenMsecs; }
+    public Long getTimeTakenMsecs() { return _timeTakenMsecs; }
 }
