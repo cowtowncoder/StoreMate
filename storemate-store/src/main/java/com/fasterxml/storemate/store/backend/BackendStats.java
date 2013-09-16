@@ -1,7 +1,5 @@
 package com.fasterxml.storemate.store.backend;
 
-
-
 /**
  * Base class for statistics exposed about store backends.
  * Since backends tend to expose quite
