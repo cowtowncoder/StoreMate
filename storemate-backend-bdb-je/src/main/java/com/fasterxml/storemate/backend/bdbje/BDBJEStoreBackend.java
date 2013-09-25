@@ -665,7 +665,7 @@ public class BDBJEStoreBackend extends StoreBackend
             throw new StoreException.DB(key, StoreException.DBProblem.SECONDARY_INDEX_CORRUPTION,
                     bdbException);
         }
-        throw new StoreException.Internal(key, bdbException);
+        throw new StoreException.DB(key, StoreException.DBProblem.OTHER, bdbException);
     }
 
     protected DatabaseEntry dbKey(StorableKey key) {
