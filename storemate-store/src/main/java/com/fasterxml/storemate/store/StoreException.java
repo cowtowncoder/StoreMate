@@ -151,10 +151,10 @@ public abstract class StoreException extends IOException
         @Override public boolean isInputError() { return false; }
         @Override public boolean isServerError() { return true; }
     }
-    
+
     /**
      * Specific {@link StoreException} subtype used for problems
-     * that are due server I/O operations, but can not be exposed as
+     * that are due to server I/O operations, but can not be exposed as
      * {@link IOException}s for some reason.
      */
     public static class IO extends StoreException
@@ -169,6 +169,50 @@ public abstract class StoreException extends IOException
             super(key, msg, t);
         }
 
+        @Override public boolean isInputError() { return false; }
+        @Override public boolean isServerError() { return true; }
+    }
+
+    /**
+     * Enumeration of kinds of Database problems that we recognize.
+     */
+    public enum DBProblem
+    {
+        /**
+         * BDB has nasty habit of detecting secondary index problems.
+         */
+        SECONDARY_INDEX_CORRUPTION,
+        
+        /**
+         * Anything not otherwise recognized will be using this enum
+         */
+        OTHER;
+    }
+    
+    /**
+     * Specific {@link StoreException} subtype used for problems
+     * with the underlying metadata database (such as BDB).
+     */
+    public static class DB extends StoreException
+    {
+        private static final long serialVersionUID = 1L;
+
+        protected final DBProblem _type;
+        
+        public DB(StorableKey key, DBProblem type, Exception t) {
+            super(key, t);
+            _type = type;
+        }
+
+        public DB(StorableKey key, DBProblem type, String msg, Exception t) {
+            super(key, msg, t);
+            _type = type;
+        }
+
+        public DBProblem getType() {
+            return _type;
+        }
+        
         @Override public boolean isInputError() { return false; }
         @Override public boolean isServerError() { return true; }
     }

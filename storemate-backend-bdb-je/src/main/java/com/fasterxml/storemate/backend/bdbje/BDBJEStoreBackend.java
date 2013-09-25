@@ -452,6 +452,7 @@ public class BDBJEStoreBackend extends StoreBackend
     public IterationResult scanEntries(StorableIterationCallback cb)
         throws StoreException
     {
+        StorableKey key = null;
         try {
             DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
             DiskOrderedCursor crsr = _entries.openCursor(config);
@@ -462,7 +463,7 @@ public class BDBJEStoreBackend extends StoreBackend
             try {
                 main_loop:
                 while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
-                    StorableKey key = storableKey(keyEntry);
+                    key = storableKey(keyEntry);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -481,7 +482,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
 
@@ -490,6 +491,7 @@ public class BDBJEStoreBackend extends StoreBackend
             StorableKey firstKey)
         throws StoreException
     {
+        StorableKey key = null;
         try {
             CursorConfig config = new CursorConfig();
             Cursor crsr = _entries.openCursor(null, config);
@@ -507,7 +509,7 @@ public class BDBJEStoreBackend extends StoreBackend
             try {
                 main_loop:
                 for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
-                    StorableKey key = storableKey(keyEntry);
+                    key = storableKey(keyEntry);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -527,7 +529,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
 
@@ -536,9 +538,9 @@ public class BDBJEStoreBackend extends StoreBackend
             StorableKey lastSeen)
         throws StoreException
     {
+        StorableKey key = null;
         try {
             Cursor crsr = _entries.openCursor(null, new CursorConfig());
-    
             try {
                 final DatabaseEntry data = new DatabaseEntry();
                 final DatabaseEntry keyEntry = dbKey(lastSeen);
@@ -557,7 +559,7 @@ public class BDBJEStoreBackend extends StoreBackend
                     }
                     main_loop:
                     for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
-                        StorableKey key = storableKey(keyEntry);
+                        key = storableKey(keyEntry);
                         switch (cb.verifyKey(key)) {
                         case SKIP_ENTRY: // nothing to do
                             continue main_loop;
@@ -578,7 +580,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
     
@@ -590,7 +592,7 @@ public class BDBJEStoreBackend extends StoreBackend
         if (cb == null) {
             throw new IllegalArgumentException("Can not pass null 'cb' argument");
         }
-
+        StorableKey key = null;
         try {
             CursorConfig config = new CursorConfig();
             SecondaryCursor crsr = _index.openCursor(null, config);
@@ -620,7 +622,7 @@ public class BDBJEStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_TIMESTAMP;
                     }
-                    StorableKey key = storableKey(primaryKeyEntry);
+                    key = storableKey(primaryKeyEntry);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -640,7 +642,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
    
@@ -658,6 +660,10 @@ public class BDBJEStoreBackend extends StoreBackend
     {
         if (bdbException instanceof LockTimeoutException) {
             throw new StoreException.ServerTimeout(key, bdbException);
+        }
+        if (bdbException instanceof SecondaryIntegrityException) {
+            throw new StoreException.DB(key, StoreException.DBProblem.SECONDARY_INDEX_CORRUPTION,
+                    bdbException);
         }
         throw new StoreException.Internal(key, bdbException);
     }

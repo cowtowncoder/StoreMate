@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.17
+
+- Add more information for BDB-JE SecondaryIntegrityException, passed to caller
+
 0.9.16 (17-Sep-2013)
 
 - Improve handling of backend statistics; was incorrectly defaulting to slow stats
