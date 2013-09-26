@@ -176,6 +176,11 @@ public class BDBJEStoreBackend extends StoreBackend
         return _getStats(_entries, config, false);
     }
 
+    @Override
+    public File getStorageDirectory() {
+        return _dataRoot;
+    }
+    
     protected BackendStats _getStats(Database db, BackendStatsConfig config,
             boolean includeEnvStats) {
         StatsConfig statsConfig = new StatsConfig()

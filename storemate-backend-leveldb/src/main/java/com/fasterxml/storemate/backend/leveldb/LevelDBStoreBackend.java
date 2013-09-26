@@ -134,6 +134,7 @@ public class LevelDBStoreBackend extends StoreBackend
         return -1L;
     }
 
+    @Override
     public long countEntries() throws StoreException {
         return _count(_dataDB);
     }
@@ -143,9 +144,14 @@ public class LevelDBStoreBackend extends StoreBackend
         return _count(_indexDB);
     }
 
+    @Override
+    public File getStorageDirectory() {
+        return _dataRoot;
+    }
+    
     private final long _count(DB db) throws StoreException
     {
-	long count = 0L;
+        long count = 0L;
         try {
             DBIterator iter = db.iterator();
             try {

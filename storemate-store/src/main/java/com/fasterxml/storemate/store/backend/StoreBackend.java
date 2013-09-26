@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.store.backend;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,10 +72,8 @@ public abstract class StoreBackend
     /**
      * Accessor for backend-specific statistics information regarding
      * primary entry storage.
-     * 
+     *
      * @param config Settings to use for collecting statistics
-     * 
-     * @since 0.9.7
      */
     public abstract BackendStats getEntryStatistics(BackendStatsConfig config);
 
@@ -83,10 +82,19 @@ public abstract class StoreBackend
      * primary entry storage.
      * 
      * @param config Settings to use for collecting statistics
-     * 
-     * @since 0.9.7
      */
     public abstract BackendStats getIndexStatistics(BackendStatsConfig config);
+
+    /**
+     * Accessor for finding root directory under which physical data is stored,
+     * if backend uses file system for storage; null if not file-backed.
+     * Callers should only ever use this for collecting statistics, or displaying
+     * diagnostics information: it should not be used for accessing (or heaven
+     * forbid, modifying) data.
+     * 
+     * @since 0.9.18
+     */
+    public abstract File getStorageDirectory();
     
     /*
     /**********************************************************************
@@ -203,8 +211,6 @@ public abstract class StoreBackend
      * Method for scanning potentially all the entries in the store,
      * ordered by the primary key, starting with entry <b>after</b>
      * specified key
-     *<p>
-     * @since 0.8.8
      */
     public abstract IterationResult iterateEntriesAfterKey(StorableIterationCallback cb,
             StorableKey lastSeen)
@@ -279,8 +285,6 @@ public abstract class StoreBackend
      * 
      * @return True if entry was created or updated; false if not (an old entry
      *   exists, and checker did not allow overwrite)
-     * 
-     * @since 0.9.3
      */
     public abstract boolean upsertEntry(StorableKey key, Storable storable,
             OverwriteChecker checker, AtomicReference<Storable> oldEntryRef)

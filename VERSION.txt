@@ -1,6 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.18:
+
+- Add `StoreBackend.getStorageDirectory()` to allow for exposing more
+  diagnostics/stats.
+
 0.9.17 (25-Sep-2013)
 
 - Added new StoreException.DB type for passing more granular failure info from store
