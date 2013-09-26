@@ -113,7 +113,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     /* Internal methods
     /**********************************************************************
      */
-    
+
     protected EnvironmentConfig envConfig(boolean allowCreate, boolean writeAccess)
     {
         EnvironmentConfig config = new EnvironmentConfig();

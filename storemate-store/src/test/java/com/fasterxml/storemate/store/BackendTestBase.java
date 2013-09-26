@@ -64,46 +64,7 @@ public abstract class BackendTestBase extends StoreTestBase
     }
 
     protected abstract StoreBackend createBackend(File testRoot, StoreConfig storeConfig);
-    
-    /*
-    ///////////////////////////////////////////////////////////////////////
-    // Methods for file, directory handling
-    ///////////////////////////////////////////////////////////////////////
-     */
-        
-    /**
-     * Method for accessing "scratch" directory used for tests.
-     * We'll try to create this directory under 
-     * Assumption is that the current directory at this point
-     * is project directory.
-     */
-    protected File getTestScratchDir(String testSuffix, boolean cleanUp) throws IOException
-    {
-        File f = new File(new File(".test-storage"), testSuffix).getCanonicalFile();
-        if (!f.exists()) {
-            if (!f.mkdirs()) {
-                throw new IOException("Failed to create test directory '"+f.getAbsolutePath()+"'");
-            }
-        } else if (cleanUp) {
-            for (File kid : f.listFiles()) {
-                deleteFileOrDir(kid);
-            }
-        }
-        return f;
-    }
 
-    protected void deleteFileOrDir(File fileOrDir) throws IOException
-    {
-        if (fileOrDir.isDirectory()) {
-            for (File kid : fileOrDir.listFiles()) {
-                deleteFileOrDir(kid);
-            }
-        }
-        if (!fileOrDir.delete()) {
-            throw new IOException("Failed to delete test file/directory '"+fileOrDir.getAbsolutePath()+"'");
-        }
-    }
-    
     /*
     ///////////////////////////////////////////////////////////////////////
     // Methods, verifying data
