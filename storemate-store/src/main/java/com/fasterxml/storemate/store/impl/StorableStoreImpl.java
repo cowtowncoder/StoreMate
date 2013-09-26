@@ -314,14 +314,14 @@ public class StorableStoreImpl extends AdminStorableStore
 
     @Override
     public boolean hasEntry(final StoreOperationSource source, final OperationDiagnostics diag,
-            final StorableKey key)
+            StorableKey key0)
         throws StoreException
     {
         _checkClosed();
-        final long operationTime = _timeMaster.currentTimeMillis();
+        long operationTime0 = _timeMaster.currentTimeMillis();
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         try {
-            return _throttler.performHas(source, operationTime, key, new StoreOperationCallback<Boolean>() {
+            return _throttler.performHas(source, operationTime0, key0, new StoreOperationCallback<Boolean>() {
                 @Override
                 public Boolean perform(long operationTime, StorableKey key, Storable value)
                         throws StoreException {
@@ -336,7 +336,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 }
             });
         } catch (IOException e) {
-            throw new StoreException.IO(key,
+            throw new StoreException.IO(key0,
                     "Problem when trying to access entry: "+e.getMessage(), e);
         }
     }
@@ -344,13 +344,13 @@ public class StorableStoreImpl extends AdminStorableStore
     @Override
     public Storable findEntry(final StoreOperationSource source,
             final OperationDiagnostics diag,
-            final StorableKey key) throws StoreException
+            StorableKey key0) throws StoreException
     {
         _checkClosed();
-        final long operationTime = _timeMaster.currentTimeMillis();
+        long operationTime0 = _timeMaster.currentTimeMillis();
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         try {
-            return _throttler.performGet(source, operationTime, key, new StoreOperationCallback<Storable>() {
+            return _throttler.performGet(source, operationTime0, key0, new StoreOperationCallback<Storable>() {
                 @Override
                 public Storable perform(long operationTime, StorableKey key, Storable value)
                         throws IOException, StoreException {
@@ -364,7 +364,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 }
             });
         } catch (IOException e) {
-            throw new StoreException.IO(key,
+            throw new StoreException.IO(key0,
                     "Problem when trying to access entry: "+e.getMessage(), e);
         }
     }
@@ -1470,20 +1470,27 @@ public class StorableStoreImpl extends AdminStorableStore
     /**********************************************************************
      */
 
-    protected void _deleteBackingFile(StorableKey key, File extFile)
+    /**
+     * @return True if deletion was either not needed (no backing file), or
+     *   if it succeeded; false if the file did not exist.
+     */
+    protected boolean _deleteBackingFile(StorableKey key, File extFile)
     {
-        if (extFile != null) {
-            try {
-                boolean ok = extFile.delete();
-                if (!ok) {
-                    LOG.warn("Failed to delete backing data file of key {}, path: {}",
-                            key, extFile.getAbsolutePath());
-                }
-            } catch (Exception e) {
-                LOG.warn("Failed to delete backing data file of key "+key+", path: "+extFile.getAbsolutePath(), e);
-            }
+        if (extFile == null) {
+            return true;
         }
-    }    
+        try {
+            boolean ok = extFile.delete();
+            if (!ok) {
+                LOG.warn("Failed to delete backing data file of key {}, path: {}",
+                        key, extFile.getAbsolutePath());
+            }
+            return ok;
+        } catch (Exception e) {
+            LOG.warn("Failed to delete backing data file of key "+key+", path: "+extFile.getAbsolutePath(), e);
+        }
+        return false;
+    }
             
     protected static int _calcChecksum(ByteContainer data) {
         // important: mask zero value, which occurs with empty content
