@@ -165,7 +165,7 @@ public class LevelDBStoreBackend extends StoreBackend
         } catch (DBException de) {
             _convertDBE(null, de);
         }
-	return count; // never gets here
+        return count; // never gets here
     }
     
     /*
@@ -204,7 +204,7 @@ public class LevelDBStoreBackend extends StoreBackend
     /* NOTE: all modification methods are protected by per-key partitioned
      * lock; so modification methods are transaction wrt other modifications,
      * although not wrt read methods. This has ramifications on ordering of
-     * data vs index mods.
+     * data vs index modifications.
      */
     
     @Override
@@ -333,7 +333,7 @@ public class LevelDBStoreBackend extends StoreBackend
             return true;
         } catch (DBException de) {
             _convertDBE(key, de);
-	    return false;
+            return false;
         }
     }
 
@@ -347,6 +347,9 @@ public class LevelDBStoreBackend extends StoreBackend
     public IterationResult scanEntries(StorableIterationCallback cb)
         throws StoreException
     {
+        // !!! TODO: make more efficient. Until then, just use in-order traversal
+        return iterateEntriesByKey(cb, null);
+
         /*
         try {
             DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
@@ -377,10 +380,9 @@ public class LevelDBStoreBackend extends StoreBackend
                 crsr.close();
             }
         } catch (DatabaseException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
         */
-        return null;
     }
 
     @Override
@@ -388,6 +390,7 @@ public class LevelDBStoreBackend extends StoreBackend
             StorableKey firstKey)
         throws StoreException
     {
+        StorableKey key = null;
         try {
             DBIterator iter = _dataDB.iterator();
             try {
@@ -399,7 +402,7 @@ public class LevelDBStoreBackend extends StoreBackend
                 main_loop:
                 while (iter.hasNext()) {
                     Map.Entry<byte[], byte[]> entry = iter.next();
-                    StorableKey key = storableKey(entry.getKey());
+                    key = storableKey(entry.getKey());
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -418,11 +421,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(null, de);
+                    return _convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
     
@@ -431,6 +434,7 @@ public class LevelDBStoreBackend extends StoreBackend
             StorableKey lastSeen)
         throws StoreException
     {
+        StorableKey key = null;
         try {
             final byte[] lastSeenRaw = dbKey(lastSeen);
             DBIterator iter = _dataDB.iterator();
@@ -452,7 +456,7 @@ public class LevelDBStoreBackend extends StoreBackend
                 }
                 main_loop:
                 while (true) {
-                    StorableKey key = storableKey(b);
+                    key = storableKey(b);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -475,11 +479,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(null, de);
+                    return _convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
     
@@ -492,6 +496,7 @@ public class LevelDBStoreBackend extends StoreBackend
             throw new IllegalArgumentException("Can not pass null 'cb' argument");
         }
 
+        StorableKey key = null;
         try {
             DBIterator iter = _indexDB.iterator();
 
@@ -516,7 +521,7 @@ public class LevelDBStoreBackend extends StoreBackend
                         return IterationResult.TERMINATED_FOR_TIMESTAMP;
                     }
 
-                    StorableKey key = _extractPrimaryKey(rawKey);
+                    key = _extractPrimaryKey(rawKey);
                     switch (cb.verifyKey(key)) {
                     case SKIP_ENTRY: // nothing to do
                         continue main_loop;
@@ -545,11 +550,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(null, de);
+                    return _convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(null, de);
+            return _convertDBE(key, de);
         }
     }
    
@@ -621,11 +626,11 @@ public class LevelDBStoreBackend extends StoreBackend
     {
         // any special types that require special handling... ?
         /*
-        if (bdbException instanceof LockTimeoutException) {
-            throw new StoreException.ServerTimeout(key, bdbException);
+        if (dbException instanceof LockTimeoutException) {
+            throw new StoreException.ServerTimeout(key, dbException);
         }
         */
-        throw new StoreException.Internal(key, dbException);
+        throw new StoreException.DB(key, StoreException.DBProblem.OTHER, dbException);
     }
 
     protected <T> T _convertIOE(StorableKey key, IOException ioe)
