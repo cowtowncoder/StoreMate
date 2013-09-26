@@ -1,9 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.17
+0.9.17 (25-Sep-2013)
 
-- Add more information for BDB-JE SecondaryIntegrityException, passed to caller
+- Added new StoreException.DB type for passing more granular failure info from store
+ (specifically handle BDB-JE SecondaryIntegrityException now, more later)
 
 0.9.16 (17-Sep-2013)
 
