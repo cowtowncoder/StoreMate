@@ -22,7 +22,8 @@ public class LowLevelTest extends StoreTestBase
 
         Environment env = new Environment(dataFir, _envConfig());
         Database entries = env.openDatabase(null, "testEntries", _dbConfig(env, true));
-        SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entries, _indexConfig(env));
+        SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entries,
+                _indexConfig(env, false));
 
         // Ok. First, add three entries with same time
         entries.put(null, _key("a"), _entry(1234, 1));
@@ -82,27 +83,42 @@ public class LowLevelTest extends StoreTestBase
 //        assertEquals(2, index.count());
 //        assertEquals(2, _count(index));
 
+        System.err.println("Corrupt state:");
+        _dumpEntries(index);
         index.close();
         entries.close();
         env.close();
-
+       
         // and try re-open
         env = new Environment(dataFir, _envConfig());
         entries = env.openDatabase(null, "testEntries", _dbConfig(env, true));
-        index = env.openSecondaryDatabase(null, "lastModIndex", entries, _indexConfig(env));
 
-        // Now: trying to delete "a" would fail again; so need to try other approaches...
-//        entries.delete(null, _key("a"));
-//        entries.put(null, _key("a"), _entry(2345, 3));
-
-        data = new DatabaseEntry();
-        assertEquals(OperationStatus.SUCCESS, entries.get(null, _key("a"), data, null));
+        // To fix the problem, need to remove, re-add:
         
+        env.removeDatabase(null, "lastModIndex");
+        index = env.openSecondaryDatabase(null, "lastModIndex", entries,
+                _indexConfig(env, true)); // true -> auto-populate
+
         assertEquals(3, entries.count());
         assertEquals(3, index.count());
         assertEquals(3, _count(index));
 
-//        _dumpEntries(index);
+        // Now: trying to delete "a" would fail again; so need to try other approaches...
+        entries.delete(null, _key("a"));
+
+//        assertTrue(_deleteEntry(index, "a"));
+
+        System.err.println("Fixed state:");
+        _dumpEntries(index);
+        
+        /*
+        data = new DatabaseEntry();
+        assertEquals(OperationStatus.SUCCESS, entries.get(null, _key("a"), data, null));
+        */
+
+        assertEquals(2, entries.count());
+        assertEquals(2, index.count());
+        assertEquals(2, _count(index));
 
         index.close();
         entries.close();
@@ -120,24 +136,51 @@ System.err.println("Entries: ");
 
         OperationStatus status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
         while (status == OperationStatus.SUCCESS) {
-            int sec = _asInt(keyEntry);
-            int primTime = _asInt(data, 0);
-            System.err.println(" Entry '"+_asString(primaryKeyEntry)+"'; "+sec+" (real: "+primTime+")");
+            System.err.println(" Entry '"+_asString(primaryKeyEntry)+"'; "+_asInt(keyEntry)+" (real: "+_asInt(data, 0)+")");
             status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
         }
         crsr.close();
 System.err.println("<-- Entries");
     }
 
+    protected boolean _deleteEntry(SecondaryDatabase db, String key) throws IOException
+    {
+        CursorConfig config = new CursorConfig();
+        SecondaryCursor crsr = db.openCursor(null, config);
+        DatabaseEntry data = new DatabaseEntry();
+        
+        DatabaseEntry keyEntry = new DatabaseEntry();
+        DatabaseEntry primaryKeyEntry = new DatabaseEntry();
+        boolean result = false;
+
+        OperationStatus status = crsr.getFirst(keyEntry, primaryKeyEntry, data, null);
+        while (status == OperationStatus.SUCCESS) {
+            String curr = _rawString(primaryKeyEntry);
+            if (curr.equals(key)) {
+                System.err.println(" about to delete '"+_asString(primaryKeyEntry)+"'; "+_asInt(keyEntry)+" (real: "+_asInt(data, 0)+")");
+                crsr.delete();
+                result = true;
+                break;
+            }
+            status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
+        }
+        crsr.close();
+        return result;
+    }
+    
     protected String _asString(DatabaseEntry e) throws IOException
     {
         StringBuilder sb = new StringBuilder();
-        final int len = e.getSize();
         sb.append('(');
-        sb.append(len);
+        sb.append(e.getSize());
         sb.append(')');
-        sb.append(new String(e.getData(), e.getOffset(), len, "UTF-8"));
+        sb.append(_rawString(e));
         return sb.toString();
+    }
+
+    protected String _rawString(DatabaseEntry e) throws IOException
+    {
+        return new String(e.getData(), e.getOffset(), e.getSize(), "UTF-8");
     }
     
     protected int _count(SecondaryDatabase db)
@@ -220,12 +263,12 @@ System.err.println("<-- Entries");
         return dbConfig;
     }
     
-    protected SecondaryConfig _indexConfig(Environment env)
+    protected SecondaryConfig _indexConfig(Environment env, boolean autoPopulate)
     {
         SecondaryConfig secConfig = new SecondaryConfig();
         secConfig.setAllowCreate(env.getConfig().getAllowCreate());
         // should not need to auto-populate?
-        secConfig.setAllowPopulate(false);
+        secConfig.setAllowPopulate(autoPopulate);
         secConfig.setKeyCreator(_keyCreator);
         // important: timestamps are not unique, need to allow dups:
         secConfig.setSortedDuplicates(true);
