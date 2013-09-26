@@ -18,12 +18,13 @@ public class LowLevelTest extends StoreTestBase
         // important: Create instance in enabled mode
         _keyCreator = new TestSecKeyCreator();
 
-        final File dataFir = getTestScratchDir("test", true);
+        final File dataFir = getTestScratchDir("test2ndConflict", true);
+        final boolean USE_TX = false;
 
-        Environment env = new Environment(dataFir, _envConfig());
-        Database entries = env.openDatabase(null, "testEntries", _dbConfig(env, true));
+        Environment env = new Environment(dataFir, _envConfig(USE_TX));
+        Database entries = env.openDatabase(null, "testEntries", _dbConfig(env, USE_TX, true));
         SecondaryDatabase index = env.openSecondaryDatabase(null, "lastModIndex", entries,
-                _indexConfig(env, false));
+                _indexConfig(env, USE_TX, false));
 
         // Ok. First, add three entries with same time
         entries.put(null, _key("a"), _entry(1234, 1));
@@ -48,7 +49,7 @@ public class LowLevelTest extends StoreTestBase
         assertEquals(4, keyEntry.getSize());
         assertEquals(1, primaryKeyEntry.getSize());
         assertEquals(8, data.getSize()); // primary data
-        
+
         assertEquals(OperationStatus.SUCCESS, crsr.getNext(keyEntry, primaryKeyEntry, data, null));
         assertEquals(OperationStatus.SUCCESS, crsr.getNext(keyEntry, primaryKeyEntry, data, null));
         assertEquals(OperationStatus.NOTFOUND, crsr.getNext(keyEntry, primaryKeyEntry, data, null));
@@ -83,21 +84,24 @@ public class LowLevelTest extends StoreTestBase
 //        assertEquals(2, index.count());
 //        assertEquals(2, _count(index));
 
+        /*
         System.err.println("Corrupt state:");
         _dumpEntries(index);
+        */
+
         index.close();
         entries.close();
         env.close();
        
         // and try re-open
-        env = new Environment(dataFir, _envConfig());
-        entries = env.openDatabase(null, "testEntries", _dbConfig(env, true));
+        env = new Environment(dataFir, _envConfig(USE_TX));
+        entries = env.openDatabase(null, "testEntries", _dbConfig(env, USE_TX, true));
 
         // To fix the problem, need to remove, re-add:
         
         env.removeDatabase(null, "lastModIndex");
         index = env.openSecondaryDatabase(null, "lastModIndex", entries,
-                _indexConfig(env, true)); // true -> auto-populate
+                _indexConfig(env, USE_TX, true)); // true -> auto-populate
 
         assertEquals(3, entries.count());
         assertEquals(3, index.count());
@@ -108,18 +112,62 @@ public class LowLevelTest extends StoreTestBase
 
 //        assertTrue(_deleteEntry(index, "a"));
 
+        /*
         System.err.println("Fixed state:");
         _dumpEntries(index);
-        
-        /*
-        data = new DatabaseEntry();
-        assertEquals(OperationStatus.SUCCESS, entries.get(null, _key("a"), data, null));
         */
 
         assertEquals(2, entries.count());
         assertEquals(2, index.count());
         assertEquals(2, _count(index));
 
+        index.close();
+        entries.close();
+        env.close();
+    }
+
+    
+    public void testReopenWithTxs() throws Exception
+    {
+        // important: Create instance in enabled mode
+        _keyCreator = new TestSecKeyCreator();
+
+        final File dataFir = getTestScratchDir("testTx", true);
+
+        // First, no TX
+        Environment env = new Environment(dataFir, _envConfig(false));
+        Database entries = env.openDatabase(null, "entries", _dbConfig(env, false, true));
+        SecondaryDatabase index = env.openSecondaryDatabase(null, "index", entries,
+                _indexConfig(env, false, false));
+
+        // Ok. First, add three entries with same time
+        entries.put(null, _key("a"), _entry(1234, 1));
+        entries.put(null, _key("c"), _entry(1234, 2));
+        entries.put(null, _key("b"), _entry(1234, 3));
+
+        // basic verification
+        assertEquals(3, entries.count());
+        assertEquals(3, index.count());
+        assertEquals(3, _count(index));
+
+        index.close();
+        entries.close();
+        env.close();
+
+        // Then re-open WITH transactions
+        env = new Environment(dataFir, _envConfig(true));
+        entries = env.openDatabase(null, "entries", _dbConfig(env, true, true));
+        index = env.openSecondaryDatabase(null, "index", entries,
+                _indexConfig(env, true, false));
+
+        assertEquals(3, entries.count());
+        assertEquals(3, index.count());
+        assertEquals(3, _count(index));
+
+        DatabaseEntry data = new DatabaseEntry();
+        entries.get(null, _key("b"), data, LockMode.DEFAULT);
+        assertEquals(8, data.getSize());
+        
         index.close();
         entries.close();
         env.close();
@@ -244,15 +292,16 @@ System.err.println("<-- Entries");
             ;
     }
 
-    protected EnvironmentConfig _envConfig()
+    protected EnvironmentConfig _envConfig(boolean useTx)
     {
         EnvironmentConfig config = new EnvironmentConfig();
         config.setAllowCreate(true);
         config.setReadOnly(false);
+        config.setTransactional(useTx);
         return config;
     }
 
-    protected DatabaseConfig _dbConfig(Environment env, boolean allowCreate)
+    protected DatabaseConfig _dbConfig(Environment env, boolean useTx, boolean allowCreate)
     {
         DatabaseConfig dbConfig = new DatabaseConfig();
         EnvironmentConfig econfig = env.getConfig();
@@ -260,10 +309,11 @@ System.err.println("<-- Entries");
         dbConfig.setAllowCreate(allowCreate);
         dbConfig.setSortedDuplicates(false);
         dbConfig.setDeferredWrite(false);
+        dbConfig.setTransactional(useTx);
         return dbConfig;
     }
     
-    protected SecondaryConfig _indexConfig(Environment env, boolean autoPopulate)
+    protected SecondaryConfig _indexConfig(Environment env, boolean useTx, boolean autoPopulate)
     {
         SecondaryConfig secConfig = new SecondaryConfig();
         secConfig.setAllowCreate(env.getConfig().getAllowCreate());
@@ -275,6 +325,7 @@ System.err.println("<-- Entries");
         // no, it is not immutable (entries will be updated with new timestamps)
         secConfig.setImmutableSecondaryKey(false);
         secConfig.setDeferredWrite(false);
+        secConfig.setTransactional(useTx);
         return secConfig;
     }
 
