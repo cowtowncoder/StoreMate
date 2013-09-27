@@ -15,7 +15,7 @@ public class BDBJEConfig extends StoreBackendConfig
      * we should, as per BDB-JE documentation; but only because
      * of secondary indexes and their non-atomicity...
      */
-    private final static boolean DEFAULT_USE_TRANSACTIONS = true;
+    private final static boolean DEFAULT_USE_TRANSACTIONS = false;
     
     /*
     /**********************************************************************
