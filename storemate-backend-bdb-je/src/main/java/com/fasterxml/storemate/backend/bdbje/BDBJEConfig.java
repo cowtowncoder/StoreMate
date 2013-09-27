@@ -11,6 +11,12 @@ import org.skife.config.DataAmount;
  */
 public class BDBJEConfig extends StoreBackendConfig
 {
+    /* Should we use transactions by default or not? Looks like
+     * we should, as per BDB-JE documentation; but only because
+     * of secondary indexes and their non-atomicity...
+     */
+    private final static boolean DEFAULT_USE_TRANSACTIONS = true;
+    
     /*
     /**********************************************************************
     /* Simple config properties, paths
@@ -51,8 +57,6 @@ public class BDBJEConfig extends StoreBackendConfig
      * to 1, but typically a higher count should make sense. Let's start
      * with 17; probably not much benefit from super-high value since it ought
      * to be I/O bound.
-     *
-     * @since 0.9.5
      */
     public int lockTableCount = 17;
 
@@ -67,8 +71,6 @@ public class BDBJEConfig extends StoreBackendConfig
      * Current hypothesis is that this needs to be somewhat higher than what is
      * estimated as the slowest OldGen GC collection; and given baseline of 5
      * seconds max GC, adding bit of padding, 7 seems reasonable.
-     *
-     * @since 0.9.6
      */
     public int lockTimeoutMsecs = 7000;
 
@@ -85,11 +87,18 @@ public class BDBJEConfig extends StoreBackendConfig
      * if deferred writes are enabled.
      *<p>
      * Default (of no value) is same as <code>false</code>, meaning that
-     * defe
-     * 
-     * @since 0.9.8
+     * deferred writes are <b>NOT</b> used.
      */
     public Boolean deferredWritesForEntries = null;
+
+    /**
+     * Should transactions be used for operations? Use is strongly recommended
+     * only because we are using secondary indexes; and without transactions
+     * it is possible (rare, unlikely, but possible) that secondary index
+     * (last-modified index) can get out-of-sync, and result in the dreaded
+     * "secondary index corrupt" exception when trying to expire entries.
+     */
+    public boolean useTransactions = DEFAULT_USE_TRANSACTIONS;
     
     /*
     /**********************************************************************

@@ -119,6 +119,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         EnvironmentConfig config = new EnvironmentConfig();
         config.setAllowCreate(allowCreate);
         config.setReadOnly(!writeAccess);
+        config.setTransactional(_bdbConfig.useTransactions);
         config.setSharedCache(false);
         config.setCacheSize(_bdbConfig.cacheSize.getNumberOfBytes());
         // Default of 500 msec way too low; usually set to higher value:

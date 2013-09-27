@@ -125,6 +125,7 @@ public class BDBJEStoreBackend extends StoreBackend
         EnvironmentConfig econfig = env.getConfig();
         dbConfig.setReadOnly(econfig.getReadOnly());
         dbConfig.setAllowCreate(econfig.getAllowCreate());
+        dbConfig.setTransactional(bdbConfig.useTransactions);
         dbConfig.setSortedDuplicates(false);
         // since 0.9.8, we can opt to use deferred writes if we dare:
         dbConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
@@ -136,7 +137,9 @@ public class BDBJEStoreBackend extends StoreBackend
         LastModKeyCreator keyCreator = new LastModKeyCreator();
         SecondaryConfig secConfig = new SecondaryConfig();
         secConfig.setAllowCreate(env.getConfig().getAllowCreate());
-        // should not need to auto-populate ever:
+        secConfig.setTransactional(bdbConfig.useTransactions);
+        // should not need to auto-populate; except if re-creating broken
+        // indexes...
         secConfig.setAllowPopulate(false);
         secConfig.setKeyCreator(keyCreator);
         // important: timestamps are not unique, need to allow dups:

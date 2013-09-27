@@ -5,6 +5,7 @@ License: Apache License 2.0
 
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
+- Allow use of transactions for BDB-JE backends
 
 0.9.17 (25-Sep-2013)
 
