@@ -1,14 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.18:
+0.9.18 (27-Sep-2013):
 
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
 - Allow use of transactions for BDB-JE backends
-
-0.9.17 (25-Sep-2013)
-
 - Added new StoreException.DB type for passing more granular failure info from store
  (specifically handle BDB-JE SecondaryIntegrityException now, more later)
 
@@ -35,33 +32,27 @@ License: Apache License 2.0
   operations for diagnostics
 - Add `CountingInputStream`
 
-0.9.11 (29-Jun-2013)
-
-- Updated versions of some dependencies
-
 0.9.10 (27-Jun-2013)
-
-- Add more sanity checks in `StorableKey` constructor
-- Improve logging of timing information by moving OperationDiagnostics in.
-- Implement off-heap buffering for PUT content (to reduce congestion for file writes)
-
 0.9.9 (04-Jun-2013)
 0.9.8 (20-May-2013)
 0.9.7 (25-Mar-2013)
 0.9.6 (18-Mar-2013)
 
+#3: Add LevelDB/Java - based backend
+#4: Add option to enable 'deferred writes' for BDB backend (NOTE: not used, up
+  to implementing stores)
+- Add more sanity checks in `StorableKey` constructor
+- Improve logging of timing information by moving OperationDiagnostics in.
+- Implement off-heap buffering for PUT content (to reduce congestion for file writes)
 - Make `StorableKey` comparable
 - Add low-level support for throttling (with `StoreOperationThrottler`),
   to be used by higher-level stores.
-#4: Add option to enable 'deferred writes' for BDB backend (NOTE: not used, up
-  to implementing stores)
 - Improve handling of backend stats a bit; expose env-stats for BDB-JE
-#3: Add LevelDB/Java - based backend
-* Add 'StoreBackend.getEntryStatistics()', 'getIndexStatistics()' for bit
+- Add 'StoreBackend.getEntryStatistics()', 'getIndexStatistics()' for bit
   more access to statistics backend exposes (if any)
-* Allow configuring of lock timeout: change default from 5 to 7 seconds, due
+- Allow configuring of lock timeout: change default from 5 to 7 seconds, due
   to couple of observed cases of hitting the limit
-* Improve handling of BDB exceptions; now get converted to StoreExceptions for
+- Improve handling of BDB exceptions; now get converted to StoreExceptions for
   easier handling (wrt alternate backends)
 
 0.9.5 (14-Mar-2013)
