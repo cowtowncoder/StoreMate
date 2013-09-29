@@ -1,13 +1,19 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.18 (27-Sep-2013):
+0.9.18 (28-Sep-2013)
+
+- Downgrade to BDB-JE 5.0.73 after finding a severe bug that crashes
+  system on startup.
+
+0.9.18 (27-Sep-2013)
 
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
 - Allow use of transactions for BDB-JE backends
 - Added new StoreException.DB type for passing more granular failure info from store
  (specifically handle BDB-JE SecondaryIntegrityException now, more later)
+- Upgrade to BDB-JE 5.0.84
 
 0.9.16 (17-Sep-2013)
 

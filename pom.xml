@@ -48,7 +48,10 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <version.bdb>5.0.84</version.bdb>
+    <!-- 28-Sep-2013, tatu: 5.0.84 has a serious bug that may crash env
+       on startup, can NOT use
+      -->
+    <version.bdb>5.0.73</version.bdb>
     <version.leveldb>0.5</version.leveldb>
     <version.lzf>0.9.9</version.lzf>
     <version.membuffers>0.9.3</version.membuffers>
