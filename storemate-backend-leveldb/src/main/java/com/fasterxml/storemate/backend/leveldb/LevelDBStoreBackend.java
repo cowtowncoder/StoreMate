@@ -70,7 +70,6 @@ public class LevelDBStoreBackend extends StoreBackend
     @Override
     public void stop()
     {
-        
         try {
             _dataDB.close();
         } catch (IOException e) { }
@@ -78,6 +77,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _indexDB.close();
         } catch (IOException e) { }
     }
+
     /*
     /**********************************************************************
     /* Capability introspection
@@ -306,7 +306,7 @@ public class LevelDBStoreBackend extends StoreBackend
             return true;
         } catch (DBException de) {
              _convertDBE(key, de);
-	     return false;
+             return false;
         }
     }
     
@@ -354,41 +354,8 @@ public class LevelDBStoreBackend extends StoreBackend
         throws StoreException
     {
         // !!! TODO: make more efficient. Until then, just use in-order traversal
+        //   Would Snapshot make sense here?
         return iterateEntriesByKey(cb, null);
-
-        /*
-        try {
-            DiskOrderedCursorConfig config = new DiskOrderedCursorConfig();
-            DiskOrderedCursor crsr = _entries.openCursor(config);
-    
-            final DatabaseEntry keyEntry = new DatabaseEntry();
-            final DatabaseEntry data = new DatabaseEntry();
-            
-            try {
-                main_loop:
-                while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
-                    StorableKey key = storableKey(keyEntry);
-                    switch (cb.verifyKey(key)) {
-                    case SKIP_ENTRY: // nothing to do
-                        continue main_loop;
-                    case PROCESS_ENTRY: // bind, process
-                        break;
-                    case TERMINATE_ITERATION: // all done?
-                        return IterationResult.TERMINATED_FOR_KEY;
-                    }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                        return IterationResult.TERMINATED_FOR_ENTRY;
-                    }
-                }
-                return IterationResult.FULLY_ITERATED;
-            } finally {
-                crsr.close();
-            }
-        } catch (DatabaseException de) {
-            return _convertDBE(key, de);
-        }
-        */
     }
 
     @Override
@@ -464,11 +431,13 @@ public class LevelDBStoreBackend extends StoreBackend
                 while (true) {
                     key = storableKey(b);
                     switch (cb.verifyKey(key)) {
-                    case SKIP_ENTRY: // nothing to do
-                        continue main_loop;
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_KEY;
                     case PROCESS_ENTRY: // bind, process
+                        break;
+                    case SKIP_ENTRY: // nothing to do
+                    default: // should we warn?
+                        continue main_loop;
                     }
                     Storable dbEntry = _storableConverter.decode(key, entry.getValue());
                     if (cb.processEntry(dbEntry) == IterationAction.TERMINATE_ITERATION) {
