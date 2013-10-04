@@ -3,8 +3,10 @@ License: Apache License 2.0
 
 0.9.20
 
-- Improve iteration for BDB-JE backend, so that use of transaction does not
-  cause problems (read lock for traversal vs write lock for soft-delete etc)
+- Improve iteration for BDB-JE backend, so that cursor is moved to next
+  entry before calling process method with current entry (hoped to help
+  with transactions, but does not seem to solve issues)
+- Update LevelDB-java version to 0.6.
 
 0.9.19 (28-Sep-2013)
 
