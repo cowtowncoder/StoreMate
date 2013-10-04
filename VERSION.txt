@@ -1,12 +1,17 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.19
+
+- Improve iteration for BDB-JE backend, so that use of transaction does not
+  cause problems (read lock for traversal vs write lock for soft-delete etc)
+
 0.9.18 (28-Sep-2013)
 
 - Downgrade to BDB-JE 5.0.73 after finding a severe bug that crashes
   system on startup.
 
-0.9.18 (27-Sep-2013)
+0.9.17 (27-Sep-2013)
 
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
@@ -14,9 +19,6 @@ License: Apache License 2.0
 - Added new StoreException.DB type for passing more granular failure info from store
  (specifically handle BDB-JE SecondaryIntegrityException now, more later)
 - Upgrade to BDB-JE 5.0.84
-
-0.9.16 (17-Sep-2013)
-
 - Improve handling of backend statistics; was incorrectly defaulting to slow stats
 
 0.9.15 (09-Sep-2013)
@@ -25,9 +27,6 @@ License: Apache License 2.0
   (occurred during testing)
 - Add metadata (time taken, only-fast-stats) for BackendStats exposed
 - Fix problem of always asking for "slow" metrics
-
-0.9.14 (08-Aug-2013)
-
 - Fix `OperationDiagnostics`, was using from nano-second base
 - Update slf4j dependencies
 

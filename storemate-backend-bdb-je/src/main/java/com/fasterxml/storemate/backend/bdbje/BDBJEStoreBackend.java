@@ -127,7 +127,7 @@ public class BDBJEStoreBackend extends StoreBackend
         dbConfig.setAllowCreate(econfig.getAllowCreate());
         dbConfig.setTransactional(bdbConfig.useTransactions);
         dbConfig.setSortedDuplicates(false);
-        // since 0.9.8, we can opt to use deferred writes if we dare:
+        // we can opt to use deferred writes if we dare:
         dbConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
         return dbConfig;
     }
@@ -139,14 +139,13 @@ public class BDBJEStoreBackend extends StoreBackend
         secConfig.setAllowCreate(env.getConfig().getAllowCreate());
         secConfig.setTransactional(bdbConfig.useTransactions);
         // should not need to auto-populate; except if re-creating broken
-        // indexes...
+        // indexes? (in which case one would have to drop index first, then re-open)
         secConfig.setAllowPopulate(false);
         secConfig.setKeyCreator(keyCreator);
         // important: timestamps are not unique, need to allow dups:
         secConfig.setSortedDuplicates(true);
         // no, it is not immutable (entries will be updated with new timestamps)
         secConfig.setImmutableSecondaryKey(false);
-        // since 0.9.8, we can opt to use deferred writes if we dare:
         secConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
         return secConfig;
     }
@@ -250,7 +249,7 @@ public class BDBJEStoreBackend extends StoreBackend
     @Override
     public long countIndexed() throws StoreException
     {
-	long count = 0L;
+        long count = 0L;
         try {
             SecondaryCursor crsr = _index.openCursor(null, new CursorConfig());
             final DatabaseEntry keyEntry = new DatabaseEntry();
@@ -268,7 +267,7 @@ public class BDBJEStoreBackend extends StoreBackend
             }
         } catch (DatabaseException de) {
             _convertDBE(null, de);
-	    return count;
+            return count;
         }
     }
 
@@ -469,20 +468,24 @@ public class BDBJEStoreBackend extends StoreBackend
             final DatabaseEntry data = new DatabaseEntry();
             
             try {
-                main_loop:
-                while (crsr.getNext(keyEntry, data, null) == OperationStatus.SUCCESS) {
+                OperationStatus status;
+                status = crsr.getNext(keyEntry, data, null);
+
+                while (status == OperationStatus.SUCCESS) {
                     key = storableKey(keyEntry);
                     switch (cb.verifyKey(key)) {
-                    case SKIP_ENTRY: // nothing to do
-                        continue main_loop;
-                    case PROCESS_ENTRY: // bind, process
-                        break;
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_KEY;
-                    }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                        return IterationResult.TERMINATED_FOR_ENTRY;
+                    case PROCESS_ENTRY: // bind, process
+                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                        // IMPORTANT: need to advance cursor before calling process!
+                        status = crsr.getNext(keyEntry, data, null);
+                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                            return IterationResult.TERMINATED_FOR_ENTRY;
+                        }
+                        break;
+                    default: // SKIP_ENTRY
+                        status = crsr.getNext(keyEntry, data, null);
                     }
                 }
                 return IterationResult.FULLY_ITERATED;
@@ -515,22 +518,22 @@ public class BDBJEStoreBackend extends StoreBackend
                 status = crsr.getSearchKeyRange(keyEntry, data, null);
             }
             try {
-                main_loop:
-                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
+                while (status == OperationStatus.SUCCESS) {
                     key = storableKey(keyEntry);
                     switch (cb.verifyKey(key)) {
-                    case SKIP_ENTRY: // nothing to do
-                        continue main_loop;
-                    case PROCESS_ENTRY: // bind, process
-                        break;
-                    case TERMINATE_ITERATION: // all done?
+                    case TERMINATE_ITERATION:
                         return IterationResult.TERMINATED_FOR_KEY;
+                    case PROCESS_ENTRY:
+                        // IMPORTANT: need to advance cursor before calling process!
+                        status = crsr.getNext(keyEntry, data, null);
+                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                            return IterationResult.TERMINATED_FOR_ENTRY;
+                        }
+                        break;
+                    default: // SKIP_ENTRY
+                        status = crsr.getNext(keyEntry, data, null);
                     }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                        return IterationResult.TERMINATED_FOR_ENTRY;
-                    }
-                    
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
@@ -553,6 +556,7 @@ public class BDBJEStoreBackend extends StoreBackend
                 final DatabaseEntry data = new DatabaseEntry();
                 final DatabaseEntry keyEntry = dbKey(lastSeen);
                 OperationStatus status = crsr.getSearchKeyRange(keyEntry, data, null);
+
                 do { // bogus loop so we can break
                     if (status != OperationStatus.SUCCESS) { // if it was the very last entry in store?
                         break;
@@ -565,22 +569,22 @@ public class BDBJEStoreBackend extends StoreBackend
                             break;
                         }
                     }
-                    main_loop:
-                    for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, data, null)) {
+                    while (status == OperationStatus.SUCCESS) {
                         key = storableKey(keyEntry);
                         switch (cb.verifyKey(key)) {
-                        case SKIP_ENTRY: // nothing to do
-                            continue main_loop;
-                        case PROCESS_ENTRY: // bind, process
-                            break;
                         case TERMINATE_ITERATION: // all done?
                             return IterationResult.TERMINATED_FOR_KEY;
+                        case PROCESS_ENTRY: // bind, process
+                            // IMPORTANT: need to advance cursor before calling process!
+                            status = crsr.getNext(keyEntry, data, null);
+                            Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                            if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                                return IterationResult.TERMINATED_FOR_ENTRY;
+                            }
+                            break;
+                        default: // SKIP_ENTRY:
+                            status = crsr.getNext(keyEntry, data, null);
                         }
-                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                            return IterationResult.TERMINATED_FOR_ENTRY;
-                        }
-                        
                     }
                 } while (false);
                 return IterationResult.FULLY_ITERATED;
@@ -619,31 +623,32 @@ public class BDBJEStoreBackend extends StoreBackend
             
             try {
                 main_loop:
-                for (; status == OperationStatus.SUCCESS; status = crsr.getNext(keyEntry, primaryKeyEntry, data, null)) {
+                while (status == OperationStatus.SUCCESS) {
                     // First things first: timestamp check
                     long timestamp = _getLongBE(keyEntry.getData(), keyEntry.getOffset());
                     switch (cb.verifyTimestamp(timestamp)) {
-                    case SKIP_ENTRY:
-                        continue main_loop;
-                    case PROCESS_ENTRY:
-                        break;
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_TIMESTAMP;
+                    case PROCESS_ENTRY:
+                        break;
+                    default: // SKIP_ENTRY
+                        status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
+                        continue main_loop;
                     }
                     key = storableKey(primaryKeyEntry);
                     switch (cb.verifyKey(key)) {
-                    case SKIP_ENTRY: // nothing to do
-                        continue main_loop;
-                    case PROCESS_ENTRY: // bind, process
-                        break;
                     case TERMINATE_ITERATION: // all done?
                         return IterationResult.TERMINATED_FOR_KEY;
+                    case PROCESS_ENTRY: // bind, process
+                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
+                        status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
+                        if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
+                            return IterationResult.TERMINATED_FOR_ENTRY;
+                        }
+                        break;
+                    default: // SKIP_ENTRY
+                        status = crsr.getNext(keyEntry, primaryKeyEntry, data, null);
                     }
-                    Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
-                    if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
-                        return IterationResult.TERMINATED_FOR_ENTRY;
-                    }
-                    
                 }
                 return IterationResult.FULLY_ITERATED;
             } finally {
