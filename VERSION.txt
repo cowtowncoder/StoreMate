@@ -1,12 +1,12 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.19
+0.9.20
 
 - Improve iteration for BDB-JE backend, so that use of transaction does not
   cause problems (read lock for traversal vs write lock for soft-delete etc)
 
-0.9.18 (28-Sep-2013)
+0.9.19 (28-Sep-2013)
 
 - Downgrade to BDB-JE 5.0.73 after finding a severe bug that crashes
   system on startup.
