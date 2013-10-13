@@ -3,7 +3,8 @@ package com.fasterxml.storemate.shared.compress;
 public enum Compression
 {
     /**
-     * Indicates case where no compression algorithm is used
+     * Indicates case where no compression algorithm is used; or
+     * when passed as compression, no attempt to compress should be made.
      */
     NONE('N', "identity", 0),
 
