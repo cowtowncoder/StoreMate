@@ -43,12 +43,6 @@ public enum Compression
 
     public String asContentEncoding()
     {
-        // for NONE we could also use "identity" but...
-        /*
-        if (this == NONE) {
-            return null;
-        }
-        */
         return _contentEncoding;
     }
 
@@ -73,18 +67,18 @@ public enum Compression
 
     public static Compression from(String str)
     {
-    	if (str == null) return null;
-    	str = str.trim();
-    	if (GZIP._contentEncoding.equals(str)) {
-    		return GZIP;
-    	}
-    	if (LZF._contentEncoding.equals(str)) {
-    		return LZF;
-    	}
-    	if (NONE._contentEncoding.equals(str)) {
-    		return NONE;
-    	}
-    	return null;
+        if (str == null) return null;
+        str = str.trim();
+        if (GZIP._contentEncoding.equals(str)) {
+    		    return GZIP;
+        }
+        if (LZF._contentEncoding.equals(str)) {
+    		    return LZF;
+        }
+        if (NONE._contentEncoding.equals(str)) {
+    		    return NONE;
+        }
+        return null;
     }
     
     /*
@@ -130,7 +124,9 @@ public enum Compression
      */
     public static Compression forContentEncoding(String contentEncoding)
     {
-        if (contentEncoding == null) return null;
+        if (contentEncoding == null) {
+            return null;
+        }
         contentEncoding = contentEncoding.trim();
         // not the cleanest, but should do for now:
         if (GZIP._contentEncoding.equals((contentEncoding))) {
@@ -139,7 +135,9 @@ public enum Compression
         if (LZF._contentEncoding.equals((contentEncoding))) {
             return LZF;
         }
-        // can leave 'NONE' to default handling:
+        if (NONE._contentEncoding.equals(contentEncoding)) {
+            return NONE;
+        }
         return null;
     }
 }
