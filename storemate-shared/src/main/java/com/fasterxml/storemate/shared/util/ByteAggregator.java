@@ -55,6 +55,12 @@ public final class ByteAggregator
 
     private int _currBlockPtr;
 
+    /*
+    /**********************************************************************
+    /* Life-cycle
+    /**********************************************************************
+     */
+    
     public ByteAggregator()
     {
         _bufferHolder = _bufferRecycler.getHolder();
@@ -88,8 +94,14 @@ public final class ByteAggregator
         }
         return aggr;
     }
-    
-    protected void reset()
+
+    /**
+     * Method for clearing out all aggregated content; and return
+     * recyclable buffers for reuse, if possible.
+     * Note that instance can NOT be used after this method is called;
+     * instead, a new instance must be constructed.
+     */
+    public void reset()
     {
         _pastLen = 0;
         _currBlockPtr = 0;
@@ -100,34 +112,77 @@ public final class ByteAggregator
         _currBlock = null;
     }
 
+    /*
+    /**********************************************************************
+    /* Access to contents
+    /**********************************************************************
+     */
+    
     /**
      * Method called when results are finalized and we can get the
      * full aggregated result buffer to return to the caller.
-     * Note that this also implicitly calls {@link #reset} so that no
-     * content is available for further calls.
+     * Equivalent to:
+     *<pre>
+     *   toByteArray(true, null);
+     *<pre>
+     * that is, this also implicitly calls {@link #reset} so that no
+     * content is available for further calls; and no prefix will be
+     * prepended.
      */
     public byte[] toByteArray()
     {
+        return toByteArray(true, null);
+    }
+    
+    /**
+     * Method called when results are finalized and we can get the
+     * full aggregated result buffer to return to the caller.
+     * 
+     * @param reset Whether contents should be {@link #reset} after
+     *   the call or not
+     */
+    public byte[] toByteArray(boolean reset)
+    {
+        return toByteArray(reset, null);
+    }
+
+    /**
+     * @param reset Whether contents should be {@link #reset} after
+     *   the call or not
+     * @param prefix Optional prefix to prepend before actual contents
+     */
+    public byte[] toByteArray(boolean reset, byte[] prefix)
+    {
         int totalLen = _pastLen + _currBlockPtr;
-        
+        if (prefix != null) {
+            totalLen += prefix.length;
+        }
         if (totalLen == 0) { // quick check: nothing aggregated?
             return NO_BYTES;
         }
-        
         byte[] result = new byte[totalLen];
         int offset = 0;
 
+        if (prefix != null) {
+            final int len = prefix.length;
+            if (len > 0) {
+                System.arraycopy(prefix, 0, result, offset, len);
+                offset += len;
+            }
+        }
+        
         if (_pastBlocks != null && !_pastBlocks.isEmpty()) {
             for (byte[] block : _pastBlocks) {
-                
-                int len = block.length;
+                final int len = block.length;
                 System.arraycopy(block, 0, result, offset, len);
                 offset += len;
             }
         }
         System.arraycopy(_currBlock, 0, result, offset, _currBlockPtr);
         offset += _currBlockPtr;
-        reset();
+        if (reset) {
+            reset();
+        }
         if (offset != totalLen) { // just a sanity check
             throw new RuntimeException("Internal error: total len assumed to be "+totalLen+", copied "+offset+" bytes");
         }
@@ -170,7 +225,11 @@ public final class ByteAggregator
         _currBlock[_currBlockPtr++] = (byte) b;
     }
 
-    @Override public void close() { /* NOP */ }
+    @Override public void close() {
+        /* Does nothing: should not call 'reset()', since content will
+         * most likely be needed...
+         */
+    }
 
     @Override public void flush() { /* NOP */ }
 

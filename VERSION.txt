@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.21
+
+- Minor improvements to ByteAggregator
+
 0.9.20 (03-Oct-2013)
 
 - Improve iteration for BDB-JE backend, so that cursor is moved to next
