@@ -4,6 +4,7 @@ License: Apache License 2.0
 0.9.21
 
 - Minor improvements to ByteAggregator
+- Update dep to low-gc-membuffers 1.0.0
 
 0.9.20 (03-Oct-2013)
 
