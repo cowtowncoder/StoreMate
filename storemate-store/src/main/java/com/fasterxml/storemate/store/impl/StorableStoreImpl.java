@@ -628,17 +628,19 @@ public class StorableStoreImpl extends AdminStorableStore
 //        metadata.storageSize = dataLength;
 
         // may get checksum for compressed data, or might not; if not, calculate:
-        if (metadata.compression != Compression.NONE) {
+        final Compression comp = metadata.compression;
+        if (comp != Compression.NONE) {
             if (metadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
                 metadata.compressedContentHash = _calcChecksum(data);
             }
+            final long origLength = metadata.uncompressedSize;
+            if (origLength <= 0L) {
+                throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
+                        "Missing or invalid uncompressedSize ("+origLength+") for pre-compressed ("
+                        +metadata.compression+") content");
+            }
         }
         metadata.storageSize = data.byteLength();
-        final long origLength = metadata.uncompressedSize;
-        if (origLength <= 0L) {
-            throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
-                    "Missing or invalid uncompressedSize ("+origLength+") for pre-compressed content");
-        }
         return _putSmallEntry(source, diag, key, metadata, customMetadata, allowOverwrites, data);
     }
 
