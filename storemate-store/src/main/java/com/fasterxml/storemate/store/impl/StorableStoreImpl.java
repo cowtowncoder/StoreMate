@@ -604,7 +604,8 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putSmallEntry(source, diag, key, metadata, customMetadata, allowOverwrites, data);
     }
 
-    protected StorableCreationResult _putSmallPreCompressedEntry(StoreOperationSource source, OperationDiagnostics diag,
+    protected StorableCreationResult _putSmallPreCompressedEntry(StoreOperationSource source,
+            OperationDiagnostics diag,
             StorableKey key, StorableCreationMetadata metadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, ByteContainer data)
         throws IOException, StoreException
@@ -631,6 +632,12 @@ public class StorableStoreImpl extends AdminStorableStore
             if (metadata.compressedContentHash == HashConstants.NO_CHECKSUM) {
                 metadata.compressedContentHash = _calcChecksum(data);
             }
+        }
+        metadata.storageSize = data.byteLength();
+        final long origLength = metadata.uncompressedSize;
+        if (origLength <= 0L) {
+            throw new StoreException.Input(key, StoreException.InputProblem.BAD_LENGTH,
+                    "Missing or invalid uncompressedSize ("+origLength+") for pre-compressed content");
         }
         return _putSmallEntry(source, diag, key, metadata, customMetadata, allowOverwrites, data);
     }
