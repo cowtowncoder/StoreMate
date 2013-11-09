@@ -87,6 +87,16 @@ public class TestHashing extends SharedTestBase
 		
 		int act = hasher.calculateHash();
 		assertEquals(exp, act);
+
+		// Do the same with the other method:
+		hasher.reset();
+		assertEquals(0, hasher.getValue());
+          for (int i = 0; i < data.length; ++i) {
+               hasher.update(data[i]);
+          }
+          assertEquals(data.length, (int) hasher.getLength());
+          act = (int) hasher.getValue();
+          assertEquals(exp, act);
     }
 
     private void _verifyMurmur3WithVariable(byte[] data)
@@ -95,7 +105,7 @@ public class TestHashing extends SharedTestBase
 
 	    IncrementalMurmur3Hasher hasher = new IncrementalMurmur3Hasher(SEED);
 	    Random rnd = new Random(data.length);
-		
+	    
 	    for (int i = 0; i < data.length; ) {
 	        int amount = 1 + rnd.nextInt(17);
 	        amount = Math.min(amount, data.length - i);
@@ -111,5 +121,8 @@ public class TestHashing extends SharedTestBase
 		
 	    int act = hasher.calculateHash();
 	    assertEquals(exp, act);
+
+	    // also, should work via Checksum
+         assertEquals(exp, hasher.getValue());
     }
 }
