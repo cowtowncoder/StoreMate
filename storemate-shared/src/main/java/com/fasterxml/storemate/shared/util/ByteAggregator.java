@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.zip.Checksum;
 
 /**
  * Helper class that is similar to {@link java.io.ByteArrayOutputStream}
@@ -15,46 +16,50 @@ import java.util.*;
  * Note that instances are NOT designed to be reusable, since instance
  * creation is cheap as the underlying buffers are automatically recycled
  * as necessary. So do not try to be clever and reuse instances;
- * this will most likely not work.
+ * this will most likely not work, but instead rely on lower level byte buffer
+ * recycling that occurs automatically, <b>as long as you call {@link #reset}</b>
+ * either directly or indirectly (note: {@link #close} will NOT call {@link #reset}).
  */
-public final class ByteAggregator
+public class ByteAggregator
     extends OutputStream
 {
-    private final static byte[] NO_BYTES = new byte[0];
+    protected final static byte[] NO_BYTES = new byte[0];
 
-    private final static int MIN_FIRST_BLOCK_SIZE = 0x1000; // 4k for first chunk
+    protected final static int DEFAULT_MAX_BLOCK_SIZE = (1 << 18);
+    
+    protected final static int MIN_FIRST_BLOCK_SIZE = 0x1000; // 4k for first chunk
 
-    private final static int MIN_OTHER_BLOCK_SIZE = 0x4000; // 16k at least afterwards
+    protected final static int MIN_OTHER_BLOCK_SIZE = 0x4000; // 16k at least afterwards
     
     /**
      * Maximum block size we will use for individual non-aggregated
      * blocks. Let's limit to using 256k chunks.
      */
-    private final static int MAX_BLOCK_SIZE = (1 << 18);
+    protected int MAX_BLOCK_SIZE = DEFAULT_MAX_BLOCK_SIZE;
 
     /**
      * We can recycle parts of buffer, which is especially useful when dealing
      * with small content, but can also help reduce first-chunk overhead for
      * larger ones.
      */
-    private final static BufferRecycler _bufferRecycler = new BufferRecycler(MIN_FIRST_BLOCK_SIZE);
+    protected final static BufferRecycler _bufferRecycler = new BufferRecycler(MIN_FIRST_BLOCK_SIZE);
 
-    private final BufferRecycler.Holder _bufferHolder;
-    
-    private LinkedList<byte[]> _pastBlocks = null;
+    protected final BufferRecycler.Holder _bufferHolder;
+
+    protected LinkedList<byte[]> _pastBlocks = null;
 
     /**
      * Number of bytes within byte arrays in {@link _pastBlocks}.
      */
-    private int _pastLen;
+    protected int _pastLen;
 
     /**
      * Currently active processing block
      */
-    private byte[] _currBlock;
+    protected byte[] _currBlock;
 
-    private int _currBlockPtr;
-
+    protected int _currBlockPtr;
+    
     /*
     /**********************************************************************
     /* Life-cycle
@@ -112,6 +117,50 @@ public final class ByteAggregator
         _currBlock = null;
     }
 
+    /*
+    /**********************************************************************
+    /* OutputStream implementation
+    /**********************************************************************
+     */
+
+    @Override
+    public final void write(byte[] b) {
+        write(b, 0, b.length);
+    }
+
+    @Override
+    public final void write(byte[] b, int off, int len)
+    {
+        while (true) {
+            int max = _currBlock.length - _currBlockPtr;
+            int toCopy = Math.min(max, len);
+            if (toCopy > 0) {
+                System.arraycopy(b, off, _currBlock, _currBlockPtr, toCopy);
+                off += toCopy;
+                _currBlockPtr += toCopy;
+                len -= toCopy;
+            }
+            if (len <= 0) break;
+            _allocMore();
+        }
+    }
+
+    @Override
+    public void write(int b) {
+        if (_currBlockPtr >= _currBlock.length) {
+            _allocMore();
+        }
+        _currBlock[_currBlockPtr++] = (byte) b;
+    }
+
+    @Override public void close() {
+        /* Does nothing: should not call 'reset()', since content will
+         * most likely be needed...
+         */
+    }
+
+    @Override public void flush() { /* NOP */ }
+    
     /*
     /**********************************************************************
     /* Access to contents
@@ -191,48 +240,45 @@ public final class ByteAggregator
 
     /*
     /**********************************************************************
-    /* OutputStream implementation
+    /* Traversal/consumption methods
     /**********************************************************************
      */
 
-    @Override
-    public void write(byte[] b) {
-        write(b, 0, b.length);
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len)
+    /**
+     * Method for writing contents of this aggregator into provided
+     * {@link OutputStream}
+     */
+    public void writeTo(OutputStream out) throws IOException
     {
-        while (true) {
-            int max = _currBlock.length - _currBlockPtr;
-            int toCopy = Math.min(max, len);
-            if (toCopy > 0) {
-                System.arraycopy(b, off, _currBlock, _currBlockPtr, toCopy);
-                off += toCopy;
-                _currBlockPtr += toCopy;
-                len -= toCopy;
+        if (_pastBlocks != null && !_pastBlocks.isEmpty()) {
+            for (byte[] block : _pastBlocks) {
+                out.write(block, 0, block.length);
             }
-            if (len <= 0) break;
-            _allocMore();
+        }
+        final int len = _currBlockPtr;
+        if (len > 0) {
+            out.write(_currBlock, 0, len);
         }
     }
 
-    @Override
-    public void write(int b) {
-        if (_currBlockPtr >= _currBlock.length) {
-            _allocMore();
+    /**
+     * Method for calculating {@link Checksum} over contents of
+     * this aggregator.
+     */
+    public ByteAggregator calcChecksum(Checksum cs)
+    {
+        if (_pastBlocks != null && !_pastBlocks.isEmpty()) {
+            for (byte[] block : _pastBlocks) {
+                cs.update(block, 0, block.length);
+            }
         }
-        _currBlock[_currBlockPtr++] = (byte) b;
+        final int len = _currBlockPtr;
+        if (len > 0) {
+            cs.update(_currBlock, 0, len);
+        }
+        return this;
     }
-
-    @Override public void close() {
-        /* Does nothing: should not call 'reset()', since content will
-         * most likely be needed...
-         */
-    }
-
-    @Override public void flush() { /* NOP */ }
-
+    
     /*
     /**********************************************************************
     /* Other public methods

@@ -3,7 +3,7 @@ License: Apache License 2.0
 
 0.9.21
 
-- Minor improvements to ByteAggregator
+- Improvements to ByteAggregator, for improved interoperability
 - Update dep to low-gc-membuffers 1.0.0
 - Make `IncrementalHasher32` implement `java.util.zip.Checksum` for convenience
 
