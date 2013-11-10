@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.21
+0.9.21 (09-Nov-2013)
 
 - Improvements to ByteAggregator, for improved interoperability
 - Update dep to low-gc-membuffers 1.0.0
