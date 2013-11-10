@@ -609,11 +609,11 @@ public class LevelDBStoreBackend extends StoreBackend
     }
 
     protected <T> T _convertIOE(StorableKey key, IOException ioe)
-            throws StoreException
-        {
-            // any special types that require special handling... ?
-            throw new StoreException.Internal(key, ioe);
-        }
+        throws StoreException
+    {
+        // any special types that require special handling... ?
+        throw new StoreException.Internal(key, ioe);
+    }
     
     private final static void _putIntBE(byte[] buffer, int offset, int value)
     {

@@ -42,28 +42,27 @@ public abstract class LastModTestBase extends BackendTestBase
        final AtomicInteger count = new AtomicInteger(0);
        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null, 1L,
                new StorableLastModIterationCallback() {
-        @Override
-        public IterationAction verifyTimestamp(long timestamp) {
+           @Override
+           public IterationAction verifyTimestamp(long timestamp) {
             if (timestamp != startTime) {
                 throw new IllegalStateException("Wrong timestamp, "+timestamp+", expected "+startTime);
             }
             return IterationAction.PROCESS_ENTRY;
-        }
+           }
 
-        @Override
-        public IterationAction verifyKey(StorableKey key) {
+           @Override
+           public IterationAction verifyKey(StorableKey key) {
             if (!key.equals(KEY1)) {
                 throw new IllegalStateException("Wrong key: "+key);
             }
             return IterationAction.PROCESS_ENTRY;
-        }
+           }
 
-        @Override
-        public IterationAction processEntry(Storable entry) {
+           @Override
+           public IterationAction processEntry(Storable entry) {
             count.addAndGet(1);
             return IterationAction.PROCESS_ENTRY;
-        }
-           
+           }
        });
        assertEquals(1, count.get());
 
@@ -142,6 +141,32 @@ public abstract class LastModTestBase extends BackendTestBase
             }
         });
         assertEquals(1, count.get());
+
+        // and once more, using exact start value
+        count.set(0);
+        store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null,
+                startTime-200L,
+                new StorableLastModIterationCallback() {
+            @Override
+            public IterationAction verifyTimestamp(long timestamp) {
+                if ((timestamp != (startTime-200L)) && (timestamp != startTime)) {
+                    throw new IllegalStateException("Wrong timestamp: "+timestamp+" (startTime "+startTime+")");
+                }
+                return IterationAction.PROCESS_ENTRY;
+            }
+
+            @Override
+            public IterationAction verifyKey(StorableKey key) {
+                return IterationAction.PROCESS_ENTRY;
+            }
+
+            @Override
+            public IterationAction processEntry(Storable entry) {
+                count.addAndGet(1);
+                return IterationAction.PROCESS_ENTRY;
+            }
+        });
+        assertEquals(2, count.get());
         
         store.stop();
    }
