@@ -47,12 +47,14 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertNull(resp.getPreviousEntry());
         
         _verifyCounts(2L, store);
+        assertEquals(0, ((AdminStorableStore) store).getTombstoneCount(StoreOperationSource.ADMIN_TOOL, 5000L));
 
         // Then deletions. First soft deletion, leaving inlined data intact
         StorableDeletionResult result = store.softDelete(StoreOperationSource.REQUEST, null,
                 KEY1, false, false);
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
+        assertEquals(1, ((AdminStorableStore) store).getTombstoneCount(StoreOperationSource.ADMIN_TOOL, 5000L));
         _verifyCounts(2L, store);
         // with soft deletion, we get modified instance, not original
         assertTrue(result.getEntry().isDeleted());
@@ -70,6 +72,8 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
         assertTrue(result.hadEntry());
         assertNotNull(result.getEntry());
         _verifyCounts(2L, store);
+        assertEquals(2, ((AdminStorableStore) store).getTombstoneCount(StoreOperationSource.ADMIN_TOOL, 5000L));
+        
         assertEquals(0, result.getEntry().getInlineDataLength());
         assertArrayEquals(new byte[0], result.getEntry().withInlinedData(WithBytesAsArray.instance));
 
