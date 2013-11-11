@@ -480,7 +480,7 @@ public class LevelDBStoreBackend extends StoreBackend
             } else {
                 iter.seek(timestampKey(firstTimestamp));
             }
-            
+
             try {
                 main_loop:
                 while (iter.hasNext()) {
@@ -554,24 +554,22 @@ public class LevelDBStoreBackend extends StoreBackend
     protected byte[] timestampKey(long timestamp)
     {
         byte[] raw = new byte[8];
-        _putIntBE(raw, 0, (int) (timestamp >> 32));
-        _putIntBE(raw, 4, (int) timestamp);
+        _putLongBE(raw, 0, timestamp);
         return raw;
     }
     
     protected byte[] keyToLastModEntry(byte[] key, Storable value)
     {
-        byte[] result = new byte[key.length + 8];
-        long ts = value.getLastModified();
-        _putIntBE(result, 0, (int) (ts >> 32));
-        _putIntBE(result, 4, (int) ts);
+        byte[] result = new byte[8 + key.length];
+        long timestamp = value.getLastModified();
+        _putLongBE(result, 0, timestamp);
         System.arraycopy(key, 0, result, 8, key.length);
         return result;
     }
 
     protected byte[] keyToLastModEntry(byte[] key, byte[] rawStorable)
     {
-        byte[] result = new byte[key.length + 8];
+        byte[] result = new byte[8 + key.length];
         // Storable starts with timestamp, so just copy
         appendTimestamp(rawStorable, result, 0);
         System.arraycopy(key, 0, result, 8, key.length);
@@ -613,6 +611,12 @@ public class LevelDBStoreBackend extends StoreBackend
     {
         // any special types that require special handling... ?
         throw new StoreException.Internal(key, ioe);
+    }
+
+    private final static void _putLongBE(byte[] buffer, int offset, long value)
+    {
+        _putIntBE(buffer, offset, (int) (value >> 32));
+        _putIntBE(buffer, offset+4, (int) value);
     }
     
     private final static void _putIntBE(byte[] buffer, int offset, int value)

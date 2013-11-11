@@ -120,7 +120,8 @@ public class Storable
      * marking an entry as soft-deleted, without actually removing inlined
      * or external data.
      */
-    public Storable softDeletedCopy(ByteContainer bytes, boolean removeData)
+    public Storable softDeletedCopy(ByteContainer bytes, boolean removeData,
+            long lastModTime)
     {
         // clear deleted flag, i.e. just retain replicated flag
         int statusFlags = StorableFlags.F_STATUS_SOFT_DELETED;
@@ -128,7 +129,7 @@ public class Storable
             statusFlags |= StorableFlags.F_STATUS_REPLICATED;
         }
         return new Storable(_key, bytes,
-                _lastModified, statusFlags, _compression,
+                lastModTime, statusFlags, _compression,
                 removeData ? 0 : _externalPathLength,
                 _contentHash, _compressedHash, _originalLength,
                 _metadataOffset, _metadataLength,

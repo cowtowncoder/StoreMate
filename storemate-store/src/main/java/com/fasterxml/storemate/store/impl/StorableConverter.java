@@ -261,20 +261,20 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
     /**********************************************************************
      */
 
-    public Storable softDeletedCopy(StorableKey key, Storable orig, long deletionTime,
+    public Storable softDeletedCopy(StorableKey key, Storable orig, final long deletionTime,
             boolean deleteInlined, boolean deleteExternal)
     {
         final boolean removeExternal = deleteExternal && orig.hasExternalData();
         final boolean removeInlined = deleteInlined && orig.hasInlineData();
         
-        /* First things first: if we have retain external or inlined,
+        /* First things first: if we have to retain external or inlined,
          * it's just a single byte change.
          */
         if (!(removeInlined || removeExternal)) {
             byte[] raw = orig.withRaw(WithBytesAsArray.instance);
             raw[OFFSET_STATUS] |= StorableFlags.F_STATUS_SOFT_DELETED;
             _ovewriteTimestamp(raw, 0, deletionTime);
-            return orig.softDeletedCopy(ByteContainer.simple(raw), false);
+            return orig.softDeletedCopy(ByteContainer.simple(raw), false, deletionTime);
         }
         /* otherwise we can still make use of first part of data, up to and
          * including optional metadata, and no minor in-place mod on copy
@@ -296,7 +296,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             base[OFFSET_EXT_PATH_LENGTH] = 0;
         }
         _ovewriteTimestamp(base, 0, deletionTime);
-        Storable mod = orig.softDeletedCopy(ByteContainer.simple(base), true);
+        Storable mod = orig.softDeletedCopy(ByteContainer.simple(base), true, deletionTime);
         return mod;
     }
     
