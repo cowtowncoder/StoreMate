@@ -237,4 +237,68 @@ public abstract class LastModTestBase extends BackendTestBase
 
        store.stop();
    }
+
+    public void testLastModWithUpdates() throws Exception
+    {
+       final long startTime = 9000L;
+       TimeMasterForSimpleTesting timeMaster = new TimeMasterForSimpleTesting(startTime);
+       StorableStore store = createStore("bdb-lastmod-updates", timeMaster);
+       final StorableKey KEY1 = storableKey("data/lastmod/1");
+       final byte[] SMALL_DATA = "Some data".getBytes("UTF-8");
+       final byte[] CUSTOM_METADATA_IN = new byte[] { 1, 2, 3 };
+
+       // Ok: store a small entry:
+       StorableCreationMetadata metadata = new StorableCreationMetadata(
+               /*existing compression*/ null,
+               calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
+       StorableCreationResult resp = store.insert(StoreOperationSource.REQUEST, null,
+               KEY1, new ByteArrayInputStream(SMALL_DATA),
+               metadata, ByteContainer.simple(CUSTOM_METADATA_IN));
+       assertTrue(resp.succeeded());
+       assertNull(resp.getPreviousEntry());
+       _verifyCounts(1L, store);
+
+       // but overwrite it immediately, with a new(er) timestamp
+       final long secondTime = 25000L;
+       timeMaster.forceCurrentTimeMillis(secondTime);
+
+       metadata = new StorableCreationMetadata(
+               /*existing compression*/ null,
+               calcChecksum32(SMALL_DATA), HashConstants.NO_CHECKSUM);
+       resp = store.upsert(StoreOperationSource.REQUEST, null,
+               KEY1, new ByteArrayInputStream(SMALL_DATA),
+               metadata, ByteContainer.simple(CUSTOM_METADATA_IN), true);
+       assertTrue(resp.succeeded());
+       assertNotNull(resp.getPreviousEntry());
+       _verifyCounts(1L, store);
+       
+       // then verify we can see it via iteration
+       final AtomicInteger count = new AtomicInteger(0);
+       store.iterateEntriesByModifiedTime(StoreOperationSource.REQUEST, null, secondTime,
+               new StorableLastModIterationCallback() {
+           @Override
+           public IterationAction verifyTimestamp(long timestamp) {
+               if (timestamp != secondTime) {
+                   throw new IllegalStateException("Wrong timestamp, "+timestamp+", expected "+secondTime);
+               }
+               return IterationAction.PROCESS_ENTRY;
+           }
+
+           @Override
+           public IterationAction verifyKey(StorableKey key) {
+               if (!key.equals(KEY1)) {
+                   throw new IllegalStateException("Wrong key: "+key);
+               }
+               return IterationAction.PROCESS_ENTRY;
+           }
+
+           @Override
+           public IterationAction processEntry(Storable entry) {
+               count.addAndGet(1);
+               return IterationAction.PROCESS_ENTRY;
+           }
+       });
+       assertEquals(1, count.get());
+       store.stop();
+    }
 }
