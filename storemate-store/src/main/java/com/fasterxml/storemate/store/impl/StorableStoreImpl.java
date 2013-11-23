@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.shared.compress.Compression;
 import com.fasterxml.storemate.shared.compress.Compressors;
-import com.fasterxml.storemate.shared.hash.BlockHasher32;
-import com.fasterxml.storemate.shared.hash.BlockMurmur3Hasher;
-import com.fasterxml.storemate.shared.hash.HashConstants;
-import com.fasterxml.storemate.shared.hash.IncrementalMurmur3Hasher;
+import com.fasterxml.storemate.shared.hash.*;
 import com.fasterxml.storemate.shared.util.BufferRecycler;
 import com.fasterxml.storemate.shared.util.IOUtil;
 import com.fasterxml.storemate.store.*;
@@ -27,11 +24,7 @@ import com.fasterxml.storemate.store.backend.StorableLastModIterationCallback;
 import com.fasterxml.storemate.store.backend.StoreBackend;
 import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.file.FileReference;
-import com.fasterxml.storemate.store.util.ByteBufferCallback;
-import com.fasterxml.storemate.store.util.CountingOutputStream;
-import com.fasterxml.storemate.store.util.OperationDiagnostics;
-import com.fasterxml.storemate.store.util.OverwriteChecker;
-import com.fasterxml.storemate.store.util.PartitionedWriteMutex;
+import com.fasterxml.storemate.store.util.*;
 import com.fasterxml.util.membuf.MemBuffersForBytes;
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 
@@ -46,16 +39,16 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     private final static int HASH_SEED = BlockHasher32.DEFAULT_SEED;
 
+    /**
+     * By default we'll use off-heap buffers composed of 64kB segments.
+     */
+    protected final int OFF_HEAP_BUFFER_SEGMENT_LEN = 64000;
+    
     private final static OverwriteChecker OVERWRITE_OK = OverwriteChecker.AlwaysOkToOverwrite.instance;
 
     private final static OverwriteChecker OVERWRITE_NOT_OK = OverwriteChecker.NeverOkToOverwrite.instance;
     
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-
-    /**
-     * By default we'll use off-heap buffers composed of 64kB segments.
-     */
-    protected final int OFF_HEAP_BUFFER_SEGMENT_LEN = 64000;
     
     /*
     /**********************************************************************
@@ -265,12 +258,18 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     @Override
-    public <T> T leaseOffHeapBuffer(ByteBufferCallback<T> cb) {
-        StreamyBytesMemBuffer buffer = allocOffHeapBuffer();
+    public <T> T leaseOffHeapBuffer(ByteBufferCallback<T> cb)
+    {
+        StreamyBytesMemBuffer buffer = null;
         try {
+            buffer = allocOffHeapBuffer();
             return cb.withBuffer(buffer);
+        } catch (IllegalStateException e) {
+            return cb.withError(e);
         } finally {
-            buffer.close();
+            if (buffer != null) {
+                buffer.close();
+            }
         }
     }
 

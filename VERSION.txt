@@ -5,6 +5,8 @@ License: Apache License 2.0
 
 - Fixed a minor problem with update of last-modified for soft-delete which affected
   LevelDB on cluster tests
+- Add method `withError()` in "ByteBufferCallback" to allow graceful handling of
+  allocation errors.
 
 0.9.21 (09-Nov-2013)
 
