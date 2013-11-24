@@ -17,8 +17,8 @@ import java.util.zip.Checksum;
  * creation is cheap as the underlying buffers are automatically recycled
  * as necessary. So do not try to be clever and reuse instances;
  * this will most likely not work, but instead rely on lower level byte buffer
- * recycling that occurs automatically, <b>as long as you call {@link #reset}</b>
- * either directly or indirectly (note: {@link #close} will NOT call {@link #reset}).
+ * recycling that occurs automatically, <b>as long as you call {@link #release}</b>
+ * either directly or indirectly (note: {@link #close} will NOT call {@link #release}).
  */
 public class ByteAggregator
     extends OutputStream
@@ -101,12 +101,39 @@ public class ByteAggregator
     }
 
     /**
-     * Method for clearing out all aggregated content; and return
-     * recyclable buffers for reuse, if possible.
+     * Alias for {@link #release}.
+     * 
+     * @deprecated Use {@link #release} instead
+     */
+    @Deprecated
+    public void reset()
+    {
+        release();
+    }
+    
+    /**
+     * Method for clearing out all aggregated content, but <b>without</b>
+     * returning all recyclable buffers, to make it possible to use
+     * this instance efficiently.
+     */
+    public void resetForReuse()
+    {
+        _pastLen = 0;
+        _currBlockPtr = 0;
+        if (_pastBlocks != null) {
+            _pastBlocks.clear();
+        }
+    }
+
+    /**
+     * Method for clearing out all aggregated content and return
+     * recyclable buffers for reuse, if possible, rendering this
+     * instance unusable for further operations.
+     *<p>
      * Note that instance can NOT be used after this method is called;
      * instead, a new instance must be constructed.
      */
-    public void reset()
+    public void release()
     {
         _pastLen = 0;
         _currBlockPtr = 0;
@@ -154,7 +181,7 @@ public class ByteAggregator
     }
 
     @Override public void close() {
-        /* Does nothing: should not call 'reset()', since content will
+        /* Does nothing: should not call 'release' or 'resetForReuse', since content will
          * most likely be needed...
          */
     }
@@ -174,7 +201,7 @@ public class ByteAggregator
      *<pre>
      *   toByteArray(true, null);
      *<pre>
-     * that is, this also implicitly calls {@link #reset} so that no
+     * that is, this also implicitly calls {@link #release} so that no
      * content is available for further calls; and no prefix will be
      * prepended.
      */
@@ -187,20 +214,20 @@ public class ByteAggregator
      * Method called when results are finalized and we can get the
      * full aggregated result buffer to return to the caller.
      * 
-     * @param reset Whether contents should be {@link #reset} after
+     * @param release Whether contents should be {@link #release} after
      *   the call or not
      */
-    public byte[] toByteArray(boolean reset)
+    public byte[] toByteArray(boolean release)
     {
-        return toByteArray(reset, null);
+        return toByteArray(release, null);
     }
 
     /**
-     * @param reset Whether contents should be {@link #reset} after
+     * @param reset Whether contents should be {@link #release} after
      *   the call or not
      * @param prefix Optional prefix to prepend before actual contents
      */
-    public byte[] toByteArray(boolean reset, byte[] prefix)
+    public byte[] toByteArray(boolean release, byte[] prefix)
     {
         int totalLen = _pastLen + _currBlockPtr;
         if (prefix != null) {
@@ -229,8 +256,8 @@ public class ByteAggregator
         }
         System.arraycopy(_currBlock, 0, result, offset, _currBlockPtr);
         offset += _currBlockPtr;
-        if (reset) {
-            reset();
+        if (release) {
+            release();
         }
         if (offset != totalLen) { // just a sanity check
             throw new RuntimeException("Internal error: total len assumed to be "+totalLen+", copied "+offset+" bytes");
@@ -261,6 +288,26 @@ public class ByteAggregator
         }
     }
 
+    /**
+     * Method that can be used to access contents aggregated, by
+     * getting aggregator to call {@link WithBytesCallback#withBytes} once
+     * per each segment with data.
+     */
+    public <T> T withBytes(WithBytesCallback<T> callback)
+    {
+        T result = null;
+        if (_pastBlocks != null && !_pastBlocks.isEmpty()) {
+            for (byte[] block : _pastBlocks) {
+                result = callback.withBytes(block, 0, block.length);
+            }
+        }
+        final int len = _currBlockPtr;
+        if (len > 0) {
+            result = callback.withBytes(_currBlock, 0, len);
+        }
+        return result;
+    }
+    
     /**
      * Method for calculating {@link Checksum} over contents of
      * this aggregator.
