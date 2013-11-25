@@ -55,7 +55,7 @@
     <!-- 0.6 released in May 2013, latest currently
      -->
     <version.leveldb>0.6</version.leveldb>
-    <version.lzf>0.9.9</version.lzf>
+    <version.lzf>0.9.10</version.lzf>
     <version.membuffers>1.0.0</version.membuffers>
 
   </properties>
