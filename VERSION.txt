@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.22 (...)
+0.9.22 (25-Nov-2013)
 
 - Fixed a minor problem with update of last-modified for soft-delete which affected
   LevelDB on cluster tests
