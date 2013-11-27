@@ -49,6 +49,16 @@ public class StorableKey
     public final int length() { return _length; }
 
     /**
+     * @since 0.9.23
+     */
+    public final int byteAt(int index) {
+        if (index < 0 || index >= _length) {
+            throw new IllegalArgumentException("Invalid index "+index+": key length="+_length);
+        }
+        return _buffer[_offset + index];
+    }
+    
+    /**
      * Method that can be called to see whether this key has specified
      * key as a prefix, including possible case that keys are identical
      */
