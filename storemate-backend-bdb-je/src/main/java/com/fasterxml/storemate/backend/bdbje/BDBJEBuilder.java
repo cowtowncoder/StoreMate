@@ -5,11 +5,13 @@ import java.util.concurrent.TimeUnit;
 
 import com.sleepycat.je.*;
 
+import com.fasterxml.storemate.shared.util.RawEntryConverter;
 import com.fasterxml.storemate.store.StorableStore;
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 import com.fasterxml.storemate.store.impl.StorableConverter;
+import com.fasterxml.storemate.store.state.NodeStateStore;
 
 /**
  * Helper object used for configuring and instantiating
@@ -17,6 +19,13 @@ import com.fasterxml.storemate.store.impl.StorableConverter;
  */
 public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
 {
+    /**
+     * For Node stores we do not really need much any caching;
+     * but throw dog a bone of, say, nice round 200k.
+     */
+    private final static long NODE_BDB_CACHE_SIZE = 200L * 1024L;
+
+    
     protected StoreConfig _storeConfig;
     protected BDBJEConfig _bdbConfig;
 
@@ -34,6 +43,31 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         return buildCreateAndInit();
     }
 
+    @Override
+    public <K,V> NodeStateStore<K,V> buildNodeStateStore(File metadataRoot,
+            RawEntryConverter<K> keyConv,
+            RawEntryConverter<V> valueConv)
+    {
+        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
+        if (metadataRoot == null) {
+            throw new IllegalStateException("Missing metadataRoot");
+        }
+        if (!metadataRoot.exists() || !metadataRoot.isDirectory()) {
+            if (!metadataRoot.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+metadataRoot.getAbsolutePath()+"' did not exist: failed to create it");
+            }
+        }
+        Environment nodeEnv = new Environment(metadataRoot, envConfigForNodeState(true, true));
+        NodeStateStore<K,V> nodeStore;
+        try {
+            nodeStore = new BDBNodeStateStoreImpl<K,V>(null, null, null, nodeEnv);
+        } catch (DatabaseException e) {
+            String msg = "Failed to open Node store: "+e.getMessage();
+            throw new IllegalStateException(msg, e);
+        }
+        return nodeStore;
+    }
+    
     /**
      * Method that will open an existing BDB database if one exists, or create
      * one if not, and create a store with that BDB. Underlying data storage
@@ -70,7 +104,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         }
 
         StorableConverter storableConv = _storeConfig.createStorableConverter();
-        EnvironmentConfig envConfig = envConfig(canCreate, canWrite);
+        EnvironmentConfig envConfig = envConfigForStore(canCreate, canWrite);
         BDBJEStoreBackend physicalStore;
         try {
             physicalStore = new BDBJEStoreBackend(storableConv, dbRoot, _bdbConfig, envConfig);
@@ -114,7 +148,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     /**********************************************************************
      */
 
-    protected EnvironmentConfig envConfig(boolean allowCreate, boolean writeAccess)
+    protected EnvironmentConfig envConfigForStore(boolean allowCreate, boolean writeAccess)
     {
         EnvironmentConfig config = new EnvironmentConfig();
         config.setAllowCreate(allowCreate);
@@ -126,6 +160,19 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         config.setLockTimeout(_bdbConfig.lockTimeoutMsecs, TimeUnit.MILLISECONDS);
         // Default of 1 for lock count is not good; let's see what to use instead:
         config.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, String.valueOf(_bdbConfig.lockTableCount));
+        return config;
+    }
+
+    protected EnvironmentConfig envConfigForNodeState(boolean allowCreate, boolean writeAccess)
+    {
+        EnvironmentConfig config = new EnvironmentConfig();
+        config.setAllowCreate(allowCreate);
+        config.setReadOnly(!writeAccess);
+        config.setSharedCache(false);
+        config.setCacheSize(NODE_BDB_CACHE_SIZE);
+        config.setDurability(Durability.COMMIT_SYNC);
+        // default of 500 msec too low; although for node settings should not really matter:
+        config.setLockTimeout(5000L, TimeUnit.MILLISECONDS);
         return config;
     }
 }

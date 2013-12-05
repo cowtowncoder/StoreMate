@@ -1,6 +1,10 @@
 package com.fasterxml.storemate.store.backend;
 
+import java.io.File;
+
+import com.fasterxml.storemate.shared.util.RawEntryConverter;
 import com.fasterxml.storemate.store.StoreConfig;
+import com.fasterxml.storemate.store.state.NodeStateStore;
 
 /**
  * Base class for builder objects used for constructing
@@ -36,8 +40,15 @@ public abstract class StoreBackendBuilder<T extends StoreBackendConfig>
     public abstract StoreBackendBuilder<?> with(StoreBackendConfig backendConfig);
 
     /**
-     * Method called after all configuration has been passed, to create
+     * Factory method called after all configuration has been passed, to create
      * the store instance.
      */
     public abstract StoreBackend build();
+
+    /**
+     * Factory method called after all configuration has been passed, to create
+     * the store used for persisting node state information.
+     */
+    public abstract <K,V> NodeStateStore<K,V> buildNodeStateStore(File metadataRoot,
+            RawEntryConverter<K> keyConv, RawEntryConverter<V> valueConv);
 }

@@ -8,10 +8,12 @@ import org.iq80.leveldb.Logger;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.impl.Iq80DBFactory;
 
+import com.fasterxml.storemate.shared.util.RawEntryConverter;
 import com.fasterxml.storemate.store.StoreConfig;
 import com.fasterxml.storemate.store.backend.StoreBackendBuilder;
 import com.fasterxml.storemate.store.backend.StoreBackendConfig;
 import com.fasterxml.storemate.store.impl.StorableConverter;
+import com.fasterxml.storemate.store.state.NodeStateStore;
 
 public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
 {
@@ -40,6 +42,16 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
         return buildCreateAndInit();
     }
 
+    @Override
+    public <K,V> NodeStateStore<K,V> buildNodeStateStore(File metadataRoot,
+            RawEntryConverter<K> keyConv,
+            RawEntryConverter<V> valueConv)
+    {
+        _verifyConfig();
+        // !!! TODO
+        return null;
+    }
+    
     /**
      * Method that will open an existing BDB database if one exists, or create
      * one if not, and create a store with that BDB. Underlying data storage
@@ -56,12 +68,10 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     public LevelDBStoreBackend buildAndInitReadWrite() {
         return _buildAndInit(false, true);
     }
-    
+
     protected LevelDBStoreBackend _buildAndInit(boolean canCreate, boolean canWrite)
     {
-        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
-        if (_levelDBConfig == null) throw new IllegalStateException("Missing LevelDBConfig");
-
+        _verifyConfig();
         File dbRoot = _levelDBConfig.dataRoot;
         if (dbRoot == null) {
             throw new IllegalStateException("Missing LevelDBConfig.dataRoot");
@@ -98,18 +108,6 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
         }
         return new LevelDBStoreBackend(storableConv, dbRoot, dataDB, indexDB);
     }
-
-    protected void _verifyDir(File dir, boolean canCreate)
-    {
-        if (!dir.exists() || !dir.isDirectory()) {
-            if (!canCreate) {
-                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
-            }
-            if (!dir.mkdirs()) {
-                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' did not exist: failed to create it");
-            }
-        }
-    }
     
     /*
     /**********************************************************************
@@ -140,6 +138,24 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     /**********************************************************************
      */
 
+    protected void _verifyDir(File dir, boolean canCreate)
+    {
+        if (!dir.exists() || !dir.isDirectory()) {
+            if (!canCreate) {
+                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' does not exist, not allowed to (try to) create");
+            }
+            if (!dir.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' did not exist: failed to create it");
+            }
+        }
+    }
+
+    protected void _verifyConfig() {
+        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
+        if (_levelDBConfig == null) throw new IllegalStateException("Missing LevelDBConfig");
+
+    }
+    
     /*
     /**********************************************************************
     /* Helper types
