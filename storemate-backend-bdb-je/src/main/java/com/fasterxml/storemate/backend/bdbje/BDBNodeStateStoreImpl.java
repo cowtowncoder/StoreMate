@@ -54,6 +54,8 @@ public class BDBNodeStateStoreImpl<K,V> extends NodeStateStore<K,V>
     @Override
     public void stop() {
         _store.close();
+//        LOG.info("Closing Node store environment...");
+        _store.getEnvironment().close();
     }
 
     /*
