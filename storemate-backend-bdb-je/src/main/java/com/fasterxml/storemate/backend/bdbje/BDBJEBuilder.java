@@ -163,7 +163,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         return config;
     }
 
-    protected EnvironmentConfig envConfigForNodeState(boolean allowCreate, boolean writeAccess)
+    protected static EnvironmentConfig envConfigForNodeState(boolean allowCreate, boolean writeAccess)
     {
         EnvironmentConfig config = new EnvironmentConfig();
         config.setAllowCreate(allowCreate);

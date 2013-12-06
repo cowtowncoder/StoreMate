@@ -1,5 +1,6 @@
 package com.fasterxml.storemate.backend.bdbje;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,16 @@ public class BDBNodeStateStoreImpl<K,V> extends NodeStateStore<K,V>
         LOG = logger;
         _store = env.openDatabase(null, // no TX, since we use atomic operations
                 "Nodes", dbConfig(env));
+    }
+
+
+    // !!! TODO: only use temporarily, until BDBJEBuilder wired for use properly
+    public static <K,V> BDBNodeStateStoreImpl<K,V> construct(File rootDir,
+            RawEntryConverter<K> keyConv,
+            RawEntryConverter<V> valueConv)
+    {
+        Environment env = new Environment(rootDir, BDBJEBuilder.envConfigForNodeState(true,  true));
+        return new BDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, env);
     }
 
     /*
