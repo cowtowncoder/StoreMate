@@ -31,6 +31,12 @@ public abstract class NodeStateStore<K,V>
     protected NodeStateStore(RawEntryConverter<K> keyConverter,
             RawEntryConverter<V> valueConverter)
     {
+        if (keyConverter == null) {
+            throw new IllegalArgumentException("Missing 'keyConverter'");
+        }
+        if (valueConverter == null) {
+            throw new IllegalArgumentException("Missing 'valueConverter'");
+        }
         _keyConverter = keyConverter;
         _valueConverter = valueConverter;
     }

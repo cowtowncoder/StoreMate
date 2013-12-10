@@ -60,7 +60,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         Environment nodeEnv = new Environment(metadataRoot, envConfigForNodeState(true, true));
         NodeStateStore<K,V> nodeStore;
         try {
-            nodeStore = new BDBNodeStateStoreImpl<K,V>(null, null, null, nodeEnv);
+            nodeStore = new BDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeEnv);
         } catch (DatabaseException e) {
             String msg = "Failed to open Node store: "+e.getMessage();
             throw new IllegalStateException(msg, e);
