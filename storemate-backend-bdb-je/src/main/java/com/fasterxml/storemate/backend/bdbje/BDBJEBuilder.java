@@ -24,7 +24,6 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
      * but throw dog a bone of, say, nice round 200k.
      */
     private final static long NODE_BDB_CACHE_SIZE = 200L * 1024L;
-
     
     protected StoreConfig _storeConfig;
     protected BDBJEConfig _bdbConfig;
@@ -48,16 +47,24 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
             RawEntryConverter<K> keyConv,
             RawEntryConverter<V> valueConv)
     {
-        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
+        verifyConfigs();
         if (metadataRoot == null) {
-            throw new IllegalStateException("Missing metadataRoot");
+            throw new IllegalStateException("Missing 'metadataRoot'");
         }
-        if (!metadataRoot.exists() || !metadataRoot.isDirectory()) {
-            if (!metadataRoot.mkdirs()) {
-                throw new IllegalArgumentException("Directory '"+metadataRoot.getAbsolutePath()+"' did not exist: failed to create it");
+        final String path = _bdbConfig.nodeStateDir;
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("Missing 'nodeStateDir'");
+        }
+        File nodeStateDir = metadataRoot;
+        for (String part : path.split("/")) {
+            nodeStateDir = new File(nodeStateDir, part);
+        }
+        if (!nodeStateDir.exists() || !nodeStateDir.isDirectory()) {
+            if (!nodeStateDir.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+nodeStateDir.getAbsolutePath()+"' did not exist: failed to create it");
             }
         }
-        Environment nodeEnv = new Environment(metadataRoot, envConfigForNodeState(true, true));
+        Environment nodeEnv = new Environment(nodeStateDir, envConfigForNodeState(true, true));
         NodeStateStore<K,V> nodeStore;
         try {
             nodeStore = new BDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeEnv);
@@ -87,9 +94,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     
     protected BDBJEStoreBackend _buildAndInit(boolean canCreate, boolean canWrite)
     {
-        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
-        if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
-
+        verifyConfigs();
         File dbRoot = _bdbConfig.dataRoot;
         if (dbRoot == null) {
             throw new IllegalStateException("Missing BDBJEConfig.dataRoot");
@@ -148,6 +153,11 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     /**********************************************************************
      */
 
+    protected void verifyConfigs() {
+        if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
+        if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");
+    }
+    
     protected EnvironmentConfig envConfigForStore(boolean allowCreate, boolean writeAccess)
     {
         EnvironmentConfig config = new EnvironmentConfig();

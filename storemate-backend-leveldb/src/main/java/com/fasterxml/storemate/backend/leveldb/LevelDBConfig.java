@@ -26,6 +26,12 @@ public class LevelDBConfig extends StoreBackendConfig
      * (nor the main deployment directory)
      */
     public File dataRoot;
+
+    /**
+     * Additional slash-separated path for storing "node state" under
+     * Store metadata directory (which comes from main service config)
+     */
+    public String nodeStateDir = "nodes";
     
     /*
     /**********************************************************************

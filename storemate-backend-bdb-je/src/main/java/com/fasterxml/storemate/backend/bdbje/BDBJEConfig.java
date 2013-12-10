@@ -32,6 +32,12 @@ public class BDBJEConfig extends StoreBackendConfig
      */
     public File dataRoot;
 
+    /**
+     * Additional slash-separated path for storing "node state" under
+     * Store metadata directory (which comes from main service config)
+     */
+    public String nodeStateDir = "nodes";
+    
     /*
     /**********************************************************************
     /* Simple config properties, size thresholds
@@ -39,7 +45,8 @@ public class BDBJEConfig extends StoreBackendConfig
      */
     
     /**
-     * Size of BDB-JE cache, in bytes. Should be big enough to allow branches
+     * Size of BDB-JE cache for entry metadata, in bytes.
+     * Should be big enough to allow branches
      * to be kept in memory, but not necessarily the whole DB.
      *<p>
      * NOTE: most developers think "bigger is better", when it comes to cache
@@ -50,7 +57,7 @@ public class BDBJEConfig extends StoreBackendConfig
      * Default value is 50 megs.
      */
     public DataAmount cacheSize = new DataAmount("50MB");
-
+    
     /**
      * Configuration setting BDB-JE uses for
      * <code>EnvironmentConfig.LOCK_N_LOCK_TABLES</code> setting; BDB defaults

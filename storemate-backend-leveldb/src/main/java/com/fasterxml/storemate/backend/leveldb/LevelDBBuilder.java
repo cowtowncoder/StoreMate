@@ -18,6 +18,12 @@ import com.fasterxml.storemate.store.state.NodeStateStore;
 public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
 {
     /**
+     * For Node Stae stores we do not really need much any caching;
+     * but throw dog a bone of, say, nice round 200k.
+     */
+    private final static long NODE_STATE_CACHE_SIZE = 200L * 1024L;
+
+    /**
      * For LevelDB we actually need two separate 'tables'; one for data,
      * another for last-modified index. Hence sub-directories.
      */
@@ -28,6 +34,8 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     protected StoreConfig _storeConfig;
     protected LevelDBConfig _levelDBConfig;
 
+    protected final LdbLogger _ldbLogger = new LdbLogger();
+    
     public LevelDBBuilder() { this(null, null); }
 
     public LevelDBBuilder(StoreConfig storeConfig, LevelDBConfig levelDBConfig)
@@ -48,8 +56,38 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
             RawEntryConverter<V> valueConv)
     {
         _verifyConfig();
-        // !!! TODO
-        return null;
+        final String path = _levelDBConfig.nodeStateDir;
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("Missing 'nodeStateDir'");
+        }
+        File nodeStateDir = metadataRoot;
+        for (String part : path.split("/")) {
+            nodeStateDir = new File(nodeStateDir, part);
+        }
+        if (!nodeStateDir.exists() || !nodeStateDir.isDirectory()) {
+            if (!nodeStateDir.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+nodeStateDir.getAbsolutePath()+"' did not exist: failed to create it");
+            }
+        }
+        _verifyDir(metadataRoot, true);
+
+        Iq80DBFactory factory = Iq80DBFactory.factory;
+        Options options = new Options();
+        options = options
+                .createIfMissing(true)
+                .logger(_ldbLogger)
+                // better safe than sorry, for store data?
+                .verifyChecksums(true)
+                .cacheSize(NODE_STATE_CACHE_SIZE)
+                ;
+        
+        DB nodeStateDB;
+        try {
+            nodeStateDB = factory.open(nodeStateDir, options);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to open Node state LevelDB: "+e.getMessage(), e);
+        }
+        return new LevelDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeStateDB);
     }
     
     /**
@@ -88,7 +126,7 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
         Options options = new Options();
         options = options
                 .createIfMissing(canCreate)
-                .logger(new LdbLogger())
+                .logger(_ldbLogger)
                 .verifyChecksums(false)
                 ;
         
@@ -153,7 +191,6 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
     protected void _verifyConfig() {
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_levelDBConfig == null) throw new IllegalStateException("Missing LevelDBConfig");
-
     }
     
     /*

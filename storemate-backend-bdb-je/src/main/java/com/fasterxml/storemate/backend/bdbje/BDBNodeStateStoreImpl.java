@@ -95,7 +95,7 @@ public class BDBNodeStateStoreImpl<K,V> extends NodeStateStore<K,V>
                 } catch (Exception e) {
                     String keyStr = "N/A";
                     try {
-                        K key = this.rawToKey(keyEntry.getData(), keyEntry.getOffset(), keyEntry.getSize());
+                        K key = rawToKey(keyEntry.getData(), keyEntry.getOffset(), keyEntry.getSize());
                         keyStr = key.toString();
                     } catch (Exception e2) {
                         keyStr = "[Corrupt Key]";
