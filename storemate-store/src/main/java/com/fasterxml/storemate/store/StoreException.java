@@ -1,6 +1,6 @@
 package com.fasterxml.storemate.store;
 
-import java.io.IOException;
+import java.io.*;
 
 import com.fasterxml.storemate.shared.StorableKey;
 
@@ -173,6 +173,18 @@ public abstract class StoreException extends IOException
         @Override public boolean isServerError() { return true; }
     }
 
+    /**
+     * More specific I/O problem: underlying data file is missing.
+     */
+    public static class NoSuchFile extends IO
+    {
+        private static final long serialVersionUID = 1L;
+
+        public NoSuchFile(StorableKey key, File f, String msg) {
+            super(key, msg, null);
+        }
+    }
+    
     /**
      * Enumeration of kinds of Database problems that we recognize.
      */
