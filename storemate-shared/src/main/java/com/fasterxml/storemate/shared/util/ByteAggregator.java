@@ -223,7 +223,7 @@ public class ByteAggregator
     }
 
     /**
-     * @param reset Whether contents should be {@link #release} after
+     * @param release Whether contents should be {@link #release} after
      *   the call or not
      * @param prefix Optional prefix to prepend before actual contents
      */

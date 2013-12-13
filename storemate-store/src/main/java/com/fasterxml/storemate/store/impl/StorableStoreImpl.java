@@ -148,13 +148,6 @@ public class StorableStoreImpl extends AdminStorableStore
     /**********************************************************************
      */
 
-    @Deprecated
-    public StorableStoreImpl(StoreConfig config, StoreBackend physicalStore,
-            TimeMaster timeMaster, FileManager fileManager)
-    {
-        this(config, physicalStore, timeMaster, fileManager, null, null);
-    }
-
     public StorableStoreImpl(StoreConfig config, StoreBackend physicalStore,
             TimeMaster timeMaster, FileManager fileManager,
             StoreOperationThrottler throttler, PartitionedWriteMutex writeMutex)
