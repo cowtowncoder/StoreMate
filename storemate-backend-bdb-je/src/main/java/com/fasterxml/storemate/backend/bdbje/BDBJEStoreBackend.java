@@ -524,9 +524,9 @@ public class BDBJEStoreBackend extends StoreBackend
                     case TERMINATE_ITERATION:
                         return IterationResult.TERMINATED_FOR_KEY;
                     case PROCESS_ENTRY:
+                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
                         // IMPORTANT: need to advance cursor before calling process!
                         status = crsr.getNext(keyEntry, data, null);
-                        Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
                         if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                             return IterationResult.TERMINATED_FOR_ENTRY;
                         }
@@ -575,9 +575,9 @@ public class BDBJEStoreBackend extends StoreBackend
                         case TERMINATE_ITERATION: // all done?
                             return IterationResult.TERMINATED_FOR_KEY;
                         case PROCESS_ENTRY: // bind, process
+                            Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
                             // IMPORTANT: need to advance cursor before calling process!
                             status = crsr.getNext(keyEntry, data, null);
-                            Storable entry = _storableConverter.decode(key, data.getData(), data.getOffset(), data.getSize());
                             if (cb.processEntry(entry) == IterationAction.TERMINATE_ITERATION) {
                                 return IterationResult.TERMINATED_FOR_ENTRY;
                             }

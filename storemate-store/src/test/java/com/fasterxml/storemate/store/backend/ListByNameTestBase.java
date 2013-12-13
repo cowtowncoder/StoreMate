@@ -3,6 +3,8 @@ package com.fasterxml.storemate.store.backend;
 import java.io.ByteArrayInputStream;
 import java.util.*;
 
+import org.junit.Assert;
+
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.hash.HashConstants;
@@ -17,8 +19,10 @@ public abstract class ListByNameTestBase extends BackendTestBase
     private static class Callback extends StorableIterationCallback
     {
         private final HashSet<StorableKey> _keys;
-        
+
         public int count;
+
+        public List<Storable> values = new ArrayList<Storable>();
         
         public Callback(StorableKey... keys) {
             _keys = new HashSet<StorableKey>(Arrays.asList(keys));
@@ -35,6 +39,7 @@ public abstract class ListByNameTestBase extends BackendTestBase
         @Override
         public IterationAction processEntry(Storable entry) {
             ++count;
+            values.add(entry);
             return IterationAction.PROCESS_ENTRY;
         }
     }
@@ -74,23 +79,54 @@ public abstract class ListByNameTestBase extends BackendTestBase
         store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, null, cb);
         assertEquals(4, cb.count);
 
+        // let's verify values too
+        List<Storable> v = cb.values;
+        assertEquals(4, v.size());
+        _verifyValue(KEY1, v.get(0));
+        _verifyValue(KEY2, v.get(1));
+        _verifyValue(KEY3, v.get(2));
+        _verifyValue(KEY4, v.get(3));
+        
         // then try partial traversal, inclusive first:
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
         store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, KEY2, cb);
         assertEquals(3, cb.count);
+        // and verify values too
+        v = cb.values;
+        assertEquals(3, v.size());
+        _verifyValue(KEY2, v.get(0));
+        _verifyValue(KEY3, v.get(1));
+        _verifyValue(KEY4, v.get(2));
+
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
         store.iterateEntriesByKey(StoreOperationSource.REQUEST, null, KEY4, cb);
         assertEquals(1, cb.count);
+        v = cb.values;
+        assertEquals(1, v.size());
+        _verifyValue(KEY4, v.get(0));
 
         // and exclusive
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
         store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, null, KEY2, cb);
         assertEquals(2, cb.count);
+        v = cb.values;
+        assertEquals(2, v.size());
+        _verifyValue(KEY3, v.get(0));
+        _verifyValue(KEY4, v.get(1));
+
         cb = new Callback(KEY1, KEY2, KEY3, KEY4);
         store.iterateEntriesAfterKey(StoreOperationSource.REQUEST, null, KEY4, cb);
         assertEquals(0, cb.count);
+        v = cb.values;
+        assertEquals(0, v.size());
         
         store.stop();
     }
 
+    protected void _verifyValue(StorableKey inputKey, Storable stored) throws Exception
+    {
+        String key = new String(inputKey.asBytes(), "UTF-8");
+        String value = new String(stored.getInlinedData().asBytes(), "UTF-8");
+        assertEquals(key, value);
+    }
 }
