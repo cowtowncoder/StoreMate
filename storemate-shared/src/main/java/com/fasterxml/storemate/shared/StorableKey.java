@@ -316,4 +316,23 @@ public class StorableKey
         
         return i1 - i2;
     }
+
+    /*
+    /**********************************************************************
+    /* Converter interfaces
+    /**********************************************************************
+     */
+    
+    /**
+     * Interface used by objects that can provide a {@link StorableKey}, either
+     * by returning aggregated key, or converting an alternate representation
+     * it has.
+     */
+    public interface Convertible {
+        public StorableKey asStorableKey();
+    }
+
+    public interface Provider {
+        public StorableKey getStorableKey();
+    }
 }
