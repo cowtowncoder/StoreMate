@@ -39,8 +39,10 @@ public abstract class IncrementalHasher32
      */
     public abstract int calculateHash();
 
+    @Override
     public abstract void reset();
 
+    @Override
     public abstract void update(byte[] data, int offset, int len);
 
     @Override

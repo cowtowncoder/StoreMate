@@ -3,8 +3,6 @@ package com.fasterxml.storemate.store.backend;
 import java.io.ByteArrayInputStream;
 import java.util.*;
 
-import org.junit.Assert;
-
 import com.fasterxml.storemate.shared.ByteContainer;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.hash.HashConstants;
