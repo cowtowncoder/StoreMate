@@ -13,7 +13,7 @@ import com.fasterxml.storemate.store.backend.*;
  * map to a single entry, whereas individual entries just use
  * key as is or do not use last-accessed information at all.
  */
-public abstract class LastAccessStore<K,E>
+public abstract class LastAccessStore<K,E,ACC extends LastAccessUpdateMethod>
     implements com.fasterxml.storemate.shared.StartAndStoppable
 {
     /*
@@ -79,7 +79,7 @@ public abstract class LastAccessStore<K,E>
     /**********************************************************************
      */
 
-    public long findLastAccessTime(K key, LastAccessUpdateMethod method)
+    public long findLastAccessTime(K key, ACC method)
     {
         EntryLastAccessed entry = findLastAccessEntry(key, method);
         return (entry == null) ? 0L : entry.lastAccessTime;
@@ -87,7 +87,7 @@ public abstract class LastAccessStore<K,E>
 
     public abstract long findLastAccessTime(E entry);
 
-    public abstract EntryLastAccessed findLastAccessEntry(K key, LastAccessUpdateMethod method);
+    public abstract EntryLastAccessed findLastAccessEntry(K key, ACC method);
 
     /*
     /**********************************************************************
@@ -106,7 +106,7 @@ public abstract class LastAccessStore<K,E>
      * @return True if an entry was deleted; false otherwise (usually since there
      *    was no entry to delete)
      */
-    public abstract boolean removeLastAccess(K key, LastAccessUpdateMethod method, long timestamp);
+    public abstract boolean removeLastAccess(K key, ACC method, long timestamp);
 
     /**
      * Alternate "raw" delete method, used when have a physical key; most commonly
