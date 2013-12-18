@@ -79,7 +79,7 @@ public abstract class LastAccessStore<K,E,ACC extends LastAccessUpdateMethod>
     /**********************************************************************
      */
 
-    public long findLastAccessTime(K key, ACC method)
+    public final long findLastAccessTime(K key, ACC method)
     {
         EntryLastAccessed entry = findLastAccessEntry(key, method);
         return (entry == null) ? 0L : entry.lastAccessTime;

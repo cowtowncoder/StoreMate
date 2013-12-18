@@ -4,9 +4,9 @@ public abstract class LastAccessConverter<K, E, ACC extends LastAccessUpdateMeth
 {
     public abstract long findLastAccessedTime(E entry);
 
-    public abstract long findLastAccessedTime(K key, ACC method);
+//    public abstract long findLastAccessedTime(K key, ACC method);
 
-    public abstract EntryLastAccessed findLastAccessed(K key, ACC method);
+//    public abstract EntryLastAccessed findLastAccessed(K key, ACC method);
 
     public abstract EntryLastAccessed createLastAccessed(E entry, long timestamp);
 

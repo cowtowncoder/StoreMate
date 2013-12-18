@@ -48,10 +48,7 @@ public class BDBLastAccessStoreImpl<
 
     public BDBLastAccessStoreImpl(LastAccessConfig config,
             LastAccessConverter<K, E, ACC> lastAccessedConverter,
-            Environment env
-//StoredEntryConverter<K,E,?> conv,
-            )
-        throws DatabaseException
+            Environment env) throws DatabaseException
     {
         super();
         _lastAccessedConverter = lastAccessedConverter;
@@ -240,14 +237,14 @@ public class BDBLastAccessStoreImpl<
     /**********************************************************************
      */
     
-    protected StorableKey _storableKey(DatabaseEntry entry) {
+    private StorableKey _storableKey(DatabaseEntry entry) {
         return new StorableKey(entry.getData(), entry.getOffset(), entry.getSize());
     }
 
     /**
      * Helper method used for creating more useful exceptions for given BDB exception
      */
-    protected <T> T _convertDBE(StorableKey key, DatabaseException bdbException)
+    private <T> T _convertDBE(StorableKey key, DatabaseException bdbException)
         throws StoreException
     {
         if (bdbException instanceof LockTimeoutException) {
@@ -256,7 +253,7 @@ public class BDBLastAccessStoreImpl<
         throw new StoreException.Internal(key, bdbException);
     }
 
-    protected DatabaseConfig dbConfig(Environment env, LastAccessConfig config)
+    private DatabaseConfig dbConfig(Environment env, LastAccessConfig config)
     {
         DatabaseConfig dbConfig = new DatabaseConfig();
         EnvironmentConfig econfig = env.getConfig();
@@ -267,12 +264,12 @@ public class BDBLastAccessStoreImpl<
         return dbConfig;
     }
 
-    protected DatabaseEntry _lastAccessKey(E entry) {
+    private DatabaseEntry _lastAccessKey(E entry) {
         byte[] raw = _lastAccessedConverter.createLastAccessedKey(entry);
         return new DatabaseEntry(raw, 0, raw.length);
     }
 
-    protected DatabaseEntry _lastAccessKey(K key, ACC method) {
+    private DatabaseEntry _lastAccessKey(K key, ACC method) {
         byte[] raw = _lastAccessedConverter.createLastAccessedKey(key, method);
         return new DatabaseEntry(raw, 0, raw.length);
     }
