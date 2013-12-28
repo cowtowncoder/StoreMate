@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.23 (xx-Dec-2013)
+0.9.23 (28-Dec-2013)
 
 - Add `StorableKey.byteAt()`
 - Upgrade compress-lzf to 1.0.0
