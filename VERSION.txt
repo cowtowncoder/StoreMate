@@ -1,10 +1,12 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.23 (not yet released)
+0.9.23 (xx-Dec-2013)
 
 - Add `StorableKey.byteAt()`
 - Upgrade compress-lzf to 1.0.0
+- Change node-state and last-access stores to be pluggable; add LevelDB-backed
+  store implementations
 
 0.9.22 (25-Nov-2013)
 

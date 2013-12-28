@@ -124,14 +124,17 @@ public class BDBLastAccessStoreImpl<
      */
 
     @Override
-    public long findLastAccessTime(E entry) {
-        return _lastAccessedConverter.findLastAccessedTime(entry);
+    public EntryLastAccessed findLastAccessEntry(K key, ACC method) {
+        return _findLastAccess(_lastAccessKey(key, method));
     }
 
     @Override
-    public EntryLastAccessed findLastAccessEntry(K key, ACC method)
+    public EntryLastAccessed findLastAccessEntry(E entry) {
+        return _findLastAccess(_lastAccessKey(entry));
+    }
+    
+    protected EntryLastAccessed _findLastAccess(DatabaseEntry lastAccessKey)
     {
-        DatabaseEntry lastAccessKey = _lastAccessKey(key, method);
         if (lastAccessKey == null) {
             return null;
         }

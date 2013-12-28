@@ -11,17 +11,16 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.storemate.shared.util.RawEntryConverter;
 import com.fasterxml.storemate.store.state.NodeStateStore;
 
-public class LevelDBNodeStateStoreImpl<K,V> extends NodeStateStore<K,V>
+public class LevelDBNodeStateStore<K,V> extends NodeStateStore<K,V>
 {
     private final Logger LOG;
     
     /**
-     * Underlying LevelDB table
-     * for storing node states.
+     * Underlying LevelDB table for storing node states.
      */
     protected final DB _store;
 
-    public LevelDBNodeStateStoreImpl(Logger logger,
+    public LevelDBNodeStateStore(Logger logger,
             RawEntryConverter<K> keyConv,
             RawEntryConverter<V> valueConv,
             DB store)
@@ -44,10 +43,6 @@ public class LevelDBNodeStateStoreImpl<K,V> extends NodeStateStore<K,V>
     public void start() { }
     @Override
     public void prepareForStop() {
-        /* 27-Mar-2013, tatu: Not much we can do; sync() only needed when
-         *   using deferred writes.
-         */
-//        _store.sync();
     }
     
     @Override

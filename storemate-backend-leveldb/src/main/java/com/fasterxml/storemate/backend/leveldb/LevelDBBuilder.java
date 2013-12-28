@@ -87,7 +87,7 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
         } catch (IOException e) {
             throw new IllegalStateException("Failed to open Node state LevelDB: "+e.getMessage(), e);
         }
-        return new LevelDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeStateDB);
+        return new LevelDBNodeStateStore<K,V>(null, keyConv, valueConv, nodeStateDB);
     }
     
     /**

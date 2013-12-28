@@ -165,11 +165,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    _convertIOE(null, de);
+                    LevelDBUtil.convertIOE(null, de);
                 }
             }
         } catch (DBException de) {
-            _convertDBE(null, de);
+            LevelDBUtil.convertDBE(null, de);
         }
         return count; // never gets here
     }
@@ -197,7 +197,7 @@ public class LevelDBStoreBackend extends StoreBackend
             }
             return _storableConverter.decode(key, data);
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
     }
 
@@ -228,7 +228,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _dataDB.put(dbKey, newEntry.asBytes());
             _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
         return null;
     }
@@ -252,7 +252,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
             return oldEntry;
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
     }
 
@@ -271,7 +271,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _dataDB.put(dbKey, newEntry.asBytes());
             _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
         } catch (DBException de) {
-            _convertDBE(key, de);
+            LevelDBUtil.convertDBE(key, de);
         }
     }
 
@@ -305,7 +305,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _indexDB.put(keyToLastModEntry(dbKey, newEntry), NO_BYTES);
             return true;
         } catch (DBException de) {
-             _convertDBE(key, de);
+             LevelDBUtil.convertDBE(key, de);
              return false;
         }
     }
@@ -338,7 +338,7 @@ public class LevelDBStoreBackend extends StoreBackend
             _dataDB.delete(dbKey);
             return true;
         } catch (DBException de) {
-            _convertDBE(key, de);
+            LevelDBUtil.convertDBE(key, de);
             return false;
         }
     }
@@ -394,11 +394,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(key, de);
+                    return LevelDBUtil.convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
     }
     
@@ -454,11 +454,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(key, de);
+                    return LevelDBUtil.convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
     }
     
@@ -525,11 +525,11 @@ public class LevelDBStoreBackend extends StoreBackend
                 try {
                     iter.close();
                 } catch (IOException de) {
-                    return _convertIOE(key, de);
+                    return LevelDBUtil.convertIOE(key, de);
                 }
             }
         } catch (DBException de) {
-            return _convertDBE(key, de);
+            return LevelDBUtil.convertDBE(key, de);
         }
     }
    
@@ -592,25 +592,6 @@ public class LevelDBStoreBackend extends StoreBackend
     protected StorableKey _extractPrimaryKey(byte[] indexKey) {
         // First 8 bytes are timestamp, rest is key
         return new StorableKey(indexKey, 8, indexKey.length - 8);
-    }
-    
-    protected <T> T _convertDBE(StorableKey key, DBException dbException)
-        throws StoreException
-    {
-        // any special types that require special handling... ?
-        /*
-        if (dbException instanceof LockTimeoutException) {
-            throw new StoreException.ServerTimeout(key, dbException);
-        }
-        */
-        throw new StoreException.DB(key, StoreException.DBProblem.OTHER, dbException);
-    }
-
-    protected <T> T _convertIOE(StorableKey key, IOException ioe)
-        throws StoreException
-    {
-        // any special types that require special handling... ?
-        throw new StoreException.Internal(key, ioe);
     }
 
     private final static void _putLongBE(byte[] buffer, int offset, long value)
