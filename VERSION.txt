@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.24 (xx-xxx-2013)
+
+- Fix a bug in ByteAggregator.readUpTo()
+
 0.9.23 (28-Dec-2013)
 
 - Add `StorableKey.byteAt()`
