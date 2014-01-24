@@ -58,7 +58,7 @@ public enum Compression
      */
     public boolean isAcceptable(String acceptableEncodings)
     {
-        if (acceptableEncodings == null) {
+        if (acceptableEncodings == null || acceptableEncodings.isEmpty()) {
             return false;
         }
         // crude, but functional due to small number of legal values:

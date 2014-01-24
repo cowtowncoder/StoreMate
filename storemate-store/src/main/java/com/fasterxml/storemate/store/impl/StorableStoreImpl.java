@@ -31,7 +31,6 @@ import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 /**
  * Full store front-end implementation.
  */
-@SuppressWarnings("hiding")
 public class StorableStoreImpl extends AdminStorableStore
 {
     /**
@@ -486,7 +485,7 @@ public class StorableStoreImpl extends AdminStorableStore
         BufferRecycler.Holder bufferHolder = _readBuffers.getHolder();        
         final byte[] readBuffer = bufferHolder.borrowBuffer(_minBytesToStream);
         int len = 0;
-
+        
         try {
             // !!! TODO: only partial read... should include other parts too
             final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
@@ -528,12 +527,14 @@ public class StorableStoreImpl extends AdminStorableStore
         throws IOException, StoreException
     {
         // First things first: verify that compression is what it claims to be:
-        final Compression originalCompression = stdMetadata.compression;
-        String error = IOUtil.verifyCompression(originalCompression, input);
+        final Compression origComp = stdMetadata.compression;
+System.err.println("PutEntry, orig comp "+origComp+", len "+stdMetadata.uncompressedSize);        
+        String error = IOUtil.verifyCompression(origComp, input);
         if (error != null) {
             throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM, error);
         }
-        if (originalCompression == null) { // client did not compress, we may try to
+
+        if (origComp == null) { // client did not compress, we may try to
             return _compressAndPutSmallEntry(source, diag, key, stdMetadata, customMetadata,
                     allowOverwrites, input);
         }
