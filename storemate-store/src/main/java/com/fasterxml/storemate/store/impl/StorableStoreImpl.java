@@ -842,13 +842,10 @@ public class StorableStoreImpl extends AdminStorableStore
         if (skipCompression) {
             _verifyStorageSize(key, stdMetadata, copiedBytes);
             if (stdMetadata.compression == Compression.NONE) {
+                stdMetadata.uncompressedSize = 0L;
                 _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
             } else { // already compressed
                 _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
-            }
-            // do we know the size?
-            if (stdMetadata.uncompressedSize < 0L) {
-                stdMetadata.uncompressedSize = 0L;
             }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
@@ -931,13 +928,10 @@ public class StorableStoreImpl extends AdminStorableStore
         if (skipCompression) {
             _verifyStorageSize(key, stdMetadata, copiedBytes);
             if (stdMetadata.compression == Compression.NONE) {
+                stdMetadata.uncompressedSize = 0L;
                 _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
             } else { // already compressed
                 _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
-            }
-            // we may not know the original size:
-            if (stdMetadata.uncompressedSize < 0L) {
-                stdMetadata.uncompressedSize = 0L;
             }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
