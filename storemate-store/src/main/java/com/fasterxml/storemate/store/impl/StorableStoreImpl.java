@@ -528,7 +528,6 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         // First things first: verify that compression is what it claims to be:
         final Compression origComp = stdMetadata.compression;
-System.err.println("PutEntry, orig comp "+origComp+", len "+stdMetadata.uncompressedSize);        
         String error = IOUtil.verifyCompression(origComp, input);
         if (error != null) {
             throw new StoreException.Input(key, StoreException.InputProblem.BAD_CHECKSUM, error);
