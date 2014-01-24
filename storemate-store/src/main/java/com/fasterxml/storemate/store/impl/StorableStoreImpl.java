@@ -499,13 +499,13 @@ public class StorableStoreImpl extends AdminStorableStore
             }
     
             // First things first: verify that compression is what it claims to be:
-            final Compression originalCompression = stdMetadata.compression;
-            String error = IOUtil.verifyCompression(originalCompression, readBuffer, len);
+            final Compression origComp = stdMetadata.compression;
+            String error = IOUtil.verifyCompression(origComp, readBuffer, len);
             if (error != null) {
                 throw new StoreException.Input(key, StoreException.InputProblem.BAD_COMPRESSION, error);
             }
             if (len < readBuffer.length) { // read it all: we are done with input stream
-                if (originalCompression == null) { // client did not compress, we may try to
+                if (origComp == null) { // client did not compress, we may try to
                     return _compressAndPutSmallEntry(source, diag, key, stdMetadata, customMetadata,
                             allowOverwrites, ByteContainer.simple(readBuffer, 0, len));
                 }
@@ -704,7 +704,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 stdMetadata.compression = Compression.LZF;
             }
         }
-        
+
         // First things first: safe handling of off-heap buffer...
         StreamyBytesMemBuffer offHeap = allocOffHeapBuffer();
         try {
@@ -838,7 +838,6 @@ public class StorableStoreImpl extends AdminStorableStore
             }
         });
         // Checksum calculation and storage details differ depending on whether compression is used
-
         final int contentHash = _cleanChecksum(hasher.calculateHash());
         if (skipCompression) {
             _verifyStorageSize(key, stdMetadata, copiedBytes);
@@ -847,8 +846,10 @@ public class StorableStoreImpl extends AdminStorableStore
             } else { // already compressed
                 _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
             }
-            // we don't really know the original size, either way:
-            stdMetadata.uncompressedSize = 0L;
+            // do we know the size?
+            if (stdMetadata.uncompressedSize < 0L) {
+                stdMetadata.uncompressedSize = 0L;
+            }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
             stdMetadata.uncompressedSize = copiedBytes;
@@ -881,7 +882,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
         final OutputStream out;
         final CountingOutputStream compressedOut;
-
+        
         if (skipCompression) {
             compressedOut = null;
             out = new FileOutputStream(storedFile);
@@ -934,8 +935,10 @@ public class StorableStoreImpl extends AdminStorableStore
             } else { // already compressed
                 _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
             }
-            // we don't really know the original size, either way:
-            stdMetadata.uncompressedSize = 0L;
+            // we may not know the original size:
+            if (stdMetadata.uncompressedSize < 0L) {
+                stdMetadata.uncompressedSize = 0L;
+            }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
             stdMetadata.uncompressedSize = copiedBytes;
