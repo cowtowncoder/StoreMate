@@ -66,4 +66,32 @@ public class TestByteAggregator extends SharedTestBase
         
         aggr.close();
     }
+
+    public void testReadUpTo() throws Exception
+    {
+        final int len = 3 * 1000 * 1000;
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(len);
+        for (int i = 0; i < len; ++i) {
+            bytes.write((byte) i);
+        }
+
+        ByteAggregator aggr = new ByteAggregator();
+        final int len2 = len/3;
+
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes.toByteArray());
+        for (int i = 0; i < 16; ++i) {
+            aggr.write((byte) in.read());
+        }
+
+        int count = aggr.readUpTo(in, len2-16);
+        assertEquals(len2-16, count);
+
+        byte[] output = aggr.toByteArray();
+        assertEquals(len2, output.length);
+        aggr.close();
+        
+        for (int i = 0; i < len2; ++i) {
+            assertEquals((byte) i, output[i]);
+        }
+    }
 }

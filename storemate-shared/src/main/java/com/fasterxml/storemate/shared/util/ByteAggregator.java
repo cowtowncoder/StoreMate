@@ -366,7 +366,7 @@ public class ByteAggregator
                 _allocMore();
                 free = _currBlock.length - _currBlockPtr;
             }
-            int count = in.read(_currBlock, 0, Math.min(free, leftToRead));
+            int count = in.read(_currBlock, _currBlockPtr, Math.min(free, leftToRead));
             if (count < 0) {
                 break;
             }
