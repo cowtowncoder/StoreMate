@@ -18,4 +18,12 @@ public class LevelDBBackendStats
         super("leveldb", creationTime, config);
         stats = src;
     }
+
+    @Override
+    public Map<String,Object> extraStats(Map<String,Object> base) {
+        if (stats != null) {
+            base.put("stats", stats);
+        }
+        return base;
+    }
 }

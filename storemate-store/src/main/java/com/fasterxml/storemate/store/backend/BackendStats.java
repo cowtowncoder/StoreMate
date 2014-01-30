@@ -1,5 +1,8 @@
 package com.fasterxml.storemate.store.backend;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Base class for statistics exposed about store backends.
  * Since backends tend to expose quite
@@ -54,4 +57,20 @@ public abstract class BackendStats
     public long getCreationTime() { return _creationTime; }
     
     public Long getTimeTakenMsecs() { return _timeTakenMsecs; }
+
+    /**
+     * Accessor that can be used to get additional, backend-specific statistics
+     * as a {@link java.util.Map}. These are typically also available via
+     * explicit typed accessors, but this method can be used for generic access.
+     */
+    public Map<String,Object> extraStats() {
+        return extraStats(new LinkedHashMap<String,Object>());
+    }
+
+    /**
+     * Accessor that can be used to get additional, backend-specific statistics
+     * as a {@link java.util.Map}. These are typically also available via
+     * explicit typed accessors, but this method can be used for generic access.
+     */
+    public abstract Map<String,Object> extraStats(Map<String,Object> base);
 }

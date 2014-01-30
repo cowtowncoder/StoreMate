@@ -1,29 +1,24 @@
 Project: StoreMate
 License: Apache License 2.0
 
+0.9.25 (xx-Feb-2013)
+
+- Make BackendStats bit more reusable
+
 0.9.24 (24-Jan-2013)
 
 - Fix a bug in ByteAggregator.readUpTo()
 - Fix a minor bug in verification of acceptable compression
-
-0.9.23 (28-Dec-2013)
-
 - Add `StorableKey.byteAt()`
 - Upgrade compress-lzf to 1.0.0
 - Change node-state and last-access stores to be pluggable; add LevelDB-backed
   store implementations
-
-0.9.22 (25-Nov-2013)
-
 - Fixed a minor problem with update of last-modified for soft-delete which affected
   LevelDB on cluster tests
 - Add method `withError()` in "ByteBufferCallback" to allow graceful handling of
   allocation errors.
 - Improve reuse/release handling of `ByteAggregator`
 - Update compress-lzf to 0.9.10 (for conditional compress)
-
-0.9.21 (09-Nov-2013)
-
 - Improvements to ByteAggregator, for improved interoperability
 - Update dep to low-gc-membuffers 1.0.0
 - Make `IncrementalHasher32` implement `java.util.zip.Checksum` for convenience
@@ -34,14 +29,8 @@ License: Apache License 2.0
   entry before calling process method with current entry (hoped to help
   with transactions, but does not seem to solve issues)
 - Update LevelDB-java version to 0.6.
-
-0.9.19 (28-Sep-2013)
-
 - Downgrade to BDB-JE 5.0.73 after finding a severe bug that crashes
   system on startup.
-
-0.9.17 (27-Sep-2013)
-
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
 - Allow use of transactions for BDB-JE backends
@@ -52,16 +41,13 @@ License: Apache License 2.0
 
 0.9.15 (09-Sep-2013)
 
+#6: Buffer content being written from request into memory buffer, before disk write operation
 - Try to improve robustness of BDB-JE error handling wrt Thread.interrupt()
   (occurred during testing)
 - Add metadata (time taken, only-fast-stats) for BackendStats exposed
 - Fix problem of always asking for "slow" metrics
 - Fix `OperationDiagnostics`, was using from nano-second base
 - Update slf4j dependencies
-
-0.9.12 (01-Jul-2013)
-
-#6: Buffer content being written from request into memory buffer, before disk write operation
 - Add 'bytes' argument to OperationDiagnostics, file operations; separate out read/write
   operations for diagnostics
 - Add `CountingInputStream`
