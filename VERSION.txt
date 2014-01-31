@@ -1,12 +1,9 @@
 Project: StoreMate
 License: Apache License 2.0
 
-0.9.25 (xx-Feb-2013)
+0.9.25 (30-Jan-2013)
 
 - Make BackendStats bit more reusable
-
-0.9.24 (24-Jan-2013)
-
 - Fix a bug in ByteAggregator.readUpTo()
 - Fix a minor bug in verification of acceptable compression
 - Add `StorableKey.byteAt()`
