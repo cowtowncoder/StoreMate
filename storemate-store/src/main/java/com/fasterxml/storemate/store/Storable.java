@@ -11,7 +11,9 @@ import com.fasterxml.storemate.store.file.FileManager;
 import com.fasterxml.storemate.store.impl.StorableFlags;
 
 /**
- * Class that represents an entry read from the backing BDB-JE store.
+ * Class that represents a single metadata entry read from the local database.
+ * It is a relatively thin wrapper around raw {@link ByteContainer} value,
+ * and its associated {@link StorableKey} key.
  */
 public class Storable
 {
