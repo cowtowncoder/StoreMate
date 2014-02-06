@@ -8,8 +8,9 @@ Check out [Project Wiki](../../wiki) for complete description; here are some of 
 * Last-modified index for building Change List - based synchronization between stores
 * Automatic, configurable auto-negotiated on-the-fly compression, decompression (GZIP, LZF, depending on payload size)
 * Pluggable DB storage backends. Current implementations include:
-    * [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB) based one: mature, default implementation
-    * [LevelDB/Java](https://github.com/dain/leveldb) based backend: experimental as of 0.9.10
+    * [BDB-JE](http://en.wikipedia.org/wiki/BerkeleyDB) based: mature, default implementation
+    * [LevelDB/Java](https://github.com/dain/leveldb) based: complete (as of 1.0), no known problems, but not as extensively used.
+    * Other backends are planned for things like `mdb` (openLDAP / lighting) and `Krati`: let us know if you are interested in contributing other backends!
 
 # License
 
@@ -17,10 +18,8 @@ Good old [Apache 2](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 # Status
 
-`StoreMate` is relatively mature, getting close to its official 1.0 release.
+`StoreMate` is a mature component, and 1.0 version was recently released.
 It is used in production systems via inclusion in `ClusterMate` (see below)
-
-Only one storage implementation exists -- one using BDB-JE, see below -- but there are plans to implement alternative backends, possibly using `LevelDB` or `Krati`.
 
 Unit tests exist to verify basic functioning of the single-node data store, when accessed locally (not over network).
 
@@ -44,5 +43,3 @@ More on design on [Wiki](../../wiki).
 # Used In
 
 * [ClusterMate](https://github.com/cowtowncoder/ClusterMate) uses `StoreMate` as its per-node Storage Layer
-
-
