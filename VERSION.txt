@@ -1,6 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
+1.0.0 (05-Feb-2013)
+
+No changes since 0.9.25 -- the very first official version!
+
 0.9.25 (30-Jan-2013)
 
 - Make BackendStats bit more reusable
@@ -77,18 +81,9 @@ License: Apache License 2.0
  settings with newer version of config-magic
 * Add support for conditionally overwriting entries; needed to support "undelete"
  (and possibly for other things in future)
-
-0.9.2 (11-Feb-2013)
-
 * Fixed an issue with BDB backend not handling possible entry offsets
 * Added find-methods in StorableKey
 * Fixed problems with hash code handling for empty content (0 must be masked)
-* Refactoring: promoted base client up to ClusterMate
-
-0.8.8 (12-Jan-2013):
-
-* Added 'StorableStore.iterateEntriesAfterKey()'
-* Added 'StorableKey.hasPrefix()'
 
 0.8.7 (16-Dec-2012):
 
