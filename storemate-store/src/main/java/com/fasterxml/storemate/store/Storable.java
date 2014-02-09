@@ -203,7 +203,8 @@ public class Storable
             return null;
         }
         ByteContainer extRef = _rawEntry.view(_payloadOffset, _externalPathLength);
-        return mgr.derefenceFile(IOUtil.getAsciiString(extRef));
+        String filename = IOUtil.getLatin1String(extRef);
+        return mgr.derefenceFile(filename);
     }
 
     /**
@@ -215,7 +216,7 @@ public class Storable
         if (_externalPathLength <= 0) {
             return null;
         }
-        return IOUtil.getAsciiString(_rawEntry.view(_payloadOffset, _externalPathLength));
+        return IOUtil.getLatin1String(_rawEntry.view(_payloadOffset, _externalPathLength));
     }
     
     public ByteContainer getMetadata() {

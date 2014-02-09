@@ -20,7 +20,7 @@ public abstract class DeleteEntryTestBase extends BackendTestBase
     public void testInlinedDeletion() throws Exception
     {
         final long startTime = _date(2012, 7, 9);
-        StorableStore store = createStore("bdb-delete-small", startTime);
+        StorableStore store = createStore("db-delete-small", startTime);
         _verifyCounts(0L, store);
 
         final StorableKey KEY1 = storableKey("data/entry/1");

@@ -184,7 +184,29 @@ public class IOUtil
         }
         return sb.toString();
     }
+
+    public static String getLatin1String(ByteContainer bytes) {
+        return bytes.withBytes(Latin1ViaCallback.instance);
+    }
     
+    public static String getLatin1String(byte[] bytes) {
+        return getLatin1String(bytes, 0, bytes.length);
+    }
+    
+    public static String getLatin1String(byte[] bytes, int offset, int length)
+    {
+        if (bytes == null) return null;
+        if (length == 0) return "";
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = offset, end = offset+length; i < end; ++i) {
+            sb.append((char) (bytes[i] & 0xFF));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * NOTE: also works for other single-byte encodings like Latin-1.
+     */
     public static byte[] getAsciiBytes(String str)
     {
         if (str == null) return null;
@@ -202,7 +224,7 @@ public class IOUtil
     /* Helper classes
     /**********************************************************************
      */
-    
+
     private final static class AsciiViaCallback implements WithBytesCallback<String>
     {
         public final static AsciiViaCallback instance = new AsciiViaCallback();
@@ -210,6 +232,16 @@ public class IOUtil
         @Override
         public String withBytes(byte[] buffer, int offset, int length) {
             return getAsciiString(buffer, offset, length);
+        }
+    }
+
+    private final static class Latin1ViaCallback implements WithBytesCallback<String>
+    {
+        public final static Latin1ViaCallback instance = new Latin1ViaCallback();
+        
+        @Override
+        public String withBytes(byte[] buffer, int offset, int length) {
+            return getLatin1String(buffer, offset, length);
         }
     }
 }

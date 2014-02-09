@@ -10,14 +10,14 @@ import com.fasterxml.storemate.store.*;
 public interface OverwriteChecker
 {
     /**
-     * Method that may be called at first, to see if ovewrite for given key is
+     * Method that may be called at first, to see if overwrite for given key is
      * always allowed ({@link Boolean#TRUE}), never allowed ({@link Boolean#FALSE}),
      * or "depends on entries involved" (null).
      */
     public Boolean mayOverwrite(StorableKey key);
     
     /**
-     * Method called to determine whether specified overwrite operation should succeeed
+     * Method called to determine whether specified overwrite operation should succeed
      * or not.
      * Note that checker will only have access to metadata, not data itself, since
      * reading data may incur significant overhead and/or buffering.
