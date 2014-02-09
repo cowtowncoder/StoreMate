@@ -457,13 +457,13 @@ public class StorableStoreImpl extends AdminStorableStore
         }
         return result;
     }
-    
+
     /*
     /**********************************************************************
     /* Internal methods for entry creation, first level
     /**********************************************************************
      */
-    
+
     /**
      * Method for putting an entry in the database; depending on arguments, either
      * overwriting existing entry (if overwrites allowed), or failing insertion.
@@ -540,13 +540,13 @@ public class StorableStoreImpl extends AdminStorableStore
         return _putSmallPreCompressedEntry(source, diag, key, stdMetadata, customMetadata,
                 allowOverwrites, input);
     }
-    
+
     /*
     /**********************************************************************
     /* Internal methods for entry creation, second level
     /**********************************************************************
      */
-    
+
     protected StorableCreationResult _compressAndPutSmallEntry(StoreOperationSource source, OperationDiagnostics diag,
             StorableKey key, StorableCreationMetadata metadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, ByteContainer data)
@@ -1080,6 +1080,7 @@ public class StorableStoreImpl extends AdminStorableStore
                                 return new StorableCreationResult(key, true, newValue, null);
                             }
                             // fail: caller may need to clean up the underlying file
+                            _deleteBackingFile(key, newValue.getExternalFile(_fileManager));
                             return new StorableCreationResult(key, false, newValue, oldValue);
                         }
                     });
@@ -1096,7 +1097,8 @@ public class StorableStoreImpl extends AdminStorableStore
                             diag.addDbAccess(nanoStart, dbStart, _timeMaster.nanosForDiagnostics());
                         }
                         if (!success) {
-                        // fail due to existing entry
+                            // fail due to existing entry
+                            _deleteBackingFile(key, newValue.getExternalFile(_fileManager));
                             return new StorableCreationResult(key, false, newValue, oldEntryRef.get());
                         }
                         return new StorableCreationResult(key, true, newValue, oldEntryRef.get());
@@ -1480,8 +1482,23 @@ public class StorableStoreImpl extends AdminStorableStore
         try {
             boolean ok = extFile.delete();
             if (!ok) {
-                LOG.warn("Failed to delete backing data file of key {}, path: {}",
-                        key, extFile.getAbsolutePath());
+/*
+// !!! TEST:
+String str = extFile.getAbsolutePath();
+for (int i = 0, len = str.length(); i < len; ++i) {
+    char c = str.charAt(i);
+    if (c >= 127) {
+        String prefix = str.substring(0, i);
+        String suffix = str.substring(i+1);
+LOG.warn("BAD character at #"+i+"/"+len+", '"+c+"' (0x"+Integer.toHexString(c & 0xFFFF)+"), prefix '"
+        +prefix+"', suffix '"+suffix+"'");
+        break;
+    }
+}                
+System.err.println("FAILED TO DELETE backing ("+ok+" / "+extFile.getAbsolutePath().length()+"): "+extFile);
+*/
+
+                LOG.warn("Failed to delete backing data file of key {}, path: {}", key, extFile.getAbsolutePath());
             }
             return ok;
         } catch (Exception e) {

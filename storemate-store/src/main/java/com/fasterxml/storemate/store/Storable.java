@@ -79,7 +79,10 @@ public class Storable
     protected final int _externalPathLength;
 
     /**
-     * Pointer to either inlined data, or external path
+     * Pointer to either inlined data, or external path.
+     *<p>
+     * NOTE: payload section starts earlier, with 'storageLength';
+     * this specifically points to actual payload data
      */
     protected final int _payloadOffset;
     
@@ -115,6 +118,17 @@ public class Storable
         
         _payloadOffset = payloadOffset;
         _storageLength = storageLength;
+
+        // Sanity checking
+        if (externalPathLength > 0) {
+            if ((payloadOffset + externalPathLength) != bytes.byteLength()) {
+                throw new IllegalStateException("Illegal Storable: payloadOffset ("+payloadOffset+") + extLen ("+ externalPathLength+") != total ("+bytes.byteLength()+")");
+            }
+        } else {
+            if ((payloadOffset + storageLength) != bytes.byteLength()) {
+                throw new IllegalStateException("Illegal Storable: payloadOffset ("+payloadOffset+") + storageLength ("+ storageLength+") != total ("+bytes.byteLength()+")");
+            }
+        }
     }
 
     /**

@@ -70,7 +70,7 @@ public class StorableConverter
     {
         // as per Javadocs, offset always 0, size same as arrays:
         BytesToStuff reader = new BytesToStuff(raw, offset, length);
-
+        
         /*
 for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
     System.out.println("#"+i+" -> 0x"+Integer.toHexString(raw[offset+i] & 0xFF));
@@ -84,7 +84,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         int statusFlags = reader.nextByte();
         final Compression compression = _decodeCompression(reader.nextByte());
         final int externalPathLength = reader.nextByte() & 0xFF;
-
+        
         final int contentHash = reader.nextInt();
         final long originalLength;
         final int compressedHash;
@@ -106,7 +106,7 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
         final int metadataOffset = reader.offset();
 
         reader.skip(metadataLength);
-
+        
         final long storageLength = reader.nextVLong();
         final int payloadOffset = reader.offset();
 
@@ -181,12 +181,18 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             writer.appendLengthAndBytes(customMetadata);
             metadataLength = customMetadata.byteLength();
         }
-        final int payloadOffset = writer.offset();
-        writer.appendLengthAndBytes(inlineData);
 
+        final int payloadOffset;
+        if (inlineData == null) {
+            writer.appendVInt(0);
+            payloadOffset = writer.offset();
+        } else {
+            writer.appendVInt(inlineData.byteLength());
+            payloadOffset = writer.offset();
+            writer.appendBytes(inlineData);
+        }
         if (!createStorable) {
             return null;
-            
         }
         return new Storable(key, writer.bufferedBytes(), modtime,
                 stdMetadata.statusAsByte(), stdMetadata.compression, 0,
@@ -241,8 +247,10 @@ for (int i = 0, end = Math.min(length, 24); i < end; ++i) {
             writer.appendLengthAndBytes(customMetadata);
             metadataLength = customMetadata.byteLength();
         }
-        final int payloadOffset = writer.offset();
         writer.appendVLong(stdMetadata.storageSize);
+        // NOTE: although storageSize is technically part of payload section, 'payloadOffset'
+        // is to point to actual payload data
+        final int payloadOffset = writer.offset();
         writer.appendBytes(rawRef);
 
         if (!createStorable) {

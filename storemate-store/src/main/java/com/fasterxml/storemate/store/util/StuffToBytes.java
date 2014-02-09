@@ -84,6 +84,7 @@ public abstract class StuffToBytes
         return appendBytes(data, 0, data.length);
     }
     
+    public abstract StuffToBytes appendBytes(ByteContainer bytes);
     public abstract StuffToBytes appendBytes(byte[] data, int offset, int length);
     
     public abstract <T> T withResult(WithBytesCallback<T> cb);
@@ -228,6 +229,14 @@ public abstract class StuffToBytes
             _ptr += length;
             return this;
         }
+
+        @Override
+        public StuffToBytes appendBytes(ByteContainer bytes) {
+            if (bytes != null) {
+                bytes.withBytes(this);
+            }
+            return this;
+        }
         
         @Override
         public StuffToBytes appendLengthAndBytes(ByteContainer bytes)
@@ -349,6 +358,14 @@ public abstract class StuffToBytes
         @Override
         public StuffToBytes appendBytes(byte[] data, int offset, int length) {
             _ptr += length;
+            return this;
+        }
+
+        @Override
+        public StuffToBytes appendBytes(ByteContainer bytes) {
+            if (bytes != null) {
+                _ptr += bytes.byteLength();
+            }
             return this;
         }
         
