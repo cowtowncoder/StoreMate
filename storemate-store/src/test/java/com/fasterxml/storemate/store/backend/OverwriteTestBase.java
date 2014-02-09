@@ -50,6 +50,7 @@ public abstract class OverwriteTestBase extends BackendTestBase
                     KEY1, new ByteArrayInputStream(DATA_ORIG),
                     metadata, ByteContainer.simple(CUSTOM_METADATA_ORIG));
             assertTrue(resp.succeeded());
+            
             assertNull(resp.getPreviousEntry());
             _verifyCounts(1L, store);
 
@@ -66,12 +67,14 @@ public abstract class OverwriteTestBase extends BackendTestBase
 
             _verifyCounts(1L, store);
 
+            final Storable oldEntry = resp.getPreviousEntry();
+            assertNotNull(oldEntry);
+            assertTrue(oldEntry.hasExternalData());
+            
             if (expSuccess) { // yes, ought to overwrite:
                 assertTrue("Should succeeed with checker "+checker, resp.succeeded());
-                assertNotNull(resp.getPreviousEntry());
             } else { // nope, original retained
                 assertFalse("Should fail with checker "+checker, resp.succeeded());
-                assertNotNull(resp.getPreviousEntry());
             }
 
             // and then verify
@@ -94,17 +97,27 @@ public abstract class OverwriteTestBase extends BackendTestBase
             }
             // and read the contents
             File f = entry.getExternalFile(store.getFileManager());
-            assertTrue(f.exists());
+            if (!f.exists()) {
+                fail("File '"+f.getAbsolutePath()+"' (replacement? "+expSuccess+") should exist, does not");
+            }
             byte[] b = readFile(f);
             byte[] uncomp = Compressors.lzfUncompress(b);
-
             
             if (expSuccess) {
                 assertEquals(DATA_REPLACE.length, uncomp.length);
             } else {
                 assertEquals(DATA_ORIG.length, uncomp.length);
             }
-        } finally {
+
+            // And finally, verify that old file is gone, if replacement succeeded
+            if (expSuccess) {
+                File oldFile = oldEntry.getExternalFile(store.getFileManager());
+                if (oldFile.exists()) {
+                    fail("Should have deleted old file '"+oldFile.getAbsolutePath()+"' ("
+                            +oldFile.length()+" bytes)");
+                }
+            }
+         } finally {
             store.stop();
         }
     }
