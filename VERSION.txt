@@ -1,7 +1,12 @@
 Project: StoreMate
 License: Apache License 2.0
 
-1.0.0 (05-Feb-2013)
+1.0.1 (xx-xxx-2014)
+
+- Fixed a problem with syncing, was incorrectly removing (or not) entries
+  when there were redundant pulls.
+
+1.0.0 (05-Feb-2014)
 
 No changes since 0.9.25 -- the very first official version!
 

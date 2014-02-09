@@ -42,13 +42,13 @@ public class StorableStoreImpl extends AdminStorableStore
      * By default we'll use off-heap buffers composed of 64kB segments.
      */
     protected final int OFF_HEAP_BUFFER_SEGMENT_LEN = 64000;
-    
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     private final static OverwriteChecker OVERWRITE_OK = OverwriteChecker.AlwaysOkToOverwrite.instance;
 
     private final static OverwriteChecker OVERWRITE_NOT_OK = OverwriteChecker.NeverOkToOverwrite.instance;
-    
-    private final Logger LOG = LoggerFactory.getLogger(getClass());
-    
+
     /*
     /**********************************************************************
     /* Simple config, compression/inline settings
@@ -62,9 +62,9 @@ public class StorableStoreImpl extends AdminStorableStore
     protected final int _maxGZIPCompressibleSize;
 
     protected final int _minBytesToStream;
-    
+
     protected final boolean _requireChecksumForPreCompressed;
-    
+
     /*
     /**********************************************************************
     /* External helper objects
@@ -74,7 +74,7 @@ public class StorableStoreImpl extends AdminStorableStore
     protected final TimeMaster _timeMaster;
 
     protected final FileManager _fileManager;
-    
+
     /**
      * Backend store implementation that abstracts out differences between
      * underlying physical storage libraries.
@@ -86,7 +86,7 @@ public class StorableStoreImpl extends AdminStorableStore
     /* Internal helper objects
     /**********************************************************************
      */
-    
+
     /**
      * Helper object that knows how to encode and decode little bit of
      * metadata that we use.
@@ -431,7 +431,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         _checkClosed();
         StorableCreationResult result = _putEntry(source, diag, key, input, stdMetadata, customMetadata, checker);
-        if (removeOldDataFile) {
+        if (removeOldDataFile && result.succeeded()) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
                 _deleteBackingFile(key, old.getExternalFile(_fileManager));
@@ -449,7 +449,7 @@ public class StorableStoreImpl extends AdminStorableStore
     {
         _checkClosed();
         StorableCreationResult result = _putEntry(source, diag, key, input, stdMetadata, customMetadata, checker);
-        if (removeOldDataFile) {
+        if (removeOldDataFile && result.succeeded()) {
             Storable old = result.getPreviousEntry();
             if (old != null) {
                 _deleteBackingFile(key, old.getExternalFile(_fileManager));
