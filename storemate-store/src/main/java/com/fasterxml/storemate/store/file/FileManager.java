@@ -168,6 +168,11 @@ public class FileManager
         _maxFilenameBaseLength = config.maxFilenameLength - FILENAME_OVERHEAD;
     }
 
+    // For test:
+    public File dataRootForTesting() {
+        return _dataRoot;
+    }
+    
     /*
     /**********************************************************************
     /* Public API for storing

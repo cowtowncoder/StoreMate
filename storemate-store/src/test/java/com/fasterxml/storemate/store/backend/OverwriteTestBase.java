@@ -1,6 +1,7 @@
 package com.fasterxml.storemate.store.backend;
 
 import java.io.*;
+import java.util.*;
 
 import com.fasterxml.storemate.shared.*;
 import com.fasterxml.storemate.shared.compress.Compression;
@@ -11,6 +12,7 @@ import com.fasterxml.storemate.store.Storable;
 import com.fasterxml.storemate.store.StorableCreationMetadata;
 import com.fasterxml.storemate.store.StorableCreationResult;
 import com.fasterxml.storemate.store.StorableStore;
+import com.fasterxml.storemate.store.StoreException;
 import com.fasterxml.storemate.store.StoreOperationSource;
 import com.fasterxml.storemate.store.TimeMasterForSimpleTesting;
 import com.fasterxml.storemate.store.util.OverwriteChecker;
@@ -20,13 +22,21 @@ public abstract class OverwriteTestBase extends BackendTestBase
     final long START_TIME_0 = _date(2013, 1, 1);
 
     // Test case where existing entry is not overwritten
-    public void testSimpleOverwriteAlwaysFail() throws Exception {
+    public void testSimpleOverwriteFails() throws Exception {
         _testOverwrite("overwrite-always-fail", false, OverwriteChecker.NeverOkToOverwrite.instance);
     }
 
     // Test case where existing entry is overwritten due to blanket ok
-    public void testSimpleOverwriteAlwaysSuccess() throws Exception {
+    public void testSimpleOverwriteSucceeds() throws Exception {
         _testOverwrite("overwrite-always-ok", true, OverwriteChecker.AlwaysOkToOverwrite.instance);
+    }
+
+    public void testConditionalOverwriteFails() throws Exception {
+        _testOverwrite("overwrite-conditional-fail", false, new OverwriteIfOlder());
+    }
+
+    public void testConditionalOverwriteSucceeds() throws Exception {
+        _testOverwrite("overwrite-conditional-ok", true, new OverwriteIfNewer());
     }
     
     private void _testOverwrite(String name, boolean expSuccess, OverwriteChecker checker)
@@ -117,8 +127,44 @@ public abstract class OverwriteTestBase extends BackendTestBase
                             +oldFile.length()+" bytes)");
                 }
             }
+            // Regardless, should have one and only one storage file remaining.
+            File dir = store.getFileManager().dataRootForTesting();
+            List<String> filenames = new ArrayList<String>();
+            _findFiles(dir, filenames);
+            if (filenames.size() != 1) {
+                fail("Should only have 1 store file after operations, got "+filenames.size()+": "+filenames);
+            }
          } finally {
             store.stop();
+        }
+    }
+
+    private void _findFiles(File dir, List<String> filenames) throws IOException
+    {
+        if (!dir.isDirectory()) {
+            filenames.add(dir.getAbsolutePath());
+        } else {
+            for (File f : dir.listFiles()) {
+                _findFiles(f, filenames);
+            }
+        }
+    }
+    
+    private static class OverwriteIfNewer implements OverwriteChecker {
+        @Override public Boolean mayOverwrite(StorableKey key) { return null; }
+        
+        @Override public boolean mayOverwrite(StorableKey key, Storable oldEntry, Storable newEntry)
+            throws StoreException {
+            return newEntry.getLastModified() > oldEntry.getLastModified();
+        }
+    }
+
+    private static class OverwriteIfOlder implements OverwriteChecker {
+        @Override public Boolean mayOverwrite(StorableKey key) { return null; }
+        
+        @Override public boolean mayOverwrite(StorableKey key, Storable oldEntry, Storable newEntry)
+            throws StoreException {
+            return newEntry.getLastModified() < oldEntry.getLastModified();
         }
     }
 }
