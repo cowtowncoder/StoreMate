@@ -144,12 +144,18 @@ public class Storable
         if (_isReplicated) {
             statusFlags |= StorableFlags.F_STATUS_REPLICATED;
         }
+        /* 09-Feb-2014, tatu: Since we may be clearing inlined data or
+         *    external path, including removal of leading length prefix,
+         *    payloadOffset may need to be truncated.
+         */
+        int payloadOffset = Math.min(_payloadOffset, bytes.byteLength());
+        
         return new Storable(_key, bytes,
                 lastModTime, statusFlags, _compression,
                 removeData ? 0 : _externalPathLength,
                 _contentHash, _compressedHash, _originalLength,
                 _metadataOffset, _metadataLength,
-                _payloadOffset,
+                payloadOffset,
                 removeData ? 0 : _storageLength);
     }
     
