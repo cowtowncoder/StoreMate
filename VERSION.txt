@@ -1,10 +1,12 @@
 Project: StoreMate
 License: Apache License 2.0
 
-1.0.1 (xx-xxx-2014)
+1.0.1 (09-Feb-2014)
 
-- Fixed a problem with syncing, was incorrectly removing (or not) entries
-  when there were redundant pulls.
+- Fixed serious problems with syncing, which could cause problems with concurrent
+   updates (requests to multiple peers for same entries):
+  o Leave orphan files for unneeded copies
+  o Delete backing file for original copy
 
 1.0.0 (05-Feb-2014)
 
