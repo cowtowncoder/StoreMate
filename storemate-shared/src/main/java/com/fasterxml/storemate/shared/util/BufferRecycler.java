@@ -81,11 +81,12 @@ public class BufferRecycler extends ThreadLocal<SoftReference<BufferRecycler.Hol
             if (_buffer != null) {
                 // this is wrong, no matter what: return just once
                 if (_buffer == b) {
-                    throw new IllegalStateException("Trying to double-return a buffer");
+                    throw new IllegalStateException("Trying to double-return a buffer (length: "+b.length+" bytes)");
                 }
                 // But is this necessary? Should not be, unless life-cycles overlap
                 // so let's throw exception for now; re-visit if necessary
-                throw new IllegalStateException("Trying to return a different buffer!");
+                throw new IllegalStateException("Trying to return a different buffer (had one with length "
+                        +_buffer.length+" bytes, return one with "+b.length+" bytes)");
             }
             _buffer = b;
         }
