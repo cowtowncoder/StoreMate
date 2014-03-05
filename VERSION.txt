@@ -1,6 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
+1.0.2 (04-Mar-2014)
+
+- Relaxed checks by BufferRecycler to allow for concurrent access (from single
+  thread): needed by depending packages for some operations.
+
 1.0.1 (09-Feb-2014)
 
 - Fixed serious problems with syncing, which could cause problems with concurrent
@@ -18,7 +23,6 @@ No changes since 0.9.25 -- the very first official version!
 - Fix a bug in ByteAggregator.readUpTo()
 - Fix a minor bug in verification of acceptable compression
 - Add `StorableKey.byteAt()`
-- Upgrade compress-lzf to 1.0.0
 - Change node-state and last-access stores to be pluggable; add LevelDB-backed
   store implementations
 - Fixed a minor problem with update of last-modified for soft-delete which affected
@@ -26,9 +30,7 @@ No changes since 0.9.25 -- the very first official version!
 - Add method `withError()` in "ByteBufferCallback" to allow graceful handling of
   allocation errors.
 - Improve reuse/release handling of `ByteAggregator`
-- Update compress-lzf to 0.9.10 (for conditional compress)
 - Improvements to ByteAggregator, for improved interoperability
-- Update dep to low-gc-membuffers 1.0.0
 - Make `IncrementalHasher32` implement `java.util.zip.Checksum` for convenience
 
 0.9.20 (03-Oct-2013)
@@ -36,15 +38,12 @@ No changes since 0.9.25 -- the very first official version!
 - Improve iteration for BDB-JE backend, so that cursor is moved to next
   entry before calling process method with current entry (hoped to help
   with transactions, but does not seem to solve issues)
-- Update LevelDB-java version to 0.6.
 - Downgrade to BDB-JE 5.0.73 after finding a severe bug that crashes
   system on startup.
 - Add `StoreBackend.getStorageDirectory()` to allow for exposing more
   diagnostics/stats.
-- Allow use of transactions for BDB-JE backends
 - Added new StoreException.DB type for passing more granular failure info from store
  (specifically handle BDB-JE SecondaryIntegrityException now, more later)
-- Upgrade to BDB-JE 5.0.84
 - Improve handling of backend statistics; was incorrectly defaulting to slow stats
 
 0.9.15 (09-Sep-2013)
@@ -53,22 +52,17 @@ No changes since 0.9.25 -- the very first official version!
 - Try to improve robustness of BDB-JE error handling wrt Thread.interrupt()
   (occurred during testing)
 - Add metadata (time taken, only-fast-stats) for BackendStats exposed
-- Fix problem of always asking for "slow" metrics
 - Fix `OperationDiagnostics`, was using from nano-second base
-- Update slf4j dependencies
 - Add 'bytes' argument to OperationDiagnostics, file operations; separate out read/write
   operations for diagnostics
-- Add `CountingInputStream`
 
 0.9.10 (27-Jun-2013)
 
 #3: Add LevelDB/Java - based backend
 #4: Add option to enable 'deferred writes' for BDB backend (NOTE: not used, up
   to implementing stores)
-- Add more sanity checks in `StorableKey` constructor
 - Improve logging of timing information by moving OperationDiagnostics in.
 - Implement off-heap buffering for PUT content (to reduce congestion for file writes)
-- Make `StorableKey` comparable
 - Add low-level support for throttling (with `StoreOperationThrottler`),
   to be used by higher-level stores.
 - Improve handling of backend stats a bit; expose env-stats for BDB-JE
@@ -81,11 +75,9 @@ No changes since 0.9.25 -- the very first official version!
 
 0.9.5 (14-Mar-2013)
 
-* Optimized LZF/GZIP handling via Compressors a bit
+* Optimized LZF/GZIP handling via Compressors
 * Allow overriding default BDB-JE lockTable count; partitioned lock count
  (for general store)
-* Minor configurability improvement: allow easier changing of BDB-JE cache
- settings with newer version of config-magic
 * Add support for conditionally overwriting entries; needed to support "undelete"
  (and possibly for other things in future)
 * Fixed an issue with BDB backend not handling possible entry offsets

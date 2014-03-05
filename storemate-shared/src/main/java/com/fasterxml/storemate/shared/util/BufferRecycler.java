@@ -19,10 +19,18 @@ import java.lang.ref.SoftReference;
  */
 public class BufferRecycler extends ThreadLocal<SoftReference<BufferRecycler.Holder>>
 {
-    private final int _initialBufferSize;
-    
+    protected final int _initialBufferSize;
+
+    /**
+     * @param initialSize Default size of the buffer to allocate,
+     *    if no recyclable instance retained.
+     */
     public BufferRecycler(int initialSize) {
         _initialBufferSize = initialSize;
+    }
+
+    protected SoftReference<BufferRecycler.Holder> initialValue() {
+        return new SoftReference<Holder>(new Holder(_initialBufferSize));
     }
 
     /**
@@ -31,9 +39,7 @@ public class BufferRecycler extends ThreadLocal<SoftReference<BufferRecycler.Hol
      */
     public Holder getHolder()
     {
-        SoftReference<Holder> ref = get();
-        Holder h = (ref == null) ? null : ref.get();
-        
+        Holder h = get().get();
         // Regardless of the reason we don't have holder, create replacement...
         if (h == null) {
             h = new Holder(_initialBufferSize);
@@ -66,27 +72,23 @@ public class BufferRecycler extends ThreadLocal<SoftReference<BufferRecycler.Hol
         public byte[] borrowBuffer(int minSize)
         {
             byte[] b = _buffer;
-            if (b == null) {
-                b = new byte[Math.max(_initialBufferSize, minSize)];
-            } else {
+            if (b != null && (b.length >= minSize)) {
                 _buffer = null;
-                if (b.length < minSize) {
-                    b = new byte[Math.max(_initialBufferSize, minSize)];
-                }
+                return b;
             }
-            return b;
+            return new byte[Math.max(_initialBufferSize, minSize)];
         }
         
         public void returnBuffer(byte[] b) {
             if (_buffer != null) {
-                // this is wrong, no matter what: return just once
+                // one simple sanity check
                 if (_buffer == b) {
                     throw new IllegalStateException("Trying to double-return a buffer (length: "+b.length+" bytes)");
                 }
-                // But is this necessary? Should not be, unless life-cycles overlap
-                // so let's throw exception for now; re-visit if necessary
-                throw new IllegalStateException("Trying to return a different buffer (had one with length "
-                        +_buffer.length+" bytes, return one with "+b.length+" bytes)");
+                // and only overwrite if we got bigger buffer
+                if (b.length <= _buffer.length) {
+                    return;
+                }
             }
             _buffer = b;
         }
