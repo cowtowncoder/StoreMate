@@ -52,9 +52,8 @@
        on startup, can NOT use
       -->
     <version.bdb>5.0.73</version.bdb>
-    <!-- 0.6 released in May 2013, latest currently
-     -->
-    <version.leveldb>0.6</version.leveldb>
+    <!-- 0.7 released in Feb 2014, latest currently -->
+    <version.leveldb>0.7</version.leveldb>
     <version.lzf>1.0.0</version.lzf>
     <version.membuffers>1.0.0</version.membuffers>
 
