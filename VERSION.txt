@@ -1,9 +1,10 @@
 Project: StoreMate
 License: Apache License 2.0
 
-1.0.3 (xx-xxx-2014)
+1.1.0 (09-Apr-2014)
 
 - Upgrade Java leveldb dependency to 0.7, to resolve Guava issues with ClusterMate
+- Update Joda dep to 2.2
 
 1.0.2 (04-Mar-2014)
 
