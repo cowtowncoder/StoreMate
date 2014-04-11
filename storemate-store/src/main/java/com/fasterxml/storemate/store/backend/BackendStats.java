@@ -23,9 +23,9 @@ public abstract class BackendStats
      * when these stats may have been collected.
      */
     protected long _creationTime;
-    
+
     protected Boolean _fastStats;
-    
+
     protected Long _timeTakenMsecs;
 
     protected BackendStats(BackendStats src) { 

@@ -16,7 +16,13 @@ public class BDBJEConfig extends StoreBackendConfig
      * of secondary indexes and their non-atomicity...
      */
     private final static boolean DEFAULT_USE_TRANSACTIONS = false;
-    
+
+    /**
+     * In most cases, uses of key prefixing should make sense, so
+     * start with it being enabled.
+     */
+    private final static boolean DEFAULT_USE_KEY_PREFIXING = true;
+
     /*
     /**********************************************************************
     /* Simple config properties, paths
@@ -106,6 +112,15 @@ public class BDBJEConfig extends StoreBackendConfig
      * "secondary index corrupt" exception when trying to expire entries.
      */
     public boolean useTransactions = DEFAULT_USE_TRANSACTIONS;
+
+    /**
+     * Should key prefixing be used by BDB-JE? It is expected that for most
+     * use cases this does make sense; but if keys are arbitrary (for example,
+     * start with UUID, or high-resolution timestamp), may want to disable this.
+     *
+     * @since 1.1.1
+     */
+    public boolean useKeyPrefixing = DEFAULT_USE_KEY_PREFIXING;
     
     /*
     /**********************************************************************

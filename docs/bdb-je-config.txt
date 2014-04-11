@@ -1,0 +1,7 @@
+1. How to figure out good BDB-JE cache size to use?
+
+  Use the tool that comes with BDB-JE, like:
+
+  java -jar ~/.m2/repository/com/sleepycat/je/5.0.73/je-5.0.73.jar DbCacheSize -records 1000000 -key 100 -data 1000
+
+

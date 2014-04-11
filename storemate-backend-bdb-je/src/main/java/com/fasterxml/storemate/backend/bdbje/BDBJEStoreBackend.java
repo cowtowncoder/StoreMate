@@ -5,11 +5,9 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.sleepycat.je.*;
-
 import com.fasterxml.storemate.backend.bdbje.util.LastModKeyCreator;
 import com.fasterxml.storemate.shared.StorableKey;
 import com.fasterxml.storemate.shared.util.WithBytesCallback;
-
 import com.fasterxml.storemate.store.*;
 import com.fasterxml.storemate.store.backend.*;
 import com.fasterxml.storemate.store.impl.StorableConverter;
@@ -127,6 +125,7 @@ public class BDBJEStoreBackend extends StoreBackend
         dbConfig.setAllowCreate(econfig.getAllowCreate());
         dbConfig.setTransactional(bdbConfig.useTransactions);
         dbConfig.setSortedDuplicates(false);
+        dbConfig.setKeyPrefixing(bdbConfig.useKeyPrefixing);
         // we can opt to use deferred writes if we dare:
         dbConfig.setDeferredWrite(bdbConfig.useDeferredWritesForEntries());
         return dbConfig;
