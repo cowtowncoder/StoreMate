@@ -1,6 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
+1.1.1 (xx-xxx-2014)
+
+- Add option to enable BDB-JE "key prefixing", defaulting to true (was not enabled
+  earlier)
+
 1.1.0 (09-Apr-2014)
 
 - Upgrade Java leveldb dependency to 0.7, to resolve Guava issues with ClusterMate
