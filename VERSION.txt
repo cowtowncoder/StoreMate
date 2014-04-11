@@ -5,6 +5,7 @@ License: Apache License 2.0
 
 - Add option to enable BDB-JE "key prefixing", defaulting to true (was not enabled
   earlier)
+- Added `StorableKeyComparator`
 
 1.1.0 (09-Apr-2014)
 
