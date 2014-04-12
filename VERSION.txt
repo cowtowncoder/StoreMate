@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-1.1.1 (xx-xxx-2014)
+1.1.1 (11-Apr-2014)
 
 - Add option to enable BDB-JE "key prefixing", defaulting to true (was not enabled
   earlier)
