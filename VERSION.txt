@@ -9,6 +9,7 @@ License: Apache License 2.0
 
 1.1.0 (09-Apr-2014)
 
+#7 Handle failure to create `MemBuffer` (by `StorableStoreImpl`) more gracefully (reported via callback)
 - Upgrade Java leveldb dependency to 0.7, to resolve Guava issues with ClusterMate
 - Update slf4j dep to 1.7.6, logback to 1.1.2 and Joda dep to 2.2
 
