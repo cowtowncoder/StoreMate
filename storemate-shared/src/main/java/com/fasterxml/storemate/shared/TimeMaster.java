@@ -50,9 +50,6 @@ public abstract class TimeMaster
         return System.currentTimeMillis();
     }
 
-    /**
-     * @since 0.9.10
-     */
     public long nanosForDiagnostics() {
         return System.nanoTime();
     }

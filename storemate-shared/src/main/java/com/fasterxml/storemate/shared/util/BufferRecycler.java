@@ -29,6 +29,7 @@ public class BufferRecycler extends ThreadLocal<SoftReference<BufferRecycler.Hol
         _initialBufferSize = initialSize;
     }
 
+    @Override
     protected SoftReference<BufferRecycler.Holder> initialValue() {
         return new SoftReference<Holder>(new Holder(_initialBufferSize));
     }

@@ -127,16 +127,12 @@ public class StoreConfig
      *<p>
      * Default size of 64 megabytes is chosen to stay under default limits
      * for off-heap allocation
-     * 
-     * @since 0.9.10
      */
     public DataAmount offHeapBufferSize = new DataAmount("64MB");
 
     /**
      * Also: to support very large entries, let's limit buffering to first
      * N bytes. Default is 1 megabyte.
-     * 
-     * @since 0.9.10
      */
     public DataAmount maxPerEntryBuffering = new DataAmount("1MB");
     

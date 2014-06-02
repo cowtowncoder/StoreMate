@@ -13,8 +13,6 @@ import com.fasterxml.storemate.store.backend.IterationResult;
  *<p>
  * A standard implementation is provided as the default, so data stores need not
  * provide one if defaults work fine.
- * 
- * @since 0.9.9
  */
 public abstract class StoreOperationThrottler
 {

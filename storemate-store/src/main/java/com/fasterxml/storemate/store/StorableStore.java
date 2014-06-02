@@ -32,8 +32,6 @@ public abstract class StorableStore
     /**
      * Method that is called before {@link #stop}, to give an advance warning
      * (if possible) about impending shutdown.
-     * 
-     * @since 0.9.7
      */
     public abstract void prepareForStop() throws Exception;
 
@@ -61,8 +59,6 @@ public abstract class StorableStore
      * Note that if allocation fails (due to large number of in-use buffers,
      * for example), null buffer may be passed; caller needs to be able
      * to check for this.
-     * 
-     * @since 0.9.10
      */
     public abstract <T> T leaseOffHeapBuffer(ByteBufferCallback<T> cb);
     

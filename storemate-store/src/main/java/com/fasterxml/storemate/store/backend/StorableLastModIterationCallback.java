@@ -21,8 +21,6 @@ public abstract class StorableLastModIterationCallback extends StorableIteration
      *<p>
      * Default implementation is basically no-operation, defined for backwards
      * compatibility
-     * 
-     * @since 0.9.7
      */
     public IterationAction processMissingEntry(StorableKey entryKey)
         throws StoreException

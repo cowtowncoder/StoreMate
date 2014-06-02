@@ -48,9 +48,6 @@ public class StorableKey
 
     public final int length() { return _length; }
 
-    /**
-     * @since 0.9.23
-     */
     public final int byteAt(int index) {
         if (index < 0 || index >= _length) {
             throw new IllegalArgumentException("Invalid index "+index+": key length="+_length);

@@ -8,8 +8,6 @@ import com.fasterxml.storemate.shared.hash.IncrementalHasher32;
  * Wrapper for {@link InputStream} that keeps track of number of bytes
  * read and skipped. It can also optionally calculate checksum over
  * read data.
- * 
- * @since 0.9.12
  */
 public class CountingInputStream extends InputStream
 {

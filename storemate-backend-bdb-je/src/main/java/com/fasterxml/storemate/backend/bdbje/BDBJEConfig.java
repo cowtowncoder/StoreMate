@@ -183,9 +183,6 @@ public class BDBJEConfig extends StoreBackendConfig
         return this;
     }
 
-    /**
-     * @since 0.9.6
-     */
     public BDBJEConfig overrideLockTimeoutMsecs(int timeoutMsecs) {
         if (timeoutMsecs < 1) {
             throw new IllegalArgumentException("Illegal timeoutMsecs value ("+timeoutMsecs+"); should be a non-zero positive value");

@@ -91,8 +91,6 @@ public abstract class StoreBackend
      * Callers should only ever use this for collecting statistics, or displaying
      * diagnostics information: it should not be used for accessing (or heaven
      * forbid, modifying) data.
-     * 
-     * @since 0.9.18
      */
     public abstract File getStorageDirectory();
     

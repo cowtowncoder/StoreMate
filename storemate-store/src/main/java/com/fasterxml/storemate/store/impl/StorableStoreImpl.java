@@ -637,7 +637,7 @@ public class StorableStoreImpl extends AdminStorableStore
     }
 
     protected StorableCreationResult _putSmallEntry(final StoreOperationSource source, final OperationDiagnostics diag,
-            final StorableKey key,
+            final StorableKey key0,
             StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites, final ByteContainer data)
         throws IOException, StoreException
@@ -648,16 +648,16 @@ public class StorableStoreImpl extends AdminStorableStore
         // inline? Yes if small enough
         if (data.byteLength() <= _maxInlinedStorageSize) {
             creationTime = _timeMaster.currentTimeMillis();
-            storable = _storableConverter.encodeInlined(key, creationTime,
+            storable = _storableConverter.encodeInlined(key0, creationTime,
                     stdMetadata, customMetadata, data);
         } else {
             // otherwise, need to create file and all that fun...
             final long fileCreationTime = _timeMaster.currentTimeMillis();
-            FileReference fileRef = _fileManager.createStorageFile(key,
+            FileReference fileRef = _fileManager.createStorageFile(key0,
                     stdMetadata.compression, fileCreationTime);
             try {
                 final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
-                _throttler.performFileWrite(source, fileCreationTime, key, fileRef.getFile(),
+                _throttler.performFileWrite(source, fileCreationTime, key0, fileRef.getFile(),
                         new FileOperationCallback<Void>() {
                     @Override
                     public Void perform(long operationTime, StorableKey key, Storable value, File externalFile)
@@ -673,15 +673,15 @@ public class StorableStoreImpl extends AdminStorableStore
             } catch (IOException e) {
                 // better remove the file, if one exists...
                 fileRef.getFile().delete();
-                throw new StoreException.IO(key,
+                throw new StoreException.IO(key0,
                         "Failed to write storage file of "+data.byteLength()+" bytes: "+e.getMessage(), e);
             }
             // but modtime better be taken only now, as above may have taken some time (I/O bound)
             creationTime = _timeMaster.currentTimeMillis();
-            storable = _storableConverter.encodeOfflined(key, creationTime,
+            storable = _storableConverter.encodeOfflined(key0, creationTime,
                     stdMetadata, customMetadata, fileRef);
         }
-        return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
+        return _putPartitionedEntry(source, diag, key0, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     protected StorableCreationResult _putLargeEntry(StoreOperationSource source, final OperationDiagnostics diag,
@@ -722,7 +722,7 @@ public class StorableStoreImpl extends AdminStorableStore
 
     @SuppressWarnings("resource")
     protected StorableCreationResult _putLargeEntry2(StoreOperationSource source, final OperationDiagnostics diag,
-            final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            StorableKey key0, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
             final byte[] readBuffer, int incomingReadByteCount,
             final InputStream input,
@@ -742,11 +742,11 @@ public class StorableStoreImpl extends AdminStorableStore
                     throw new IOException("Internal problem: failed to append "+incomingReadByteCount+" in an off-heap buffer");
                 }
             }
-            int overflow = _readInBuffer(diag, key, input, readBuffer, offHeap);
+            int overflow = _readInBuffer(diag, key0, input, readBuffer, offHeap);
             if (overflow == 0) {
                 // Optimal case: managed to read all input -- offline!
                 return _putLargeEntryFullyBuffered(source, diag,
-                        key, stdMetadata, customMetadata, allowOverwrites,
+                        key0, stdMetadata, customMetadata, allowOverwrites,
                         readBuffer, skipCompression, offHeap);
             }
             leftover = Arrays.copyOf(readBuffer, overflow);
@@ -758,7 +758,7 @@ public class StorableStoreImpl extends AdminStorableStore
         
         // So: start by creating the result file
         long fileCreationTime = _timeMaster.currentTimeMillis();
-        final FileReference fileRef = _fileManager.createStorageFile(key, stdMetadata.compression, fileCreationTime);
+        final FileReference fileRef = _fileManager.createStorageFile(key0, stdMetadata.compression, fileCreationTime);
         File storedFile = fileRef.getFile();
 
         final OutputStream out;
@@ -777,13 +777,13 @@ public class StorableStoreImpl extends AdminStorableStore
         // Need to mix-n-match read, write; trickier to account for each part.
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         long copiedBytes = _throttler.performFileWrite(source,
-                fileCreationTime, key, fileRef.getFile(),
+                fileCreationTime, key0, fileRef.getFile(),
                 new FileOperationCallback<Long>() {
             @Override
             public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
                     throws IOException, StoreException {
                 final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
-                long copiedBytes = 0L;
+                long total = 0L;
 
                 try {
                     // First: dump out anything in off-heap buffer
@@ -791,7 +791,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         int count;
                         while ((count = offHeap.readIfAvailable(readBuffer)) > 0) {
                             out.write(readBuffer, 0, count);
-                            copiedBytes += count;
+                            total += count;
                             hasher.update(readBuffer, 0, count);
                         }
                     }
@@ -799,7 +799,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     if (leftover != null) {
                         out.write(leftover);
                         hasher.update(leftover, 0, leftover.length);
-                        copiedBytes += leftover.length;
+                        total += leftover.length;
                     }
                     // and then need to proceed with copying the rest, compressing along the way
                     while (true) {
@@ -807,20 +807,20 @@ public class StorableStoreImpl extends AdminStorableStore
                         try {
                             count = input.read(readBuffer);
                         } catch (IOException e) { // probably will fail to write response too but...
-                            throw new StoreException.IO(key, "Failed to read content to store (after "+copiedBytes+" bytes)", e);
+                            throw new StoreException.IO(key, "Failed to read content to store (after "+total+" bytes)", e);
                         }
                         if (count < 0) {
                             break;
                         }
-                        copiedBytes += count;
+                        total += count;
                         out.write(readBuffer, 0, count);
                         hasher.update(readBuffer, 0, count);
                     }
                 } catch (IOException e) {
-                    if (copiedBytes == 0L) {
+                    if (total == 0L) {
                         throw new StoreException.IO(key, "Failed to write initial bytes of file '"+externalFile.getAbsolutePath()+"'", e);
                     }
-                    throw new StoreException.IO(key, "Failed to write intermediate bytes (after "+copiedBytes
+                    throw new StoreException.IO(key, "Failed to write intermediate bytes (after "+total
                             +") to file '"+externalFile.getAbsolutePath()+"'", e);
                 } finally {
                     try {
@@ -830,36 +830,36 @@ public class StorableStoreImpl extends AdminStorableStore
                     }
                     if (diag != null) {
                         // Note: due to compression, bytes written may be less than read:
-                        long writtenBytes = (compressedOut == null) ? copiedBytes : compressedOut.count();
+                        long writtenBytes = (compressedOut == null) ? total : compressedOut.count();
                         diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, writtenBytes);
                     }
                 }
-                return copiedBytes;
+                return total;
             }
         });
         // Checksum calculation and storage details differ depending on whether compression is used
         final int contentHash = _cleanChecksum(hasher.calculateHash());
         if (skipCompression) {
-            _verifyStorageSize(key, stdMetadata, copiedBytes);
+            _verifyStorageSize(key0, stdMetadata, copiedBytes);
             if (stdMetadata.compression == Compression.NONE) {
                 stdMetadata.uncompressedSize = 0L;
-                _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
+                _verifyContentHash(key0, stdMetadata, copiedBytes, contentHash);
             } else { // already compressed
-                _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
+                _verifyCompressedHash(key0, stdMetadata, copiedBytes, contentHash);
             }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
             // must verify checksum, if one was offered...
-            _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
-            _verifyCompressedHash(key, stdMetadata, copiedBytes, compressedHash);
+            _verifyContentHash(key0, stdMetadata, copiedBytes, contentHash);
+            _verifyCompressedHash(key0, stdMetadata, copiedBytes, compressedHash);
         }
         long creationTime = _timeMaster.currentTimeMillis();
-        Storable storable = _storableConverter.encodeOfflined(key, creationTime,
+        Storable storable = _storableConverter.encodeOfflined(key0, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
-        return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
+        return _putPartitionedEntry(source, diag, key0, creationTime, stdMetadata, storable, allowOverwrites);
     }
 
     /**
@@ -868,13 +868,13 @@ public class StorableStoreImpl extends AdminStorableStore
      */
     @SuppressWarnings("resource")
     protected StorableCreationResult _putLargeEntryFullyBuffered(StoreOperationSource source, final OperationDiagnostics diag,
-            final StorableKey key, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
+            StorableKey key0, StorableCreationMetadata stdMetadata, ByteContainer customMetadata,
             OverwriteChecker allowOverwrites,
             final byte[] readBuffer, final boolean skipCompression, final StreamyBytesMemBuffer offHeap)
         throws IOException, StoreException
     {
         long fileCreationTime = _timeMaster.currentTimeMillis();
-        final FileReference fileRef = _fileManager.createStorageFile(key, stdMetadata.compression, fileCreationTime);
+        final FileReference fileRef = _fileManager.createStorageFile(key0, stdMetadata.compression, fileCreationTime);
         File storedFile = fileRef.getFile();
 
         final OutputStream out;
@@ -892,22 +892,22 @@ public class StorableStoreImpl extends AdminStorableStore
 
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         long copiedBytes = _throttler.performFileWrite(source,
-                fileCreationTime, key, fileRef.getFile(),
+                fileCreationTime, key0, fileRef.getFile(),
                 new FileOperationCallback<Long>() {
             @Override
             public Long perform(long operationTime, StorableKey key, Storable value, File externalFile)
                     throws IOException, StoreException {
                 final long fsStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
-                long copiedBytes = 0L;
+                long total = 0L;
                 
                 try {
                     int count;
                     while ((count = offHeap.readIfAvailable(readBuffer)) > 0) {
-                        copiedBytes += count;
+                        total += count;
                         try {
                             out.write(readBuffer, 0, count);
                         } catch (IOException e) {
-                            throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+copiedBytes
+                            throw new StoreException.IO(key, "Failed to write "+count+" bytes (after "+total
                                     +") to file '"+externalFile.getAbsolutePath()+"'", e);
                         }
                         hasher.update(readBuffer, 0, count);
@@ -916,36 +916,36 @@ public class StorableStoreImpl extends AdminStorableStore
                     try { out.close(); } catch (IOException e) { }
                     if (diag != null) {
                         // Note: due to compression, bytes written may be less than read:
-                        long writtenBytes = (compressedOut == null) ? copiedBytes : compressedOut.count();
+                        long writtenBytes = (compressedOut == null) ? total : compressedOut.count();
                         diag.addFileWriteAccess(nanoStart,  fsStart,  _timeMaster, writtenBytes);
                     }
                 }
-                return copiedBytes;
+                return total;
             }
         });
         // Checksum calculation and storage details differ depending on whether compression is used
         final int contentHash = _cleanChecksum(hasher.calculateHash());
         if (skipCompression) {
-            _verifyStorageSize(key, stdMetadata, copiedBytes);
+            _verifyStorageSize(key0, stdMetadata, copiedBytes);
             if (stdMetadata.compression == Compression.NONE) {
                 stdMetadata.uncompressedSize = 0L;
-                _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
+                _verifyContentHash(key0, stdMetadata, copiedBytes, contentHash);
             } else { // already compressed
-                _verifyCompressedHash(key, stdMetadata, copiedBytes, contentHash);
+                _verifyCompressedHash(key0, stdMetadata, copiedBytes, contentHash);
             }
         } else {
             final int compressedHash = _cleanChecksum(compressedOut.calculateHash());
             stdMetadata.uncompressedSize = copiedBytes;
             stdMetadata.storageSize = compressedOut.count();
             // must verify checksum, if one was offered...
-            _verifyContentHash(key, stdMetadata, copiedBytes, contentHash);
-            _verifyCompressedHash(key, stdMetadata, copiedBytes, compressedHash);
+            _verifyContentHash(key0, stdMetadata, copiedBytes, contentHash);
+            _verifyCompressedHash(key0, stdMetadata, copiedBytes, compressedHash);
         }
         long creationTime = _timeMaster.currentTimeMillis();
-        Storable storable = _storableConverter.encodeOfflined(key, creationTime,
+        Storable storable = _storableConverter.encodeOfflined(key0, creationTime,
                 stdMetadata, customMetadata, fileRef);
 
-        return _putPartitionedEntry(source, diag, key, creationTime, stdMetadata, storable, allowOverwrites);
+        return _putPartitionedEntry(source, diag, key0, creationTime, stdMetadata, storable, allowOverwrites);
     }
     
     protected void _verifyStorageSize(StorableKey key, StorableCreationMetadata stdMetadata, long bytes)
@@ -1034,7 +1034,7 @@ public class StorableStoreImpl extends AdminStorableStore
      *   important as it determines last-modified traversal order for synchronization
      */
     protected StorableCreationResult _putPartitionedEntry(final StoreOperationSource source, final OperationDiagnostics diag,
-            StorableKey key, final long operationTime,
+            StorableKey key0, final long operationTime,
             final StorableCreationMetadata stdMetadata, Storable storable,
             final OverwriteChecker allowOverwrites)
         throws IOException, StoreException
@@ -1043,17 +1043,17 @@ public class StorableStoreImpl extends AdminStorableStore
         // so it's ok to assume rest is DB access.
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         final StorableCreationResult result = _throttler.performPut(source,
-                operationTime, key, storable,
+                operationTime, key0, storable,
                 new StoreOperationCallback<StorableCreationResult>() {
             @Override
-            public StorableCreationResult perform(long time, StorableKey key, final Storable newValue)
+            public StorableCreationResult perform(long time, StorableKey key1, final Storable newValue)
                 throws IOException, StoreException
             {
                 // blind update, insert-only are easy
-                Boolean defaultOk = allowOverwrites.mayOverwrite(key);
+                Boolean defaultOk = allowOverwrites.mayOverwrite(key1);
                 if (defaultOk != null) { // depends on entry in question...
                     if (defaultOk.booleanValue()) { // always ok, fine ("upsert")
-                        return _writeMutex.partitionedWrite(time, key,
+                        return _writeMutex.partitionedWrite(time, key1,
                                 new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                             @Override
                             public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
@@ -1067,7 +1067,7 @@ public class StorableStoreImpl extends AdminStorableStore
                         });
                     }
                     // strict "insert"
-                    return _writeMutex.partitionedWrite(time, key,
+                    return _writeMutex.partitionedWrite(time, key1,
                             new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                         @Override
                         public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
@@ -1086,7 +1086,7 @@ public class StorableStoreImpl extends AdminStorableStore
                     });
                 }
                 // But if things depend on existence of old entry, or entries, trickier:
-                return _writeMutex.partitionedWrite(time, key,
+                return _writeMutex.partitionedWrite(time, key1,
                         new PartitionedWriteMutex.Callback<StorableCreationResult>() {
                     @Override
                     public StorableCreationResult performWrite(StorableKey key) throws IOException, StoreException {
@@ -1113,7 +1113,7 @@ public class StorableStoreImpl extends AdminStorableStore
             // otherwise, may need to delete file that was created
             FileReference ref = stdMetadata.dataFile;
             if (ref != null) {
-                _deleteBackingFile(key, ref.getFile());
+                _deleteBackingFile(key0, ref.getFile());
             }
         }
         return result;
@@ -1127,20 +1127,20 @@ public class StorableStoreImpl extends AdminStorableStore
 
     @Override
     public StorableDeletionResult softDelete(final StoreOperationSource source, final OperationDiagnostics diag,
-            StorableKey key,
+            StorableKey key0,
             final boolean removeInlinedData, final boolean removeExternalData)
         throws IOException, StoreException
     {
         _checkClosed();
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         Storable entry = _throttler.performSoftDelete(source,
-                _timeMaster.currentTimeMillis(), key,
+                _timeMaster.currentTimeMillis(), key0,
         new StoreOperationCallback<Storable>() {
             @Override
-            public Storable perform(final long operationTime, StorableKey key, Storable value)
+            public Storable perform(final long operationTime, StorableKey key1, Storable value1)
                 throws IOException, StoreException
             {
-                return _writeMutex.partitionedWrite(operationTime, key,
+                return _writeMutex.partitionedWrite(operationTime, key1,
                         new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
@@ -1156,24 +1156,24 @@ public class StorableStoreImpl extends AdminStorableStore
                 });
             }
         });
-        return new StorableDeletionResult(key, entry);
+        return new StorableDeletionResult(key0, entry);
     }
     
     @Override
     public StorableDeletionResult hardDelete(final StoreOperationSource source, final OperationDiagnostics diag,
-            StorableKey key, final boolean removeExternalData)
+            StorableKey key0, final boolean removeExternalData)
         throws IOException, StoreException
     {
         _checkClosed();
         final long nanoStart = (diag == null) ? 0L : _timeMaster.nanosForDiagnostics();
         Storable entry = _throttler.performHardDelete(source,
-                _timeMaster.currentTimeMillis(), key,
+                _timeMaster.currentTimeMillis(), key0,
                 new StoreOperationCallback<Storable>() {
             @Override
-            public Storable perform(final long operationTime, StorableKey key, Storable value)
+            public Storable perform(final long operationTime, StorableKey key1, Storable value1)
                 throws IOException, StoreException
             {
-                return _writeMutex.partitionedWrite(operationTime, key,
+                return _writeMutex.partitionedWrite(operationTime, key1,
                         new PartitionedWriteMutex.Callback<Storable>() {
                     @Override
                     public Storable performWrite(StorableKey key) throws IOException, StoreException {
@@ -1189,7 +1189,7 @@ public class StorableStoreImpl extends AdminStorableStore
                 });
             }
         });
-        return new StorableDeletionResult(key, entry);
+        return new StorableDeletionResult(key0, entry);
     }
 
     protected Storable _softDelete(StoreOperationSource source, final OperationDiagnostics diag,
