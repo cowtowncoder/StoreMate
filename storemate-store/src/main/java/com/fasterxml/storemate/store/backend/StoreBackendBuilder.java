@@ -51,4 +51,32 @@ public abstract class StoreBackendBuilder<T extends StoreBackendConfig>
      */
     public abstract <K,V> NodeStateStore<K,V> buildNodeStateStore(File metadataRoot,
             RawEntryConverter<K> keyConv, RawEntryConverter<V> valueConv);
+
+    /**
+     * Factory method that may be called to create a secondary node-state store,
+     * typically for storing remote-cluster information.
+     * 
+     * @since 1.1.2
+     */
+    public abstract <K,V> NodeStateStore<K,V> buildSecondaryNodeStateStore(File metadataRoot,
+            String secondaryId,
+            RawEntryConverter<K> keyConv, RawEntryConverter<V> valueConv);
+
+
+    protected File _concatAndCreate(File root, String path)
+    {
+        File dir = root;
+        for (String part : path.split("/")) {
+            part = part.trim();
+            if (!part.isEmpty()) { // to remove possible duplicate slashes, avoid empty segments
+                dir = new File(dir, part);
+            }
+        }
+        if (!dir.exists() || !dir.isDirectory()) {
+            if (!dir.mkdirs()) {
+                throw new IllegalArgumentException("Directory '"+dir.getAbsolutePath()+"' did not exist: failed to create it");
+            }
+        }
+        return dir;
+    }
 }

@@ -55,21 +55,41 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
         if (path == null || path.isEmpty()) {
             throw new IllegalStateException("Missing 'nodeStateDir'");
         }
-        File nodeStateDir = metadataRoot;
-        for (String part : path.split("/")) {
-            nodeStateDir = new File(nodeStateDir, part);
-        }
-        if (!nodeStateDir.exists() || !nodeStateDir.isDirectory()) {
-            if (!nodeStateDir.mkdirs()) {
-                throw new IllegalArgumentException("Directory '"+nodeStateDir.getAbsolutePath()+"' did not exist: failed to create it");
-            }
-        }
+        File nodeStateDir = _concatAndCreate(metadataRoot, path);
         Environment nodeEnv = new Environment(nodeStateDir, envConfigForNodeState(true, true));
         NodeStateStore<K,V> nodeStore;
         try {
             nodeStore = new BDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeEnv);
         } catch (DatabaseException e) {
             String msg = "Failed to open Node store: "+e.getMessage();
+            throw new IllegalStateException(msg, e);
+        }
+        return nodeStore;
+    }
+
+    @Override
+    public <K,V> NodeStateStore<K,V> buildSecondaryNodeStateStore(File metadataRoot,
+            String secondaryId,
+            RawEntryConverter<K> keyConv, RawEntryConverter<V> valueConv)
+    {
+        if (secondaryId == null || secondaryId.isEmpty()) {
+            throw new IllegalStateException("Missing argument 'secondaryId`");
+        }
+        verifyConfigs();
+        if (metadataRoot == null) {
+            throw new IllegalStateException("Missing 'metadataRoot'");
+        }
+        final String path = _bdbConfig.remoteStateDir;
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("Missing 'remoteStateDir'");
+        }
+        File nodeStateDir = _concatAndCreate(metadataRoot, path + "/" + secondaryId);
+        Environment nodeEnv = new Environment(nodeStateDir, envConfigForNodeState(true, true));
+        NodeStateStore<K,V> nodeStore;
+        try {
+            nodeStore = new BDBNodeStateStoreImpl<K,V>(null, keyConv, valueConv, nodeEnv);
+        } catch (DatabaseException e) {
+            String msg = "Failed to open Remote Node store (id '"+secondaryId+"'): "+e.getMessage();
             throw new IllegalStateException(msg, e);
         }
         return nodeStore;
@@ -152,7 +172,7 @@ public class BDBJEBuilder extends StoreBackendBuilder<BDBJEConfig>
     /* Internal methods
     /**********************************************************************
      */
-
+    
     protected void verifyConfigs() {
         if (_storeConfig == null) throw new IllegalStateException("Missing StoreConfig");
         if (_bdbConfig == null) throw new IllegalStateException("Missing BDBJEConfig");

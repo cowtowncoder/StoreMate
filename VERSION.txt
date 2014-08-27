@@ -1,6 +1,11 @@
 Project: StoreMate
 License: Apache License 2.0
 
+1.1.2 (xx-Aug-2014)
+
+- Add support for secondary node-state-stores, needed (or at least useful)
+  for storing information about remote cluster nodes.
+
 1.1.1 (11-Apr-2014)
 
 - Add option to enable BDB-JE "key prefixing", defaulting to true (was not enabled

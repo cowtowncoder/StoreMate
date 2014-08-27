@@ -18,7 +18,7 @@ import com.fasterxml.storemate.store.state.NodeStateStore;
 public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
 {
     /**
-     * For Node Stae stores we do not really need much any caching;
+     * For Node State stores we do not really need much any caching;
      * but throw dog a bone of, say, nice round 200k.
      */
     private final static long NODE_STATE_CACHE_SIZE = 200L * 1024L;
@@ -55,20 +55,15 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
             RawEntryConverter<K> keyConv,
             RawEntryConverter<V> valueConv)
     {
+        if (metadataRoot == null) {
+            throw new IllegalStateException("Missing 'metadataRoot'");
+        }
         _verifyConfig();
         final String path = _levelDBConfig.nodeStateDir;
         if (path == null || path.isEmpty()) {
             throw new IllegalStateException("Missing 'nodeStateDir'");
         }
-        File nodeStateDir = metadataRoot;
-        for (String part : path.split("/")) {
-            nodeStateDir = new File(nodeStateDir, part);
-        }
-        if (!nodeStateDir.exists() || !nodeStateDir.isDirectory()) {
-            if (!nodeStateDir.mkdirs()) {
-                throw new IllegalArgumentException("Directory '"+nodeStateDir.getAbsolutePath()+"' did not exist: failed to create it");
-            }
-        }
+        File nodeStateDir = _concatAndCreate(metadataRoot, path);
         _verifyDir(metadataRoot, true);
 
         Iq80DBFactory factory = Iq80DBFactory.factory;
@@ -86,6 +81,46 @@ public class LevelDBBuilder extends StoreBackendBuilder<LevelDBConfig>
             nodeStateDB = factory.open(nodeStateDir, options);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to open Node state LevelDB: "+e.getMessage(), e);
+        }
+        return new LevelDBNodeStateStore<K,V>(null, keyConv, valueConv, nodeStateDB);
+    }
+
+    @Override
+    public <K,V> NodeStateStore<K,V> buildSecondaryNodeStateStore(File metadataRoot,
+            String secondaryId,
+            RawEntryConverter<K> keyConv, RawEntryConverter<V> valueConv)
+    {
+        if (secondaryId == null || secondaryId.isEmpty()) {
+            throw new IllegalStateException("Missing argument 'secondaryId`");
+        }
+        _verifyConfig();
+        if (metadataRoot == null) {
+            throw new IllegalStateException("Missing 'metadataRoot'");
+        }
+        final String path = _levelDBConfig.remoteStateDir;
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("Missing 'remoteStateDir'");
+        }
+        File nodeStateDir = _concatAndCreate(metadataRoot, path + "/" + secondaryId);
+
+        _verifyDir(metadataRoot, true);
+
+        Iq80DBFactory factory = Iq80DBFactory.factory;
+        Options options = new Options();
+        options = options
+                .createIfMissing(true)
+                .logger(_ldbLogger)
+                // better safe than sorry, for store data?
+                .verifyChecksums(true)
+                .cacheSize(NODE_STATE_CACHE_SIZE)
+                ;
+        
+        DB nodeStateDB;
+        try {
+            nodeStateDB = factory.open(nodeStateDir, options);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to open Remote Node state LevelDB (id '"+secondaryId
+                    +"'): "+e.getMessage(), e);
         }
         return new LevelDBNodeStateStore<K,V>(null, keyConv, valueConv, nodeStateDB);
     }

@@ -32,7 +32,16 @@ public class LevelDBConfig extends StoreBackendConfig
      * Store metadata directory (which comes from main service config)
      */
     public String nodeStateDir = "nodes";
-    
+
+    /**
+     * Additional slash-separated path for storing optional "remote node state" information
+     * under Store metadata directory (which comes from main service config).
+     * Note that unlike with other stores, additional sub-directory is typically
+     * created under this directory, to support creation of multiple separate stores
+     * if/as needed.
+     */
+    public String remoteStateDir = "remoteNodes";
+
     /*
     /**********************************************************************
     /* Simple config properties, size thresholds
