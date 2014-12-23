@@ -1,7 +1,7 @@
 Project: StoreMate
 License: Apache License 2.0
 
-1.1.2 (xx-Aug-2014)
+1.1.2 (28-Aug-2014)
 
 - Add support for secondary node-state-stores, needed (or at least useful)
   for storing information about remote cluster nodes.
