@@ -71,7 +71,7 @@ public abstract class StoreException extends IOException
         /**
          * Error caused by client supplying incorrect length declaration
          * (claiming content to have length of N bytes, but supplying M
-         * bytes where N <> M)
+         * bytes where N &lt;&gt; M)
          */
         BAD_LENGTH
         ;
