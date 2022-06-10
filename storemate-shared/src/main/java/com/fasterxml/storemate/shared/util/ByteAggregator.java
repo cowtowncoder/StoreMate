@@ -200,7 +200,7 @@ public class ByteAggregator
      * Equivalent to:
      *<pre>
      *   toByteArray(true, null);
-     *<pre>
+     *</pre>
      * that is, this also implicitly calls {@link #release} so that no
      * content is available for further calls; and no prefix will be
      * prepended.
