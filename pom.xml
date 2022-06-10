@@ -52,8 +52,8 @@
     <version.bdb>5.0.73</version.bdb>
     <!-- 0.7 released in Feb 2014, latest currently -->
     <version.leveldb>0.7</version.leveldb>
-    <version.lzf>1.0.3</version.lzf>
-    <version.membuffers>1.1.1</version.membuffers>
+    <version.lzf>1.1</version.lzf>
+    <version.membuffers>1.2.0</version.membuffers>
 
   </properties>
 
